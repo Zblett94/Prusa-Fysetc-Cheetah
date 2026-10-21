@@ -29,6 +29,11 @@ pio run
 The result is `.pio/build/MK3S_SKR_MINI_E3_V3/firmware.bin`. Every push to GitHub
 also builds it (Actions tab, artifact `firmware-MK3S_SKR_MINI_E3_V3`).
 
+The translations (`lang/po`) are added to `firmware.bin` after linking by
+`buildroot/scripts/lang.py`, which needs the Python packages `polib` and `pyelftools`
+(installed automatically if missing). Flash `firmware.bin`, not `firmware.elf`: only
+the `.bin` contains the language tables.
+
 ## Install
 
 1. Copy `firmware.bin` to the root of a FAT32 micro-SD card.
@@ -64,7 +69,7 @@ pins).
 | Power panic recovery | yes, needs a power-fail signal on PWR-DET |
 | MMU2S / MMU3 | yes, on the TFT header (no reset wire, reset over serial) |
 | Quiet heatbed PWM | same automaton on a hardware timer |
-| Languages | **English only** (the other languages live in the external SPI flash of the EINSy) |
+| Languages | all 14 languages of the Prusa release (en, cs, de, es, fr, it, pl, nl, ro, hu, hr, sk, sv, no), stored in the internal flash and selectable directly from the menu |
 | Crash dumps (D20-D22), memory dump menu | **no** (needs the external SPI flash) |
 | TMC2130 linearity correction | **no** (the TMC2209 has no programmable wave table) |
 | LCD backlight dimming, PSU/bed voltage readout, Raspberry Pi port, MMU reset wire | **no** (not available on the board) |
@@ -78,7 +83,9 @@ pins).
 | `Firmware/hal_stm32/` | STM32 hardware abstraction layer |
 | `Firmware/pins_SKR_MINI_E3_V3.h` | pin map |
 | `Firmware/variants/MK3S-SKR_MINI_E3_V3.h` | printer configuration (MK3S values, hardware related changes marked `SKR:`) |
-| `buildroot/` | PlatformIO board definition, STM32 variant (from Marlin), build script |
+| `buildroot/` | PlatformIO board definition, STM32 variant (from Marlin), build scripts |
+| `lang/` | Prusa translations (`po/`) and language table tools |
+| `test/renode/` | emulator test harness (see [docs/PORTING.md](docs/PORTING.md)) |
 | `docs/` | wiring and porting notes |
 | `README_PRUSA.md` | the original Prusa-Firmware README |
 

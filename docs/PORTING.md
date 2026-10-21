@@ -65,6 +65,36 @@ timers emulate those of the 16 MHz AVR.
   EEPROM on the AVR, is also kept in a backup register across the reset.
 - `menu_data` is word aligned.
 
+## Languages
+
+The EINSy keeps one secondary language in the ATmega flash and the others in the
+external SPI flash; selecting one of those makes the bootloader copy it into the
+ATmega flash. The STM32G0B1 has enough flash for all of them: `_SEC_LANG`
+(`LANG_SIZE_RESERVED` = 192 KiB, `config.h`) holds all language tables one after the
+other, and every language is selected directly from the menu (`language.c`).
+
+The tables have the Prusa format and are built by the Prusa tools. After linking,
+`buildroot/scripts/lang.py`
+
+1. collects the translatable strings (`_I()`/`ISTR()`, section `loc_pri`) and
+   numbers them in address order, like `lang/lang-map.py`,
+2. builds one table per `lang/po/Firmware_xx.po` with `lang/lang-build.py`,
+3. writes the string IDs, the signature `_PRI_LANG_SIGNATURE` and the tables into
+   `firmware.bin`.
+
+The ELF file is not patched; it runs in English only.
+
+## Emulator tests
+
+`pio run -e renode_test` builds a test variant (`-DEMULATION`) for the
+[Renode](https://renode.io) emulator: the host serial is USART2, the EEPROM is preset
+like a calibrated printer, the heaters and thermistors are replaced by a simple
+thermal simulation and the LCD contents are mirrored into RAM. `test/renode/run.py`
+boots it, sends G-code and checks the serial output and the LCD;
+`test/renode/smoke_test.sh` checks start-up, M115, M503 and moves,
+`test/renode/lang_test.sh` the language menu and a German message. The emulator does not model the TMC2209 drivers, EXTI and the ADC, so
+these tests cover the firmware logic, not the hardware layer.
+
 ## TMC2209 instead of TMC2130
 
 The register map of the TMC2209 is close to the TMC2130 one. `tmc2130.cpp` keeps its

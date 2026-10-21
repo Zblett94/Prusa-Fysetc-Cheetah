@@ -74,9 +74,14 @@
 #define LANG_MODE              1 // sec. language support
 #endif
 
+#ifdef __AVR__
 #define LANG_SIZE_RESERVED     0x3500 // reserved space for secondary language (13568 bytes).
                                       // 0x3D00 Maximum 15616 bytes as it depends on xflash_layout.h
                                       // 16 Languages max. per group including stock
+#else
+// STM32 port: no external flash, all language tables are stored in the internal flash
+#define LANG_SIZE_RESERVED     0x30000
+#endif
 
 #if (LANG_SIZE_RESERVED % 256)
   #error "LANG_SIZE_RESERVED should be a multiple of a page size"

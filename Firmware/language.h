@@ -38,6 +38,18 @@
 #define _i(s) _I(s) // declare a translatable string and return the translated form
 #define _T(s) (s)   // return translated string from reference
 #define _O(s) (s)   // return original (untranslated) string from reference
+#elif !defined(__AVR__) // STM32, secondary languages
+// STM32 port: the translatable strings are collected in the section loc_pri (a C name,
+// so the linker provides __start_loc_pri/__stop_loc_pri). Their IDs and the language
+// tables are patched into the binary after linking (buildroot/scripts/lang.py).
+#define PROGMEM_I2
+#define PROGMEM_I1 __attribute__((section("loc_pri")))
+#define PROGMEM_N1
+#define _I(s) (__extension__({static const char __c[] PROGMEM_I1 = "\xff\xff" s; &__c[0];}))
+#define ISTR(s) "\xff\xff" s
+#define _i(s) lang_get_translation(_I(s))
+#define _T(s) lang_get_translation(s)
+#define _O(s) (s + 2)
 #else //(LANG_MODE == 0)
 // section .loc_sec (originaly .progmem0) will be used for localized translated strings
 #define PROGMEM_I2 __attribute__((section(".loc_sec")))
@@ -157,13 +169,21 @@ extern uint8_t lang_selected;
 #if (LANG_MODE != 0)
 extern const char _SEC_LANG[LANG_SIZE_RESERVED];
 extern const char* lang_get_translation(const char* s);
+#ifdef __AVR__
 #define _SEC_LANG_TABLE ((uint16_t)&_SEC_LANG)
+#else
+#define _SEC_LANG_TABLE ((uintptr_t)&_SEC_LANG)
+#endif
 #endif //(LANG_MODE != 0)
 
 /** @brief selects language, eeprom is updated in case of success */
 extern uint8_t lang_select(uint8_t lang);
 /** @brief performs checksum test of secondary language data */
+#ifdef __AVR__
 extern uint8_t lang_check(uint16_t addr);
+#else
+extern uint8_t lang_check(uintptr_t addr);
+#endif
 /** @return total number of languages (primary + all in xflash) */
 extern uint8_t lang_get_count(void);
 /** @brief reads lang table header and offset in xflash or progmem */

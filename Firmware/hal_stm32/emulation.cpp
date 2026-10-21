@@ -7,12 +7,17 @@
 #include "../eeprom.h"
 #include "../util.h"
 
+//! Language preset for the EEPROM (0 = English, 1.. = language tables, 255 = ask at
+//! start-up). In the flash, the test script (run.py --lang) overwrites it.
+extern "C" const volatile uint8_t emu_lang = 0;
+
 //! The emulator has no I2C EEPROM: preset the RAM mirror like a calibrated printer,
 //! so the first run wizard does not block the G-code tests.
 void hal_emulation_eeprom_preset()
 {
 	eeprom_write_byte((uint8_t*)EEPROM_WIZARD_ACTIVE, 0);
 	eeprom_write_byte((uint8_t*)EEPROM_CALIBRATION_STATUS_V2, CALIBRATION_WIZARD_STEPS);
+	eeprom_write_byte((uint8_t*)EEPROM_LANG, emu_lang);
 }
 
 //! HD44780 DDRAM shadow, read by the emulator test scripts (symbol emu_lcd_ddram)

@@ -3,7 +3,11 @@
 #include <avr/pgmspace.h>
 #include <avr/io.h>
 #include <avr/eeprom.h>
+#ifdef __AVR__
 #include "bootapp.h"
+#else
+#include <string.h>
+#endif
 
 #include "Configuration.h"
 #include "pins.h"
@@ -25,6 +29,131 @@ uint16_t lang_get_code(_UNUSED uint8_t lang) { return LANG_CODE_EN; }
 const char* lang_get_name_by_code(_UNUSED uint16_t code) { return _n("English"); }
 void lang_reset(void) { }
 uint8_t lang_is_selected(void) { return 1; }
+
+#elif !defined(__AVR__) //secondary languages, STM32
+
+// STM32 port: there is no external SPI flash. All secondary language tables (same
+// format as on the AVR) are stored one after the other in _SEC_LANG in the internal
+// flash, so every language can be selected directly, without the bootloader copy.
+// buildroot/scripts/lang.py writes the tables, the string IDs and the signature into
+// firmware.bin after linking.
+// The tables are read byte by byte: they are not aligned and the Cortex-M0+ faults on
+// unaligned accesses.
+
+//reserved space for the secondary language tables
+const char _SEC_LANG[LANG_SIZE_RESERVED] __attribute__((aligned(4), used)) = "_SEC_LANG";
+
+//primary language signature
+const uint32_t _PRI_LANG_SIGNATURE[1] __attribute__((used)) = {0xffffffff};
+
+//lang_table pointer
+lang_table_t* lang_table = 0;
+
+//! Address of patched flash data. Hides the initial value from the compiler, which
+//! would otherwise fold the reads of these constants.
+static const uint8_t* lang_flash(const void* p)
+{
+	__asm__ volatile ("" : "+r" (p));
+	return (const uint8_t*)p;
+}
+
+static uint16_t lang_rd16(const uint8_t* p) { return p[0] | ((uint16_t)p[1] << 8); }
+static uint32_t lang_rd32(const uint8_t* p) { return lang_rd16(p) | ((uint32_t)lang_rd16(p + 2) << 16); }
+
+//! @return table of language lang (1..), 0 if not present
+static const uint8_t* lang_find_table(uint8_t lang)
+{
+	if (lang_rd32(lang_flash(_PRI_LANG_SIGNATURE)) == 0xffffffff)
+		return 0; //signature not set - only primary language will be available
+	const uint8_t* table = lang_flash(_SEC_LANG);
+	const uint8_t* end = table + LANG_SIZE_RESERVED;
+	while ((lang > 0) && (table + sizeof(lang_table_header_t) <= end) && (lang_rd32(table) == LANG_MAGIC))
+	{
+		uint16_t size = lang_rd16(table + 4);
+		if ((size < sizeof(lang_table_header_t)) || (table + size > end)) break;
+		if (--lang == 0) return table;
+		table += size;
+	}
+	return 0;
+}
+
+const char* lang_get_translation(const char* s)
+{
+	if (lang_selected == 0) return s + 2; //primary language selected, return orig. str.
+	if (lang_table == 0) return s + 2; //sec. lang table not found, return orig. str.
+	const uint8_t* table = (const uint8_t*)lang_table;
+	uint16_t ui = lang_rd16((const uint8_t*)s); //read string id
+	if (ui == 0xffff) return s + 2; //id not assigned, return orig. str.
+	if (ui >= lang_rd16(table + 6)) return s + 2; //id not in table
+	ui = lang_rd16(table + 16 + ui*2); //read relative offset
+	if (table[ui] == 0) //read first character
+		return s + 2;//zero length string == not translated, return orig. str.
+	return (const char*)(table + ui); //return calculated pointer
+}
+
+uint8_t lang_select(uint8_t lang)
+{
+	if (lang == LANG_ID_PRI) //primary language
+	{
+		lang_table = 0;
+		lang_selected = lang;
+	}
+	else
+	{
+		const uint8_t* table = lang_find_table(lang);
+		if (table && lang_check((uintptr_t)table))
+			if (lang_rd32(table + 12) == lang_rd32(lang_flash(_PRI_LANG_SIGNATURE))) //signature valid
+			{
+				lang_table = (lang_table_t*)table; // set table pointer
+				lang_selected = lang; // set language id
+			}
+	}
+	if (lang_selected == lang)
+	{
+		eeprom_update_byte((unsigned char*)EEPROM_LANG, lang_selected);
+		return 1;
+	}
+	return 0;
+}
+
+uint8_t lang_check(uintptr_t addr)
+{
+	const uint8_t* table = (const uint8_t*)addr;
+	uint16_t sum = 0;
+	uint16_t size = lang_rd16(table + 4);
+	uint16_t lt_sum = lang_rd16(table + 8);
+	uint16_t i; for (i = 0; i < size; i++)
+		sum += (uint16_t)table[i] << ((i & 1)?0:8);
+	sum -= lt_sum; //subtract checksum
+	sum = (sum >> 8) | ((sum & 0xff) << 8); //swap bytes
+	return (sum == lt_sum);
+}
+
+uint8_t lang_get_count()
+{
+	uint8_t count = 1; //count = 1 (primary)
+	while (lang_find_table(count))
+		count++;
+	return count;
+}
+
+uint8_t lang_get_header(uint8_t lang, lang_table_header_t* header, uint32_t* offset)
+{
+	if (lang == LANG_ID_PRI) return 0; //primary lang not supported for this function
+	const uint8_t* table = lang_find_table(lang);
+	if (table == 0) return 0;
+	memcpy(header, table, sizeof(lang_table_header_t));
+	if (offset) *offset = (uint32_t)(uintptr_t)table;
+	return 1;
+}
+
+uint16_t lang_get_code(uint8_t lang)
+{
+	if (lang == LANG_ID_PRI) return LANG_CODE_EN; //primary lang = EN
+	const uint8_t* table = lang_find_table(lang);
+	if (table == 0) return LANG_CODE_XX;
+	return lang_rd16(table + 10); //read language code
+}
 
 #else //(LANG_MODE == 0) //secondary languages in progmem or xflash
 
@@ -201,6 +330,10 @@ uint16_t lang_get_code(uint8_t lang)
 	return LANG_CODE_XX;
 }
 
+#endif //(LANG_MODE == 0)
+
+#if (LANG_MODE != 0)
+
 const char* lang_get_name_by_code(uint16_t code)
 {
 	switch (code)
@@ -303,12 +436,16 @@ uint16_t lang_print_sec_lang()
 }
 #endif //DEBUG_SEC_LANG
 
-#endif //(LANG_MODE == 0)
+#endif //(LANG_MODE != 0)
 
 
 void lang_boot_update_start(uint8_t lang)
 {
+#ifdef __AVR__
 	uint8_t cnt = lang_get_count();
 	if ((lang < 2) || (lang > cnt)) return; //only languages from xflash can be selected
 	bootapp_reboot_user0(lang << 3);
+#else
+	(void)lang; // STM32: every language is selected directly, nothing to copy
+#endif
 }
