@@ -279,6 +279,16 @@ void hal_hotend_fan_tick(void) {
 #endif
 }
 
+#ifdef EMULATION
+//! Renode test build: tachometer of the hotend fan, ~5000 RPM at full speed
+//! (2 pulses per revolution, sampled on the 976 Hz tick)
+bool emulation_tach0() {
+	static uint32_t phase;
+	phase += hotend_fan_duty;
+	return (phase / 740) & 1;
+}
+#endif
+
 //------------------------------------------------------------------------------
 // watchdog (IWDG, LSI 32 kHz)
 //------------------------------------------------------------------------------

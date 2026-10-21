@@ -88,10 +88,12 @@ The ELF file is not patched; it runs in English only.
 
 `pio run -e renode_test` builds a test variant (`-DEMULATION`) for the
 [Renode](https://renode.io) emulator: the host serial is USART2, the EEPROM is preset
-like a calibrated printer, the heaters and thermistors are replaced by a simple
-thermal simulation and the LCD contents are mirrored into RAM. `test/renode/run.py`
+like a calibrated printer, the heaters, thermistors (with the response lag of the
+E3D V6 that the thermal model expects) and the hotend fan tachometer are simulated,
+and the LCD contents are mirrored into RAM. `test/renode/run.py`
 boots it, sends G-code and checks the serial output and the LCD;
 `test/renode/smoke_test.sh` checks start-up, M115, M503 and moves,
+`test/renode/heat_test.sh` heating and temperature regulation,
 `test/renode/lang_test.sh` the language menu and a German message. The emulator does not model the TMC2209 drivers, EXTI and the ADC, so
 these tests cover the firmware logic, not the hardware layer.
 

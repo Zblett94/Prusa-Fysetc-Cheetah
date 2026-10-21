@@ -310,15 +310,21 @@ void checkExtruderAutoFans()
 #endif // any extruder auto fan pins set
 
 #if (defined(FANCHECK) && defined(TACH_0) && (TACH_0 > -1))
+#ifdef EMULATION
+extern bool emulation_tach0();
+#define READ_TACH_0() emulation_tach0()
+#else
+#define READ_TACH_0() READ(TACH_0)
+#endif
 void readFanTach() {
     static bool fan_state[2];
 #ifdef FAN_SOFT_PWM
-    if (READ(TACH_0) != fan_state[0]) {
+    if (READ_TACH_0() != fan_state[0]) {
         if(fan_measuring) fan_edge_counter[0] ++;
         fan_state[0] = !fan_state[0];
     }
 #else //FAN_SOFT_PWM
-    if (READ(TACH_0) != fan_state[0]) {
+    if (READ_TACH_0() != fan_state[0]) {
         fan_edge_counter[0] ++;
         fan_state[0] = !fan_state[0];
     }

@@ -7,13 +7,14 @@ given emulated times, collects the serial output and the LCD contents (DDRAM sha
 emu_lcd_ddram kept by the test build) and prints them.
 
 usage: run.py [--renode PATH] [--elf PATH] [--boot SECONDS] [--wait SECONDS] [--lang N]
-              [--expect REGEX ...] [--expect-lcd REGEX ...] [GCODE | @SECONDS ...]
+              [--expect REGEX ...] [--forbid REGEX ...] [--expect-lcd REGEX ...] [GCODE | @SECONDS ...]
 
 The firmware is loaded from firmware.bin (next to the ELF file), which contains the
 language tables added after linking.
 
 With --expect / --expect-lcd, the script fails (exit code 1) unless every regular
-expression is found in the serial output / on the LCD.
+expression is found in the serial output / on the LCD, or if a --forbid expression
+is found in the serial output.
 """
 import argparse, os, re, subprocess, sys, tempfile
 
@@ -36,6 +37,7 @@ def main():
     ap.add_argument('--wait', type=float, default=2.0, help='emulated seconds after each command')
     ap.add_argument('--lang', type=int, default=0, help='language preset: 0 English, 1.. language tables, 255 ask')
     ap.add_argument('--expect', action='append', default=[], help='regex that must appear in the serial output')
+    ap.add_argument('--forbid', action='append', default=[], help='regex that must not appear in the serial output')
     ap.add_argument('--expect-lcd', action='append', default=[], help='regex that must appear on the LCD')
     ap.add_argument('gcode', nargs='*')
     a = ap.parse_args()
@@ -95,6 +97,10 @@ def main():
     for e in a.expect:
         if not re.search(e, serial, re.M):
             print(f'MISSING: {e}')
+            failed = True
+    for e in a.forbid:
+        if re.search(e, serial, re.M):
+            print(f'FOUND: {e}')
             failed = True
     for e in a.expect_lcd:
         if not re.search(e, screen, re.M):

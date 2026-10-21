@@ -1909,6 +1909,11 @@ static void ambient_raw_from_mcu_sensor()
 // P.I.N.D.A., driven by the heater/fan PWM. Produces ADC samples (10 bit).
 static float emu_t_hotend = 25.f, emu_t_bed = 25.f, emu_t_pinda = 25.f;
 static uint32_t emu_last_ms;
+// hotend thermistor response of the E3D V6 (like the thermal model defaults):
+// 2.1 s lag (8 temperature manager cycles), then a first order filter (fS = 0.065)
+static float emu_t_hotend_lag[8] = {25.f, 25.f, 25.f, 25.f, 25.f, 25.f, 25.f, 25.f};
+static uint8_t emu_lag_idx;
+static float emu_t_hotend_sensor = 25.f;
 
 static uint16_t emu_raw_for(float t, bool bed)
 {
@@ -1935,18 +1940,22 @@ uint16_t emulation_adc_sample(uint8_t ch)
         // heatbed: 200 W, C = 700 J/K, R = 0.6 K/W
         emu_t_bed += dt * (200.f * soft_pwm_bed / 127.f - (emu_t_bed - ta) / 0.6f) / 700.f;
         emu_t_pinda += dt * (0.8f * emu_t_bed + 0.2f * ta - emu_t_pinda) / 60.f;
-        return emu_raw_for(emu_t_hotend, false);
+        const float lagged = emu_t_hotend_lag[emu_lag_idx];
+        emu_t_hotend_lag[emu_lag_idx] = emu_t_hotend;
+        emu_lag_idx = (emu_lag_idx + 1) % 8;
+        emu_t_hotend_sensor += 0.065f * (lagged - emu_t_hotend_sensor);
+        return emu_raw_for(emu_t_hotend_sensor, false);
     }
     if (ch == TEMP_BED_PIN) return emu_raw_for(emu_t_bed, true);
 #ifdef PINDA_THERMISTOR
     if (ch == TEMP_PINDA_PIN) return emu_raw_for(emu_t_pinda, true);
 #endif
 #ifdef AMBIENT_THERMISTOR
-    // STM32 at 35 C, VDDA = 3.3 V, factory calibration values from the system memory
+    // STM32 at 25 C (the simulated ambient), VDDA = 3.3 V, factory calibration values from the system memory
     const float vref12 = (float)(*VREFINT_CAL_ADDR) * 3000.f / 3300.f;
     if (ch == VREFINT_ADC_CHANNEL) return (uint16_t)(vref12 + 0.5f) >> 2;
     if (ch == TEMP_AMBIENT_PIN) {
-        const float ts30 = (float)(*TEMPSENSOR_CAL1_ADDR) + (35.f - 30.f) * ((float)(*TEMPSENSOR_CAL2_ADDR) - (float)(*TEMPSENSOR_CAL1_ADDR)) / 100.f;
+        const float ts30 = (float)(*TEMPSENSOR_CAL1_ADDR) + (25.f - 30.f) * ((float)(*TEMPSENSOR_CAL2_ADDR) - (float)(*TEMPSENSOR_CAL1_ADDR)) / 100.f;
         return (uint16_t)(ts30 * 3000.f / 3300.f + 0.5f) >> 2;
     }
 #endif
