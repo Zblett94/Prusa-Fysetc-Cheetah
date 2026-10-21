@@ -235,8 +235,10 @@ void hal_uvlo_unlock(void) {
 	const uint32_t primask = __get_PRIMASK();
 	__disable_irq();
 	if (uvlo_lock_depth && --uvlo_lock_depth == 0 && uvlo_was_enabled) {
-		// a power failure during the lock is still latched in the pending registers
 		EXTI->IMR1 |= fastio::mask(UVLO_PIN);
+		// do not lose a power failure which happened while the line was masked
+		if (!READ(UVLO_PIN))
+			EXTI->SWIER1 = fastio::mask(UVLO_PIN);
 	}
 	__set_PRIMASK(primask);
 #endif

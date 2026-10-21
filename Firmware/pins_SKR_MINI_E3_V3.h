@@ -136,8 +136,8 @@ static inline uint32_t adc_channel_pin(uint8_t ch) {
 #define IR_SENSOR_PIN        PC15   // "E0-STOP": MK3S IR filament sensor
 #define UVLO_PIN             PC12   // "PWR-DET": power panic signal from the PSU
 //#define MMU_RST_PIN        the MMU is reset over its serial protocol
-#define MMU_SERIAL_RX_PIN    PA3    // "TFT" header (USART2)
-#define MMU_SERIAL_TX_PIN    PA2
+#define MMU_SERIAL_RX_PIN    PA3_ALT1 // "TFT" header (USART2)
+#define MMU_SERIAL_TX_PIN    PA2_ALT1
 
 #define EXTRUDER_0_AUTO_FAN_PIN PC7 // "FAN1": hotend fan (5V)
 
