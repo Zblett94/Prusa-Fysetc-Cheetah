@@ -1021,7 +1021,7 @@ Having the real displacement of the head, we can calculate the total movement le
   // Acceleration of the segment, in mm/sec^2
   block->acceleration_steps_per_s2 = accel;
   block->acceleration = accel / steps_per_mm;
-  block->acceleration_rate = (uint32_t)(accel * (float(1UL << 24) / ((F_CPU) / 8.0f)));
+  block->acceleration_rate = (uint32_t)(accel * (float(1UL << 24) / ((TIMING_F_CPU) / 8.0f)));
 
   // Start with a safe speed.
   // Safe speed is the speed, from which the machine may halt to stop immediately.
@@ -1165,7 +1165,7 @@ Having the real displacement of the head, we can calculate the total movement le
       // to save more space we avoid another copy of calc_timer and go through slow division, but we
       // still need to replicate the *exact* same step grouping policy (see below)
       if (advance_speed > MAX_STEP_FREQUENCY) advance_speed = MAX_STEP_FREQUENCY;
-      float advance_rate = (F_CPU / 8.0) / advance_speed;
+      float advance_rate = (TIMING_F_CPU / 8.0) / advance_speed;
       if (advance_speed > 20000) {
           block->advance_rate = advance_rate * 4;
           block->advance_step_loops = 4;

@@ -23,8 +23,13 @@
 
 #include "planner.h"
 
+#ifdef __AVR__
 #define ENABLE_STEPPER_DRIVER_INTERRUPT()  TIMSK1 |= (1<<OCIE1A)
 #define DISABLE_STEPPER_DRIVER_INTERRUPT() TIMSK1 &= ~(1<<OCIE1A)
+#else
+#define ENABLE_STEPPER_DRIVER_INTERRUPT()  hal_step_timer_isr_enable(true)
+#define DISABLE_STEPPER_DRIVER_INTERRUPT() hal_step_timer_isr_enable(false)
+#endif
 
 #ifdef ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED
 extern bool abort_on_endstop_hit;

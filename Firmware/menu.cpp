@@ -18,10 +18,10 @@
 
 static menu_record_t menu_stack[MENU_DEPTH_MAX];
 
-uint8_t menu_data[MENU_DATA_SIZE];
-#ifndef __AVR__
-#error "menu_data is non-portable to non 8bit processor"
-#endif
+// STM32 port: menu_data is reinterpreted as various structs holding floats and
+// pointers, so it must be word aligned (the Cortex-M0+ faults on unaligned access).
+// The structs are checked against MENU_DATA_SIZE with static_asserts.
+uint8_t menu_data[MENU_DATA_SIZE] __attribute__((aligned(4)));
 
 uint8_t menu_depth = 0;
 uint8_t menu_block_mask = MENU_BLOCK_NONE;

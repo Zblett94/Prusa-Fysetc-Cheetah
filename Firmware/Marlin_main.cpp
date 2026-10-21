@@ -268,7 +268,14 @@ float feedrate = 1500.0;
 // Original feedrate saved during homing moves
 static float saved_feedrate;
 
+#ifdef __AVR__
 static const int8_t sensitive_pins[] PROGMEM = SENSITIVE_PINS; // Sensitive pin list for M42
+#define SENSITIVE_PIN(i) ((int8_t)pgm_read_byte(&sensitive_pins[i]))
+#else
+// STM32 port: digital pin numbers of the STM32 core (PA0 = 0 ... PF2 = 59)
+static const int16_t sensitive_pins[] = SENSITIVE_PINS; // Sensitive pin list for M42
+#define SENSITIVE_PIN(i) (sensitive_pins[i])
+#endif
 
 //static float tt = 0;
 //static float bt = 0;
@@ -692,7 +699,9 @@ void watchdogEarlyDisable(void) {
     // watchdog timer manually.
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
       wdt_reset();
+#ifdef __AVR__
       MCUSR &= ~_BV(WDRF);
+#endif
       wdt_disable();
     }
 }
@@ -1023,7 +1032,13 @@ static void fw_kill_init() {
         eeprom_write_byte_notify((uint8_t*)EEPROM_KILL_PENDING_FLAG, EEPROM_EMPTY_VALUE);
 
         // display the kill message
+#ifndef __AVR__
+        // STM32 port: flash pointers are 32 bit, the EEPROM word only holds the low half.
+        // The full pointer is kept in a backup register, which survives the reset.
+        PGM_P kill_msg = (PGM_P)hal_kill_message_load(eeprom_read_word((uint16_t*)EEPROM_KILL_MESSAGE), PSTR("KILLED."));
+#else
         PGM_P kill_msg = (PGM_P)eeprom_read_word((uint16_t*)EEPROM_KILL_MESSAGE);
+#endif
         lcd_show_fullscreen_message_and_wait_P(kill_msg);
     }
 }
@@ -1054,8 +1069,14 @@ void setup()
 
   selectedSerialPort = eeprom_init_default_byte((uint8_t *)EEPROM_SECOND_SERIAL_ACTIVE, 0);
 	MYSERIAL.begin(BAUDRATE);
+#ifdef __AVR__
 	fdev_setup_stream(uartout, uart_putchar, NULL, _FDEV_SETUP_WRITE); //setup uart out stream
 	stdout = uartout;
+#else
+	// STM32 port: newlib stdout is routed to MYSERIAL by _write() (MarlinSerial.cpp).
+	// Unbuffered, so that printf_P and SERIAL_ECHO output keeps its order.
+	setvbuf(stdout, NULL, _IONBF, 0);
+#endif
 
 #ifdef XFLASH
     bool xflash_success = xflash_init();
@@ -1197,7 +1218,11 @@ void setup()
 #endif //DEBUG_SEC_LANG
 
 	// Check startup - does nothing if bootloader sets MCUSR to 0
+#ifdef __AVR__
 	byte mcu = MCUSR;
+#else
+	byte mcu = hal_reset_cause(); // same bit layout as MCUSR
+#endif
 /*	if (mcu & 1) SERIAL_ECHOLNRPGM(MSG_POWERUP);
 	if (mcu & 2) SERIAL_ECHOLNRPGM(MSG_EXTERNAL_RESET);
 	if (mcu & 4) SERIAL_ECHOLNRPGM(MSG_BROWNOUT_RESET);
@@ -1208,7 +1233,9 @@ void setup()
 	if (mcu & 4) puts_P(MSG_BROWNOUT_RESET);
 	if (mcu & 8) puts_P(MSG_WATCHDOG_RESET);
 	if (mcu & 32) puts_P(MSG_SOFTWARE_RESET);
+#ifdef __AVR__
 	MCUSR = 0;
+#endif
 
 	//SERIAL_ECHORPGM(MSG_MARLIN);
 	//SERIAL_ECHOLNRPGM(VERSION_STRING);
@@ -5029,7 +5056,7 @@ void process_commands()
           pin_number = code_value_uint8();
         for(int8_t i = 0; i < (int8_t)(sizeof(sensitive_pins)/sizeof(sensitive_pins[0])); i++)
         {
-          if ((int8_t)pgm_read_byte(&sensitive_pins[i]) == pin_number)
+          if (SENSITIVE_PIN(i) == pin_number)
           {
             pin_number = -1;
             break;
@@ -6440,7 +6467,7 @@ void process_commands()
 
           for(int8_t i = 0; i < (int8_t)(sizeof(sensitive_pins)/sizeof(sensitive_pins[0])); i++)
           {
-            if (((int8_t)pgm_read_byte(&sensitive_pins[i]) == pin_number))
+            if ((SENSITIVE_PIN(i) == pin_number))
             {
               pin_number = -1;
               break;
@@ -8944,7 +8971,12 @@ void kill(const char *full_screen_message) {
     }
 
     // update eeprom with the correct kill message to be shown on startup
+#ifndef __AVR__
+    hal_kill_message_store(full_screen_message);
+    eeprom_write_word_notify((uint16_t*)EEPROM_KILL_MESSAGE, (uint16_t)(uintptr_t)full_screen_message);
+#else
     eeprom_write_word_notify((uint16_t*)EEPROM_KILL_MESSAGE, (uint16_t)full_screen_message);
+#endif
     eeprom_write_byte_notify((uint8_t*)EEPROM_KILL_PENDING_FLAG, KILL_PENDING_FLAG);
 
     softReset();

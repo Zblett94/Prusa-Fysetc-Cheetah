@@ -15,7 +15,7 @@
 #include "messages.h"
 #include "language.h"
 
-#ifdef __AVR__
+#if defined(__AVR__) || defined(PRUSA_MK3_FW)
 // As of FW 3.12 we only support building the FW with only one extruder, all the multi-extruder infrastructure will be removed.
 // Saves at least 800B of code size
 static_assert(EXTRUDERS == 1);

@@ -33,13 +33,13 @@ typedef struct
     int16_t z_offset; //!< Z_BABYSTEP_MIN .. Z_BABYSTEP_MAX = Z_BABYSTEP_MIN*2/1000 [mm] .. Z_BABYSTEP_MAX*2/1000 [mm]
     uint8_t bed_temp; //!< 0 .. 254 [°C] NOTE: currently only written-to and never used
     uint8_t pinda_temp; //!< 0 .. 254 [°C] NOTE: currently only written-to and never used
-} Sheet;
+} __attribute__((packed)) Sheet; // packed: describes the EEPROM layout, identical on 8 and 32 bit MCUs
 
 typedef struct
 {
     Sheet s[MAX_SHEETS];
     uint8_t active_sheet;
-} Sheets;
+} __attribute__((packed)) Sheets;
 // sizeof(Sheets). Do not change it unless EEPROM_Sheets_base is last item in EEPROM.
 // Otherwise it would move following items.
 #define EEPROM_SHEETS_SIZEOF 89

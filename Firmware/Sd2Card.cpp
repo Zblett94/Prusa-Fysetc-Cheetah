@@ -22,7 +22,76 @@
 #ifdef SDSUPPORT
 #include "Sd2Card.h"
 //------------------------------------------------------------------------------
-#ifndef SOFTWARE_SPI
+#if !defined(SOFTWARE_SPI) && !defined(__AVR__)
+//------------------------------------------------------------------------------
+// STM32 port: SPI1 (PA5 SCK, PA6 MISO, PA7 MOSI) drives the on-board micro SD slot.
+// Same rates as the AVR: spiRate 0 = 8 MHz ... 5 = 250 kHz (6 is limited to 250 kHz).
+//------------------------------------------------------------------------------
+static inline void spiPinAF0(uint32_t pin) {
+  GPIO_TypeDef *port = _FIO_PORT(pin);
+  const uint32_t b = fastio::pin_bit(pin);
+  port->AFR[b >> 3] &= ~(0xFUL << ((b & 7) * 4)); // AF0 = SPI1
+  port->OSPEEDR |= (3UL << (b * 2));
+  port->MODER = (port->MODER & ~(3UL << (b * 2))) | (2UL << (b * 2));
+}
+
+static void spiInit(uint8_t spiRate) {
+  static bool initialized;
+  if (!initialized) {
+    __HAL_RCC_SPI1_CLK_ENABLE();
+    spiPinAF0(SD_SCK_PIN);
+    spiPinAF0(SD_MISO_PIN);
+    spiPinAF0(SD_MOSI_PIN);
+    // MISO pull-up
+    GPIO_TypeDef *port = _FIO_PORT(SD_MISO_PIN);
+    const uint32_t b = fastio::pin_bit(SD_MISO_PIN);
+    port->PUPDR = (port->PUPDR & ~(3UL << (b * 2))) | (1UL << (b * 2));
+    initialized = true;
+  }
+  uint32_t br = spiRate + 2; // 64 MHz / 2^(br + 1)
+  if (br > 7) br = 7;
+  const uint32_t cr1 = SPI_CR1_MSTR | SPI_CR1_SSM | SPI_CR1_SSI | (br << SPI_CR1_BR_Pos);
+  if ((SPI1->CR1 & ~SPI_CR1_SPE) != cr1 || !(SPI1->CR1 & SPI_CR1_SPE)) {
+    SPI1->CR1 = 0;
+    SPI1->CR2 = (7UL << SPI_CR2_DS_Pos) | SPI_CR2_FRXTH; // 8 bit frames, RXNE at 8 bits
+    SPI1->CR1 = cr1;
+    SPI1->CR1 = cr1 | SPI_CR1_SPE;
+  }
+}
+//------------------------------------------------------------------------------
+static inline uint8_t spiTransfer(uint8_t b) {
+  while (!(SPI1->SR & SPI_SR_TXE)) { /* Intentionally left empty */ }
+  *(volatile uint8_t *)&SPI1->DR = b;
+  while (!(SPI1->SR & SPI_SR_RXNE)) { /* Intentionally left empty */ }
+  return *(volatile uint8_t *)&SPI1->DR;
+}
+//------------------------------------------------------------------------------
+/** SPI receive a byte */
+static uint8_t spiRec() {
+  return spiTransfer(0XFF);
+}
+//------------------------------------------------------------------------------
+/** SPI read data - only one call so force inline */
+static inline __attribute__((always_inline))
+void spiRead(uint8_t* buf, uint16_t nbyte) {
+  for (uint16_t i = 0; i < nbyte; i++)
+    buf[i] = spiTransfer(0XFF);
+}
+//------------------------------------------------------------------------------
+/** SPI send a byte */
+static void spiSend(uint8_t b) {
+  spiTransfer(b);
+}
+//------------------------------------------------------------------------------
+/** SPI send block - only one call so force inline */
+static inline __attribute__((always_inline))
+  void spiSendBlock(uint8_t token, const uint8_t* buf) {
+  spiTransfer(token);
+  for (uint16_t i = 0; i < 512; i++)
+    spiTransfer(buf[i]);
+}
+//------------------------------------------------------------------------------
+#elif !defined(SOFTWARE_SPI)
 // functions for hardware SPI
 //------------------------------------------------------------------------------
 // make sure SPCR rate is in expected bits
@@ -292,17 +361,23 @@ bool Sd2Card::init(uint8_t sckRateID) {
   // set pin modes
   chipSelectHigh();
   SET_OUTPUT(SDSS);
+#ifdef __AVR__
   SET_INPUT(MISO);
   SET_OUTPUT(MOSI);
   SET_OUTPUT(SCK);
+#endif
 
-#ifndef SOFTWARE_SPI
+#if !defined(SOFTWARE_SPI) && defined(__AVR__)
   // SS must be in output mode even it is not chip select
   SET_OUTPUT(SS);
   // set SS high - may be chip select for another SPI device
 #if SET_SPI_SS_HIGH
   WRITE(SS, 1);
 #endif  // SET_SPI_SS_HIGH
+  // set SCK rate for initialization commands
+  spiRate_ = SPI_SD_INIT_RATE;
+  spiInit(spiRate_);
+#elif !defined(SOFTWARE_SPI)
   // set SCK rate for initialization commands
   spiRate_ = SPI_SD_INIT_RATE;
   spiInit(spiRate_);

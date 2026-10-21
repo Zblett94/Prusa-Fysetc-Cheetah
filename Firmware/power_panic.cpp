@@ -289,6 +289,31 @@ static void uvlo_tiny() {
     uvlo_drain_reset();
 }
 
+#ifndef __AVR__
+// STM32 port: the "PWR-DET" input (UVLO_PIN) with its EXTI line replaces INT4 (PE4)
+static void uvlo_isr();
+
+void setup_uvlo_interrupt() {
+    SET_INPUT(UVLO_PIN);
+    WRITE(UVLO_PIN, LOW); //no internal pull-up
+
+    // sensing any logical change (ISC41 = 0, ISC40 = 1)
+    hal_exti_attach(UVLO_PIN, CHANGE, uvlo_isr);
+
+    // enable the interrupt
+    hal_exti_enable(UVLO_PIN, true);
+
+    // check if power was lost before we armed the interrupt
+    if(!READ(UVLO_PIN) && printer_recovering())
+    {
+        SERIAL_ECHOLNRPGM(MSG_INT4);
+        uvlo_drain_reset();
+    }
+}
+
+static void uvlo_isr() {
+    hal_exti_enable(UVLO_PIN, false); //disable the interrupt to make sure that this code will be executed just once
+#else //!__AVR__
 void setup_uvlo_interrupt() {
     DDRE &= ~(1 << 4); //input pin
     PORTE &= ~(1 << 4); //no internal pull-up
@@ -310,6 +335,7 @@ void setup_uvlo_interrupt() {
 
 ISR(INT4_vect) {
     EIMSK &= ~(1 << 4); //disable INT4 interrupt to make sure that this code will be executed just once
+#endif //!__AVR__
     SERIAL_ECHOLNRPGM(MSG_INT4);
     if (eeprom_read_byte((uint8_t*)EEPROM_UVLO) == PowerPanic::NO_PENDING_RECOVERY)
     {

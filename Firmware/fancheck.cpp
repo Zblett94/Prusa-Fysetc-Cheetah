@@ -164,6 +164,23 @@ void checkFanSpeed()
 #endif //(defined(TACH_0) && TACH_0 >-1) || (defined(TACH_1) && TACH_1 > -1)
 
 #if (defined(FANCHECK) && defined(TACH_1) && (TACH_1 >-1))
+#ifndef __AVR__
+// STM32 port: EXTI line of TACH_1 replaces INT7. The sensed edge is toggled in the
+// handler exactly like the ISC70 bit on the AVR.
+static volatile bool tach1_sense_rising; // == ISC70 bit
+static void tach1_isr();
+
+void setup_fan_interrupt() {
+	// the EINSy has external pull-ups on the tach lines, the SKR has none: use the internal ones
+	SET_INPUT(TACH_1);
+	WRITE(TACH_1, HIGH);
+
+	//start with sensing falling edge (ISC71 = 1, ISC70 = 0)
+	tach1_sense_rising = false;
+	hal_exti_attach(TACH_1, FALLING, tach1_isr);
+	hal_exti_enable(TACH_1, true);
+}
+#else //!__AVR__
 void setup_fan_interrupt() {
 //INT7
 	DDRE &= ~(1 << 7); //input pin
@@ -176,10 +193,19 @@ void setup_fan_interrupt() {
 	//enable INT7 interrupt
 	EIMSK |= (1 << 7);
 }
+#endif //!__AVR__
 
 // The fan interrupt is triggered at maximum 325Hz (may be a bit more due to component tollerances),
 // and it takes 4.24 us to process (the interrupt invocation overhead not taken into account).
+#ifndef __AVR__
+#define TACH1_SENSE_RISING()  (tach1_sense_rising)
+#define TACH1_TOGGLE_EDGE()   do { tach1_sense_rising = !tach1_sense_rising; hal_exti_set_edge(TACH_1, tach1_sense_rising, !tach1_sense_rising); } while (0)
+static void tach1_isr() {
+#else
+#define TACH1_SENSE_RISING()  ((1 << 6) & EICRB)
+#define TACH1_TOGGLE_EDGE()   (EICRB ^= (1 << 6))
 ISR(INT7_vect) {
+#endif
 	//measuring speed now works for fanSpeed > 18 (approximately), which is sufficient because MIN_PRINT_FAN_SPEED is higher
 #ifdef FAN_SOFT_PWM
 	if (!fan_measuring || (fanSpeedSoftPwm < MIN_PRINT_FAN_SPEED)) return;
@@ -187,7 +213,7 @@ ISR(INT7_vect) {
 	if (fanSpeed < MIN_PRINT_FAN_SPEED) return;
 #endif //FAN_SOFT_PWM
 
-	if ((1 << 6) & EICRB) { //interrupt was triggered by rising edge
+	if (TACH1_SENSE_RISING()) { //interrupt was triggered by rising edge
 		t_fan_rising_edge = millis_nc();
 	}
 	else { //interrupt was triggered by falling edge
@@ -195,12 +221,16 @@ ISR(INT7_vect) {
 			fan_edge_counter[1] += 2; //we are currently counting all edges so lets count two edges for one pulse
 		}
 	}
-	EICRB ^= (1 << 6); //change edge
+	TACH1_TOGGLE_EDGE(); //change edge
 }
 #endif //(defined(FANCHECK) && defined(TACH_1) && (TACH_1 >-1))
 
 #ifdef EXTRUDER_ALTFAN_DETECT
+#ifndef __AVR__
+static void tach0_isr() {
+#else
 ISR(INT6_vect) {
+#endif
     fan_edge_counter[0]++;
 }
 
@@ -214,17 +244,30 @@ bool extruder_altfan_detect()
     setExtruderAutoFanState(3);
 
     SET_INPUT(TACH_0);
+#ifndef __AVR__
+    WRITE(TACH_0, HIGH); // internal pull-up (the EINSy has an external one)
+    hal_exti_attach(TACH_0, CHANGE, tach0_isr); // any logical change (ISC6 = 01)
+    CRITICAL_SECTION_START;
+    hal_exti_enable(TACH_0, true);
+    fan_edge_counter[0] = 0;
+    CRITICAL_SECTION_END;
+#else
     CRITICAL_SECTION_START;
     EICRB &= ~(1 << ISC61);
     EICRB |= (1 << ISC60);
     EIMSK |= (1 << INT6);
     fan_edge_counter[0] = 0;
     CRITICAL_SECTION_END;
+#endif
     extruder_autofan_last_check = _millis();
 
     _delay(1000);
 
+#ifndef __AVR__
+    hal_exti_enable(TACH_0, false);
+#else
     EIMSK &= ~(1 << INT6);
+#endif
 
     countFanSpeed();
 

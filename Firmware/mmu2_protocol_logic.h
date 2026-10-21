@@ -2,13 +2,17 @@
 #include <stdint.h>
 #include <avr/pgmspace.h>
 
-#ifdef __AVR__
+#if defined(__AVR__) || defined(PRUSA_MK3_FW)
     #include "mmu2/error_codes.h"
     #include "mmu2/progress_codes.h"
     #include "mmu2/buttons.h"
     #include "mmu2/registers.h"
     #include "mmu2_protocol.h"
 
+#ifndef __AVR__
+// STM32 port: the real std::array is available
+#include <array>
+#else //!__AVR__
 // #include <array> std array is not available on AVR ... we need to "fake" it
 namespace std {
 template <typename T, uint8_t N>
@@ -25,6 +29,7 @@ public:
     }
 };
 } // namespace std
+#endif //!__AVR__
 #else
 
     #include <array>
@@ -367,7 +372,7 @@ private:
 
     uint8_t lastFSensor; ///< last state of filament sensor
 
-#ifndef __AVR__
+#if !(defined(__AVR__) || defined(PRUSA_MK3_FW))
     uint8_t txbuff[Protocol::MaxRequestSize()]; ///< In Buddy FW - a static transmit buffer needs to exist as DMA cannot be used from CCMRAM.
                                                 ///< On MK3/S/+ the transmit buffer is allocated on the stack without restrictions
 #endif

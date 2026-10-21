@@ -47,12 +47,19 @@
 #include "Timer.h"
 #include "Configuration_var.h"
 #include "Prusa_farm.h"
+#ifndef __AVR__
+#include <stm32g0xx_ll_adc.h>
+#endif
 
 #if (ADC_OVRSAMPL != OVERSAMPLENR)
 #error "ADC_OVRSAMPL oversampling must match OVERSAMPLENR"
 #endif
 
-#ifdef SYSTEM_TIMER_2
+#ifndef __AVR__
+// STM32 port: TIM16 (~976 Hz) replaces timer2 COMPB, TIM15 (3.7 Hz) replaces timer5 COMPA
+#define ENABLE_SOFT_PWM_INTERRUPT()  hal_softpwm_isr_enable(true)
+#define DISABLE_SOFT_PWM_INTERRUPT() hal_softpwm_isr_enable(false)
+#elif defined(SYSTEM_TIMER_2)
 #define ENABLE_SOFT_PWM_INTERRUPT()  TIMSK2 |= (1<<OCIE2B)
 #define DISABLE_SOFT_PWM_INTERRUPT() TIMSK2 &= ~(1<<OCIE2B)
 #else //SYSTEM_TIMER_2
@@ -87,15 +94,28 @@
 #define OCIExA TEMP_TIM_REGNAME(OCIE, TEMP_TIM, A)
 #define OCFxA TEMP_TIM_REGNAME(OCF, TEMP_TIM, A)
 
+#ifndef __AVR__
+#define TEMP_MGR_INT_FLAG_STATE()    (TIM15->SR & TIM_SR_UIF)
+#define TEMP_MGR_INT_FLAG_CLEAR()    (TIM15->SR = ~TIM_SR_UIF)
+#define TEMP_MGR_INTERRUPT_STATE()   (TIM15->DIER & TIM_DIER_UIE)
+#define ENABLE_TEMP_MGR_INTERRUPT()  hal_tempmgr_isr_enable(true)
+#define DISABLE_TEMP_MGR_INTERRUPT() hal_tempmgr_isr_enable(false)
+#else //!__AVR__
 #define TEMP_MGR_INT_FLAG_STATE()    (TIFRx & (1<<OCFxA))
 #define TEMP_MGR_INT_FLAG_CLEAR()    TIFRx |= (1<<OCFxA)
 #define TEMP_MGR_INTERRUPT_STATE()   (TIMSKx & (1<<OCIExA))
 #define ENABLE_TEMP_MGR_INTERRUPT()  TIMSKx |=  (1<<OCIExA)
 #define DISABLE_TEMP_MGR_INTERRUPT() TIMSKx &= ~(1<<OCIExA)
+#endif //!__AVR__
 
 #ifdef THERMAL_MODEL
 // thermal model interface
 #include "thermal_model.h"
+#endif
+
+#ifndef __AVR__
+static void soft_pwm_timer_isr();
+static void temp_mgr_timer_isr();
 #endif
 
 #include "Filament_sensor.h"
@@ -308,8 +328,8 @@ void __attribute__((noinline)) PID_autotune(float temp, int extruder, int ncycle
 
       input = (extruder<0)?current_temperature_bed:current_temperature[extruder];
 
-      max=max(max,input);
-      min=min(min,input);
+      max=::max(max,input);
+      min=::min(min,input);
 
       #if (defined(EXTRUDER_0_AUTO_FAN_PIN) && EXTRUDER_0_AUTO_FAN_PIN > -1)
       if(_millis() - extruder_autofan_last_check > 2500) {
@@ -817,7 +837,11 @@ void soft_pwm_init()
 
   // timer2 already enabled earlier in the code
   // now enable the COMPB temperature interrupt
+#ifndef __AVR__
+  hal_softpwm_timer_init(soft_pwm_timer_isr);
+#else
   OCR2B = 128;
+#endif
   ENABLE_SOFT_PWM_INTERRUPT();
 
   timer4_init(); //for tone and Hotend fan PWM
@@ -1317,6 +1341,15 @@ FORCE_INLINE static void soft_pwm_isr()
 #endif //(defined(TACH_0))
 }
 
+#ifndef __AVR__
+// STM32 port: TIM16 update interrupt. The interrupt priorities replace the
+// AVR NONATOMIC_BLOCK: the stepper and the serial interrupts preempt this one.
+static void soft_pwm_timer_isr()
+{
+    soft_pwm_isr();
+    hal_hotend_fan_tick();
+}
+#else //!__AVR__
 // Timer2 (originaly timer0) is shared with millies
 #ifdef SYSTEM_TIMER_2
 ISR(TIMER2_COMPB_vect)
@@ -1330,6 +1363,7 @@ ISR(TIMER0_COMPB_vect)
     }
     ENABLE_SOFT_PWM_INTERRUPT();
 }
+#endif //!__AVR__
 
 void check_max_temp_raw()
 {
@@ -1617,6 +1651,13 @@ void temp_mgr_init()
     adc_start_cycle();
 
     // initialize temperature timer
+#ifndef __AVR__
+    hal_tempmgr_timer_init(temp_mgr_timer_isr);
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+        TEMP_MGR_INT_FLAG_CLEAR();
+        ENABLE_TEMP_MGR_INTERRUPT();
+    }
+#else //!__AVR__
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 
         // CTC
@@ -1643,6 +1684,7 @@ void temp_mgr_init()
         ENABLE_TEMP_MGR_INTERRUPT();
 
     }
+#endif //!__AVR__
 }
 
 static void pid_heater(uint8_t e, const float current, const int target)
@@ -1832,6 +1874,36 @@ float current_temperature_pinda_isr;
 float current_temperature_ambient_isr;
 #endif
 
+#if defined(AMBIENT_THERMISTOR) && !defined(__AVR__)
+// STM32 port: the EINSy measures the "ambient" (board) temperature with a thermistor.
+// The SKR Mini E3 V3 has none, the STM32 internal temperature sensor is used instead.
+// Its temperature is converted into the raw value the EINSy thermistor (table 2000)
+// would read, so the raw value based checks and the thermal model work unchanged.
+static volatile uint16_t ambient_ts_acc;
+static volatile uint16_t ambient_vref_acc;
+
+static void ambient_raw_from_mcu_sensor()
+{
+    const uint16_t vref_acc = ambient_vref_acc;
+    if (!vref_acc) return;
+    // the accumulators hold OVERSAMPLENR samples of 12 bit >> 2: average 12 bit value = acc * 4 / OVERSAMPLENR
+    const float vref12 = vref_acc * (4.f / OVERSAMPLENR);
+    const float ts12 = ambient_ts_acc * (4.f / OVERSAMPLENR);
+    const float vdda_mv = (float)VREFINT_CAL_VREF * (float)(*VREFINT_CAL_ADDR) / vref12;
+    const float ts_cal = ts12 * vdda_mv / (float)TEMPSENSOR_CAL_VREFANALOG;
+    const float temp = (ts_cal - (float)(*TEMPSENSOR_CAL1_ADDR)) * (float)(TEMPSENSOR_CAL2_TEMP - TEMPSENSOR_CAL1_TEMP)
+        / (float)((int32_t)(*TEMPSENSOR_CAL2_ADDR) - (int32_t)(*TEMPSENSOR_CAL1_ADDR)) + (float)TEMPSENSOR_CAL1_TEMP;
+    // bisection over the NTC table (the raw value decreases with the temperature)
+    int lo = AMBIENT_RAW_HI_TEMP, hi = AMBIENT_RAW_LO_TEMP;
+    while (hi - lo > 1) {
+        const int mid = (lo + hi) / 2;
+        if (analog2tempAmbient(mid) > temp) lo = mid;
+        else hi = mid;
+    }
+    current_temperature_raw_ambient = hi;
+}
+#endif
+
 // ISR callback from adc when sampling finished
 void adc_callback()
 {
@@ -1841,7 +1913,13 @@ void adc_callback()
     current_temperature_raw_pinda = adc_values[ADC_PIN_IDX(TEMP_PINDA_PIN)];
 #endif //PINDA_THERMISTOR
 #ifdef AMBIENT_THERMISTOR
+#ifndef __AVR__
+    // converted into current_temperature_raw_ambient by the temperature manager
+    ambient_ts_acc = adc_values[ADC_PIN_IDX(TEMP_AMBIENT_PIN)];
+    ambient_vref_acc = adc_values[ADC_PIN_IDX(VREFINT_ADC_CHANNEL)];
+#else
     current_temperature_raw_ambient = adc_values[ADC_PIN_IDX(TEMP_AMBIENT_PIN)]; // 5->6
+#endif
 #endif //AMBIENT_THERMISTOR
 #ifdef VOLT_PWR_PIN
     current_voltage_raw_pwr = adc_values[ADC_PIN_IDX(VOLT_PWR_PIN)];
@@ -1895,6 +1973,9 @@ static void updateTemperatures()
    analog2temp is relatively slow */
 static void setIsrTemperaturesFromRawValues()
 {
+#if defined(AMBIENT_THERMISTOR) && !defined(__AVR__)
+    ambient_raw_from_mcu_sensor();
+#endif
     for(uint8_t e=0;e<EXTRUDERS;e++)
         current_temperature_isr[e] = analog2temp(current_temperature_raw[e], e);
     current_temperature_bed_isr = analog2tempBed(current_temperature_bed_raw);
@@ -1948,6 +2029,23 @@ static void temp_mgr_isr()
         temp_mgr_pid();
 }
 
+#ifndef __AVR__
+// STM32 port: TIM15 update interrupt, lowest priority, so everything else preempts it
+static void temp_mgr_timer_isr()
+{
+    // immediately schedule a new conversion
+    if(adc_values_ready != true) return;
+    adc_values_ready = false;
+    CRITICAL_SECTION_START;
+    adc_start_cycle();
+    CRITICAL_SECTION_END;
+
+    // run temperature management with interrupts enabled to reduce latency
+    DISABLE_TEMP_MGR_INTERRUPT();
+    temp_mgr_isr();
+    ENABLE_TEMP_MGR_INTERRUPT();
+}
+#else //!__AVR__
 ISR(TIMERx_COMPA_vect)
 {
     // immediately schedule a new conversion
@@ -1962,6 +2060,7 @@ ISR(TIMERx_COMPA_vect)
     }
     ENABLE_TEMP_MGR_INTERRUPT();
 }
+#endif //!__AVR__
 
 void disable_heater()
 {

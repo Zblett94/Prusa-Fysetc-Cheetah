@@ -28,7 +28,10 @@
 #endif
 
 // The presence of the UBRRH register is used to detect a UART.
-#if ((SERIAL_PORT == 0 && (defined(UBRRH) || defined(UBRR0H))) || \
+#ifndef __AVR__
+// STM32 port: the host serial line is the native USB CDC of the STM32
+#define HAS_UART
+#elif ((SERIAL_PORT == 0 && (defined(UBRRH) || defined(UBRR0H))) || \
 	(SERIAL_PORT == 1 && defined(UBRR1H)) || \
 	(SERIAL_PORT == 2 && defined(UBRR2H)) || \
 	(SERIAL_PORT == 3 && defined(UBRR3H)))
@@ -98,10 +101,14 @@ class MarlinSerial //: public Stream
     static int read(void);
     static void flush(void);
 
+#ifndef __AVR__
+    static int available(void);
+#else //!__AVR__
     static /*FORCE_INLINE*/ int available(void)
     {
       return (unsigned int)(RX_BUFFER_SIZE + rx_buffer.head - rx_buffer.tail) % RX_BUFFER_SIZE;
     }
+#endif //!__AVR__
     /*
     FORCE_INLINE void write(uint8_t c)
     {
@@ -111,6 +118,12 @@ class MarlinSerial //: public Stream
       M_UDRx = c;
     }
     */
+#ifndef __AVR__
+	static void write(uint8_t c);
+
+	// USB CDC data is buffered by the USB stack and pulled into rx_buffer by available()/read()
+	static void checkRx(void) {}
+#else //!__AVR__
 	static void write(uint8_t c)
 	{
 		if (selectedSerialPort == 0)
@@ -179,6 +192,7 @@ class MarlinSerial //: public Stream
     }
 
 
+#endif //!__AVR__
     private:
     static void printNumber(unsigned long, uint8_t);
     static void printFloat(double, uint8_t);

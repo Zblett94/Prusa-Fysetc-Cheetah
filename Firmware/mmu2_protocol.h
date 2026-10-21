@@ -2,6 +2,12 @@
 #pragma once
 #include <stdint.h>
 #include "mmu2_crc.h"
+#ifndef __AVR__
+// STM32 port: the CMSIS device header defines CRC (the CRC peripheral), which clashes
+// with the protocol's CRC identifiers. The CRC peripheral is not used.
+#include <stm32_def.h>
+#undef CRC
+#endif
 
 namespace modules {
 

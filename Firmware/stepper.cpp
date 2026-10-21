@@ -268,7 +268,12 @@ void invert_z_endstop(bool endstop_invert)
 
 // "The Stepper Driver Interrupt" - This timer interrupt is the workhorse.
 // It pops blocks from the block_buffer and executes them by pulsing the stepper pins appropriately.
+#ifdef __AVR__
 ISR(TIMER1_COMPA_vect) {
+#else
+// STM32 port: TIM17 update interrupt, OCR1A/TCNT1 map to TIM17 ARR/CNT (hal_stm32/hal.h)
+static void stepper_timer_isr() {
+#endif
 #ifdef DEBUG_STACK_MONITOR
 	uint16_t sp = SPL + 256 * SPH;
 	if (sp < SP_min) SP_min = sp;
@@ -1225,6 +1230,11 @@ void st_init()
     disable_e0();
   #endif
 
+#ifndef __AVR__
+  // TIM17 at 2 MHz, update event when CNT reaches ARR (= AVR Timer1 CTC mode on OCR1A)
+  hal_step_timer_init(stepper_timer_isr);
+  hal_step_timer_isr_enable(false);
+#else //!__AVR__
   // waveform generation = 0100 = CTC
   TCCR1B &= ~(1<<WGM13);
   TCCR1B |=  (1<<WGM12);
@@ -1241,6 +1251,7 @@ void st_init()
   // sure to regenerate speed_lookuptable.h with
   // create_speed_lookuptable.py
   TCCR1B = (TCCR1B & ~(0x07<<CS10)) | (2<<CS10);
+#endif //!__AVR__
 
   // Plan the first interrupt after 8ms from now.
   OCR1A = 0x4000;
@@ -1271,7 +1282,11 @@ void st_init()
 void st_reset_timer()
 {
   // Clear a possible pending interrupt on OCR1A overflow.
+#ifdef __AVR__
   TIFR1 |= 1 << OCF1A;
+#else
+  STEP_TIMER->SR = ~TIM_SR_UIF;
+#endif
   // Reset the counter.
   TCNT1 = 0;
   // Wake up after 1ms from now.

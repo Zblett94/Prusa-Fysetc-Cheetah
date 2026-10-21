@@ -2,7 +2,7 @@
 #include "mmu2_log.h"
 #include "mmu2_fsensor.h"
 
-#ifdef __AVR__
+#if defined(__AVR__) || defined(PRUSA_MK3_FW)
     // on MK3/S/+ we shuffle the timers a bit, thus "_millis" may not equal "millis"
     #include "system_timer.h"
 #else
@@ -202,7 +202,7 @@ StepStatus ProtocolLogic::ExpectingMessage() {
 }
 
 void ProtocolLogic::SendMsg(RequestMsg rq) {
-#ifdef __AVR__
+#if defined(__AVR__) || defined(PRUSA_MK3_FW)
     // Buddy FW cannot use stack-allocated txbuff - DMA doesn't work with CCMRAM
     // No restrictions on MK3/S/+ though
     uint8_t txbuff[Protocol::MaxRequestSize()];
@@ -214,7 +214,7 @@ void ProtocolLogic::SendMsg(RequestMsg rq) {
 }
 
 void ProtocolLogic::SendWriteMsg(RequestMsg rq) {
-#ifdef __AVR__
+#if defined(__AVR__) || defined(PRUSA_MK3_FW)
     // Buddy FW cannot use stack-allocated txbuff - DMA doesn't work with CCMRAM
     // No restrictions on MK3/S/+ though
     uint8_t txbuff[Protocol::MaxRequestSize()];

@@ -426,11 +426,13 @@ struct _menu_tune_data_t
     TuneItem item;             // 3 bytes
 };
 
+#ifdef __AVR__
 static_assert(sizeof(_menu_tune_data_t) == 18);
+#endif
 static_assert(sizeof(menu_data)>= sizeof(_menu_tune_data_t),"_menu_tune_data_t doesn't fit into menu_data");
 
 void tuneIdlerStallguardThresholdMenu() {
-    static constexpr _menu_tune_data_t * const _md = (_menu_tune_data_t*)&(menu_data[0]);
+    static _menu_tune_data_t * const _md = (_menu_tune_data_t*)&(menu_data[0]);
 
     // Do not timeout the screen, otherwise there will be FW crash (menu recursion)
     lcd_timeoutToStatus.stop();

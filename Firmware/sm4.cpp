@@ -9,6 +9,10 @@
 #define false 0
 #define true 1
 #include "Configuration_var.h"
+#if (MOTHERBOARD == BOARD_SKR_MINI_E3_V3)
+#include "pins.h"
+#include "fastio.h"
+#endif
 
 
 #ifdef NEW_XYZCAL
@@ -62,6 +66,12 @@ void sm4_set_dir(uint8_t axis, uint8_t dir)
 	case 1: if (dir == INVERT_Y_DIR) PORTL |= 2; else PORTL &= ~2; break;
 	case 2: if (dir == INVERT_Z_DIR) PORTL |= 4; else PORTL &= ~4; break;
 	case 3: if (dir == INVERT_E0_DIR) PORTL |= 64; else PORTL &= ~64; break;
+#elif (MOTHERBOARD == BOARD_SKR_MINI_E3_V3)
+	// same pin levels as the EINSy PORTL bits
+	case 0: WRITE(X_DIR_PIN, dir == INVERT_X_DIR); break;
+	case 1: WRITE(Y_DIR_PIN, dir == INVERT_Y_DIR); break;
+	case 2: WRITE(Z_DIR_PIN, dir == INVERT_Z_DIR); break;
+	case 3: WRITE(E0_DIR_PIN, dir == INVERT_E0_DIR); break;
 #endif
 	}
 	asm("nop");
@@ -69,6 +79,13 @@ void sm4_set_dir(uint8_t axis, uint8_t dir)
 
 void sm4_set_dir_bits(uint8_t dir_bits)
 {
+#if (MOTHERBOARD == BOARD_SKR_MINI_E3_V3)
+	dir_bits ^= dir_mask;
+	WRITE(X_DIR_PIN, dir_bits & 1);
+	WRITE(Y_DIR_PIN, dir_bits & 2);
+	WRITE(Z_DIR_PIN, dir_bits & 4);
+	WRITE(E0_DIR_PIN, dir_bits & 8);
+#else
 	uint8_t portL = PORTL;
 	portL &= 0xb8; //set direction bits to zero
 	//TODO -optimize in asm
@@ -86,11 +103,31 @@ void sm4_set_dir_bits(uint8_t dir_bits)
 	if (dir_bits & 8) portL |= 64; //set E direction bit
 #endif
 	PORTL = portL;
+#endif
 	asm("nop");
 }
 
 void sm4_do_step(uint8_t axes_mask)
 {
+#if (MOTHERBOARD == BOARD_SKR_MINI_E3_V3)
+#ifdef TMC2130_DEDGE_STEPPING
+	// toggle step signals by mask
+	if (axes_mask & 1) TOGGLE(X_STEP_PIN);
+	if (axes_mask & 2) TOGGLE(Y_STEP_PIN);
+	if (axes_mask & 4) TOGGLE(Z_STEP_PIN);
+	if (axes_mask & 8) TOGGLE(E0_STEP_PIN);
+#else
+	if (axes_mask & 1) WRITE(X_STEP_PIN, 1);
+	if (axes_mask & 2) WRITE(Y_STEP_PIN, 1);
+	if (axes_mask & 4) WRITE(Z_STEP_PIN, 1);
+	if (axes_mask & 8) WRITE(E0_STEP_PIN, 1);
+	delayMicroseconds(1);
+	WRITE(X_STEP_PIN, 0);
+	WRITE(Y_STEP_PIN, 0);
+	WRITE(Z_STEP_PIN, 0);
+	WRITE(E0_STEP_PIN, 0);
+#endif
+#endif
 #if ((MOTHERBOARD == BOARD_RAMBO_MINI_1_0) || (MOTHERBOARD == BOARD_RAMBO_MINI_1_3) || (MOTHERBOARD == BOARD_EINSY_1_0a))
 #ifdef TMC2130_DEDGE_STEPPING
 	PINC = (axes_mask & 0x0f); // toggle step signals by mask

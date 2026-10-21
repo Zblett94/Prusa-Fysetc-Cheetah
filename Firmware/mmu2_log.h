@@ -1,5 +1,5 @@
 #pragma once
-#ifdef __AVR__
+#if defined(__AVR__) || defined(PRUSA_MK3_FW)
     #include <avr/pgmspace.h>
 #endif
 
@@ -25,7 +25,7 @@ void LogEchoEvent_P(const char *msg_P);
 } // namespace MMU2
 
 #ifndef UNITTEST
-    #ifdef __AVR__
+    #if defined(__AVR__) || defined(PRUSA_MK3_FW)
         #include "Marlin.h"
     #else
         #include "../../core/serial.h"

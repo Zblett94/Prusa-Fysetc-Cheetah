@@ -6,6 +6,11 @@
 #ifndef	_FASTIO_ARDUINO_H
 #define	_FASTIO_ARDUINO_H
 
+#ifndef __AVR__
+// STM32 port: pin I/O is implemented in hal_stm32/fastio_stm32.h
+#include "hal_stm32/fastio_stm32.h"
+#else //!__AVR__
+
 #include <avr/io.h>
 #include "macros.h"
 
@@ -4047,5 +4052,7 @@ pins
 #ifndef	DIO0_PIN
 #error pins for this chip not defined in arduino.h! If you write an appropriate pin definition and have this firmware work on your chip, please submit a pull request
 #endif
+
+#endif //!__AVR__
 
 #endif /* _FASTIO_ARDUINO_H */

@@ -6,13 +6,56 @@
 
 #include "tmc2130.h"
 #include "language.h"
-#include "spi.h"
 #include "Timer.h"
+
+#ifdef TMC2209
+//------------------------------------------------------------------------------
+// STM32 port: TMC2209 drivers on the single wire UART of the SKR Mini E3 V3.
+//
+// The register map of the TMC2209 is a subset of the TMC2130 one, with these
+// differences, handled in this file:
+//  - GCONF: en_spreadCycle (bit 2) replaces en_pwm_mode (inverted meaning),
+//    pdn_disable and mstep_reg_select must be set to use the UART.
+//  - StallGuard4 (SGTHRS 0x40, SG_RESULT 0x41) replaces StallGuard2 (COOLCONF
+//    SGT, DRV_STATUS SG_RESULT). StallGuard4 only works in stealthChop, so the
+//    axes which need stall detection (X/Y crash detection and homing, Z
+//    calibration) run in stealthChop where the TMC2130 used spreadCycle.
+//    Define TMC2209_NORMAL_MODE_SPREADCYCLE to keep spreadCycle in the "Normal"
+//    mode instead (crash detection is then not available).
+//  - DIAG is active high (the pins are defined with FASTIO_INVERTED).
+//  - DRV_STATUS: the overtemperature pre-warning is bit 0 (bit 26 on the TMC2130).
+//  - PWMCONF has additional PWM_REG/PWM_LIM/autograd fields.
+//  - no MSLUT (linearity correction), no XDIRECT/VDCMIN/THIGH.
+//  - The sense resistors are 0.11 ohm instead of 0.22 ohm: the motor currents
+//    (Prusa units 0..63, M911/M912) are converted so that the physical current
+//    is the same as on the EINSy.
+//------------------------------------------------------------------------------
+#include "hal_stm32/tmc2209_uart.h"
+
+#define TMC2209_GCONF_BASE   0x000001C0 // pdn_disable | mstep_reg_select | multistep_filt
+#define TMC2209_GCONF_SPREAD (TMC2209_GCONF_BASE | 0x04) // en_spreadCycle
+#define TMC2209_GCONF_STEALTH TMC2209_GCONF_BASE
+
+// The TMC2130 values passed to tmc2130_wr(GCONF) are translated in tmc2130_tx()
+#define TMC2130_GCONF_NORMAL 0x00000000 // spreadCycle
+#define TMC2130_GCONF_SGSENS 0x00000180 // spreadCycle with stallguard -> TMC2209: stealthChop + StallGuard4
+#define TMC2130_GCONF_DYNAMIC_SGSENS 0x00000184 // stealthChop/spreadCycle (dynamic) with stallguard -> TMC2209: stealthChop + StallGuard4
+#define TMC2130_GCONF_SILENT 0x00000004 // stealthChop
+
+#define TMC2209_REG_SGTHRS    0x40
+#define TMC2209_REG_SG_RESULT 0x41
+#define TMC2209_DRV_STATUS_OTPW 0x00000001
+
+static const uint8_t tmc2209_slave[NUM_AXIS] = { X_TMC2209_ADDR, Y_TMC2209_ADDR, Z_TMC2209_ADDR, E0_TMC2209_ADDR };
+
+#else //TMC2209
+#include "spi.h"
 
 #define TMC2130_GCONF_NORMAL 0x00000000 // spreadCycle
 #define TMC2130_GCONF_SGSENS 0x00000180 // spreadCycle with stallguard (stall activates DIAG0 and DIAG1 [open collector])
 #define TMC2130_GCONF_DYNAMIC_SGSENS 0x00000184 // stealthChop/spreadCycle (dynamic) with stallguard (stall activates DIAG0 and DIAG1 [open collector])
 #define TMC2130_GCONF_SILENT 0x00000004 // stealthChop
+#endif //TMC2209
 
 #ifdef TMC2130_DEDGE_STEPPING
 static constexpr uint8_t default_dedge_bit = 1;
@@ -126,20 +169,48 @@ static constexpr uint32_t PWM_GRAD[NUM_AXIS] = {TMC2130_PWM_GRAD_X, TMC2130_PWM_
 static constexpr uint32_t PWM_FREQ[NUM_AXIS] = {TMC2130_PWM_FREQ_X, TMC2130_PWM_FREQ_Y, TMC2130_PWM_FREQ_Z, TMC2130_PWM_FREQ_E};
 static constexpr uint32_t PWM_AUTO[NUM_AXIS] = {TMC2130_PWM_AUTO_X, TMC2130_PWM_AUTO_Y, TMC2130_PWM_AUTO_Z, TMC2130_PWM_AUTO_E};
 
+#ifdef TMC2209
+// TMC2209 stealthChop with automatic tuning: PWM_OFS/PWM_GRAD are the start values of
+// the automatic tuning (Trinamic defaults), PWM_REG = 4, PWM_LIM = 12, pwm_autograd = 1.
+constexpr uint32_t TMC2209_PWMCONF(uint32_t PWM_FREQ, uint32_t PWM_AUTO)
+{
+    return PWM_AUTO
+        ? (PWMCONF_REG(36, 14, PWM_FREQ, 1) | (1UL << 19) | (4UL << 24) | (12UL << 28))
+        : PWMCONF_REG(36, 0, PWM_FREQ, 0) | (4UL << 24) | (12UL << 28);
+}
+static PWMConfU pwmconf[NUM_AXIS] = {
+    PWMConfU(TMC2209_PWMCONF(PWM_FREQ[X_AXIS], PWM_AUTO[X_AXIS])),
+    PWMConfU(TMC2209_PWMCONF(PWM_FREQ[Y_AXIS], PWM_AUTO[Y_AXIS])),
+    PWMConfU(TMC2209_PWMCONF(PWM_FREQ[Z_AXIS], PWM_AUTO[Z_AXIS])),
+    PWMConfU(TMC2209_PWMCONF(PWM_FREQ[E_AXIS], PWM_AUTO[E_AXIS]))
+};
+#else //TMC2209
 static PWMConfU pwmconf[NUM_AXIS] = {
     PWMConfU(PWMCONF_REG(PWM_AMPL[X_AXIS], PWM_GRAD[X_AXIS], PWM_FREQ[X_AXIS], PWM_AUTO[X_AXIS])),
     PWMConfU(PWMCONF_REG(PWM_AMPL[Y_AXIS], PWM_GRAD[Y_AXIS], PWM_FREQ[Y_AXIS], PWM_AUTO[Y_AXIS])),
     PWMConfU(PWMCONF_REG(PWM_AMPL[Z_AXIS], PWM_GRAD[Z_AXIS], PWM_FREQ[Z_AXIS], PWM_AUTO[Z_AXIS])),
     PWMConfU(PWMCONF_REG(PWM_AMPL[E_AXIS], PWM_GRAD[E_AXIS], PWM_FREQ[E_AXIS], PWM_AUTO[E_AXIS]))
 };
+#endif //TMC2209
 
 // E-axis PWMCONF setting when using E-cool mode. Can be disabled/enabled at run time.
+#ifdef TMC2209
+// non automatic stealthChop: PWM_OFS / PWM_GRAD have the same meaning as PWM_AMPL / PWM_GRAD of the TMC2130
+static constexpr PWMConfU pwmconf_Ecool = PWMConfU(PWMCONF_REG(TMC2130_PWM_AMPL_Ecool, TMC2130_PWM_GRAD_Ecool, PWM_FREQ[E_AXIS], TMC2130_PWM_AUTO_Ecool) | (4UL << 24) | (12UL << 28));
+#else
 static constexpr PWMConfU pwmconf_Ecool = PWMConfU(PWMCONF_REG(TMC2130_PWM_AMPL_Ecool, TMC2130_PWM_GRAD_Ecool, PWM_FREQ[E_AXIS], TMC2130_PWM_AUTO_Ecool));
+#endif
 
 uint8_t tmc2130_mres[4] = {0, 0, 0, 0}; //will be filed at begin of init
 
+#ifdef TMC2209
+// StallGuard4 thresholds (SGTHRS). Higher values are more sensitive (the opposite of the TMC2130 SGT).
+uint8_t tmc2130_sg_thr[4] = {TMC2209_SGTHRS_X, TMC2209_SGTHRS_Y, TMC2209_SGTHRS_Z, TMC2209_SGTHRS_E};
+static uint8_t tmc2130_sg_thr_home[4] = {TMC2209_SGTHRS_HOME_X, TMC2209_SGTHRS_HOME_Y, TMC2209_SGTHRS_HOME_Z, TMC2209_SGTHRS_E};
+#else
 uint8_t tmc2130_sg_thr[4] = {TMC2130_SG_THRS_X, TMC2130_SG_THRS_Y, TMC2130_SG_THRS_Z, TMC2130_SG_THRS_E};
 static uint8_t tmc2130_sg_thr_home[4] = TMC2130_SG_THRS_HOME;
+#endif
 
 
 uint8_t tmc2130_sg_homing_axes_mask = 0x00;
@@ -287,6 +358,25 @@ uint16_t __tcoolthrs(uint8_t axis)
 	return 0;
 }
 
+#ifdef TMC2209
+static void tmc2130_XYZ_reg_init(uint8_t axis)
+{
+	tmc2130_setup_chopper(axis, tmc2130_mres[axis]);
+	tmc2130_wr(axis, TMC2130_REG_TPOWERDOWN, 0x00000000);
+	const bool isStealth = (tmc2130_mode == TMC2130_MODE_SILENT);
+	// StallGuard4 threshold (stall detection and crash detection) for all modes
+	tmc2130_wr(axis, TMC2130_REG_COOLCONF, (((uint32_t)tmc2130_sg_thr[axis]) << 16));
+	tmc2130_wr(axis, TMC2130_REG_TCOOLTHRS, isStealth ? 0 : __tcoolthrs(axis));
+	tmc2130_wr(axis, TMC2130_REG_PWMCONF, pwmconf[axis].dw);
+	if (axis == Z_AXIS) {
+		// Z: always stealthChop, StallGuard4 in the normal mode (Z calibration)
+		tmc2130_wr(axis, TMC2130_REG_GCONF, isStealth ? TMC2130_GCONF_SILENT : TMC2130_GCONF_DYNAMIC_SGSENS);
+	} else { // X Y
+		tmc2130_wr(axis, TMC2130_REG_GCONF, isStealth ? TMC2130_GCONF_SILENT : TMC2130_GCONF_SGSENS);
+	}
+	tmc2130_wr(axis, TMC2130_REG_TPWMTHRS, TMC2130_TPWMTHRS);
+}
+#else //TMC2209
 static void tmc2130_XYZ_reg_init(uint8_t axis)
 {
 	tmc2130_setup_chopper(axis, tmc2130_mres[axis]);
@@ -310,10 +400,26 @@ static void tmc2130_XYZ_reg_init(uint8_t axis)
 		tmc2130_wr(axis, TMC2130_REG_TPWMTHRS, TMC2130_TPWMTHRS);
 	}
 }
+#endif //TMC2209
 
 void tmc2130_init(TMCInitParams params)
 {
 //	DBG(_n("tmc2130_init(), mode=%S\n"), tmc2130_mode?_n("STEALTH"):_n("NORMAL"));
+#ifdef TMC2209
+	tmc2209_uart_init();
+	// DIAG outputs are push-pull, active high: no pull-ups
+	SET_INPUT(X_TMC2130_DIAG);
+	SET_INPUT(Y_TMC2130_DIAG);
+	SET_INPUT(Z_TMC2130_DIAG);
+	WRITE(X_TMC2130_DIAG,LOW);
+	WRITE(Y_TMC2130_DIAG,LOW);
+	WRITE(Z_TMC2130_DIAG,LOW);
+	// clear the reset/undervoltage flags
+	tmc2130_wr(X_AXIS, TMC2130_REG_GSTAT, 0x07);
+	tmc2130_wr(Y_AXIS, TMC2130_REG_GSTAT, 0x07);
+	tmc2130_wr(Z_AXIS, TMC2130_REG_GSTAT, 0x07);
+	tmc2130_wr(E_AXIS, TMC2130_REG_GSTAT, 0x07);
+#else //TMC2209
 	WRITE(X_TMC2130_CS, HIGH);
 	WRITE(Y_TMC2130_CS, HIGH);
 	WRITE(Z_TMC2130_CS, HIGH);
@@ -331,6 +437,7 @@ void tmc2130_init(TMCInitParams params)
 	WRITE(Y_TMC2130_DIAG,HIGH);
 	WRITE(Z_TMC2130_DIAG,HIGH);
 	WRITE(E0_TMC2130_DIAG,HIGH);
+#endif //TMC2209
 
 	for (uint_least8_t axis = 0; axis < E_AXIS; axis++) // X Y Z axes
 	{
@@ -406,7 +513,11 @@ bool tmc2130_update_sg()
 	if (tmc2130_sg_measure <= E_AXIS)
 	{
 		uint32_t val32 = 0;
+#ifdef TMC2209
+		tmc2130_rd(tmc2130_sg_measure, TMC2209_REG_SG_RESULT, &val32);
+#else
 		tmc2130_rd(tmc2130_sg_measure, TMC2130_REG_DRV_STATUS, &val32);
+#endif
 		tmc2130_sg_measure_val += (val32 & 0x3ff);
 		tmc2130_sg_measure_cnt++;
 		return true;
@@ -425,6 +536,15 @@ void tmc2130_home_enter(uint8_t axes_mask)
 		if (axes_mask & mask)
 		{
 			tmc2130_sg_homing_axes_mask |= mask;
+#ifdef TMC2209
+			// StallGuard4 homing in stealthChop
+			tmc2130_wr(axis, TMC2130_REG_COOLCONF, (((uint32_t)tmc2130_sg_thr_home[axis]) << 16));
+			tmc2130_wr(axis, TMC2130_REG_TCOOLTHRS, __tcoolthrs(axis));
+			tmc2130_wr(axis, TMC2130_REG_TPWMTHRS, 0);
+			MotorCurrents curr(homing_currents_P[axis]);
+			tmc2130_setup_chopper(axis, tmc2130_mres[axis], &curr);
+			tmc2130_wr(axis, TMC2130_REG_GCONF, TMC2130_GCONF_SGSENS);
+#else //TMC2209
 			//Configuration to spreadCycle
 			tmc2130_wr(axis, TMC2130_REG_GCONF, TMC2130_GCONF_NORMAL);
 			tmc2130_wr(axis, TMC2130_REG_COOLCONF, (((uint32_t)tmc2130_sg_thr_home[axis]) << 16));
@@ -432,6 +552,7 @@ void tmc2130_home_enter(uint8_t axes_mask)
 			MotorCurrents curr(homing_currents_P[axis]);
 			tmc2130_setup_chopper(axis, tmc2130_mres[axis], &curr);
 			tmc2130_wr(axis, TMC2130_REG_GCONF, TMC2130_GCONF_SGSENS); //stallguard output DIAG1, DIAG1 = pushpull
+#endif //TMC2209
 		}
 	}
 #endif //TMC2130_SG_HOMING
@@ -497,7 +618,11 @@ void tmc2130_check_overtemp()
 		{
 			uint32_t drv_status = 0;
 			tmc2130_rd(i, TMC2130_REG_DRV_STATUS, &drv_status);
+#ifdef TMC2209
+			if (drv_status & TMC2209_DRV_STATUS_OTPW)
+#else
 			if (drv_status & ((uint32_t)1 << 26))
+#endif
 			{ // BIT 26 - over temp prewarning ~120C (+-20C)
 				SERIAL_ERRORRPGM(MSG_TMC_OVERTEMP);
 				SERIAL_ECHOLN(i);
@@ -526,6 +651,31 @@ static constexpr bool getIntpolBit([[maybe_unused]]const uint8_t axis, const uin
     return (mres != 0); // intpol to 256 only if microsteps aren't 256
 }
 
+#ifdef TMC2209
+//! Convert EINSy TMC2130 current settings (vsense, IRUN, IHOLD with 0.22 ohm sense resistors)
+//! into TMC2209 settings giving the same motor current with the SKR sense resistors.
+struct Tmc2209Currents {
+    uint8_t vsense;
+    uint8_t iRun;
+    uint8_t iHold;
+    Tmc2209Currents(bool einsy_vsense, uint8_t einsy_irun, uint8_t einsy_ihold) {
+        const float k = (TMC2209_RSENSE + 0.02f) / (0.2f + 0.02f);
+        const float vfs = einsy_vsense ? 0.18f : 0.32f;
+        const float run = (einsy_irun + 1) * vfs * k;   // = (CS + 1) * Vfs on the TMC2209
+        const float hold = (einsy_ihold + 1) * vfs * k;
+        vsense = (run <= 32 * 0.18f) ? 1 : 0;
+        const float vfs2 = vsense ? 0.18f : 0.32f;
+        iRun = cs(run / vfs2);
+        iHold = cs(hold / vfs2);
+    }
+private:
+    static uint8_t cs(float n) {
+        int16_t v = (int16_t)(n + 0.5f) - 1;
+        return (v < 0) ? 0 : ((v > 31) ? 31 : v);
+    }
+};
+#endif //TMC2209
+
 static void SetCurrents(const uint8_t axis, const MotorCurrents &curr) {
     uint8_t iHold = curr.getiHold();
     const uint8_t iRun = curr.getiRun();
@@ -552,7 +702,13 @@ static void SetCurrents(const uint8_t axis, const MotorCurrents &curr) {
             : s(ih, ir) {}
     };
 
+#ifdef TMC2209
+    // the CHOPCONF vsense bit is the one of currents[axis] (see tmc2130_setup_chopper)
+    const Tmc2209Currents c(currents[axis].getvSense(), iRun, iHold);
+    IHoldRun ihold_irun(c.iHold, c.iRun);
+#else
     IHoldRun ihold_irun(iHold, iRun);
+#endif
 #ifdef DEBUG_TMC_CURRENTS
 	printf_P(PSTR("SetCurrents(axis=%u, iHold=%u, iRun=%u, vsense=%u, reg=%08lX)\n"), axis, iHold, iRun, curr.getvSense(), ihold_irun.dw);
 #endif //DEBUG_TMC_CURRENTS
@@ -569,6 +725,12 @@ void tmc2130_setup_chopper(uint8_t axis, uint8_t mres, const MotorCurrents *curr
 	chopconf.s.hstrt = tmc2130_chopper_config[axis].hstr; // initial 4, modified to 5
 	chopconf.s.hend = tmc2130_chopper_config[axis].hend; // original value = 1
 	chopconf.s.tbl = tmc2130_chopper_config[axis].tbl; //blanking time, original value = 2
+#ifdef TMC2209
+	{
+		const MotorCurrents &c = curr ? *curr : currents[axis];
+		chopconf.s.vsense = Tmc2209Currents(currents[axis].getvSense(), c.getiRun(), c.getiHold()).vsense;
+	}
+#endif
 
 	tmc2130_wr(axis, TMC2130_REG_CHOPCONF, chopconf.dw);
 	if (curr == nullptr) {
@@ -659,6 +821,7 @@ uint8_t tmc2130_usteps2mres(uint16_t usteps)
 }
 
 
+#ifndef TMC2209
 inline void tmc2130_cs_low(uint8_t axis)
 {
 	switch (axis)
@@ -680,6 +843,62 @@ inline void tmc2130_cs_high(uint8_t axis)
 	case E_AXIS: WRITE(E0_TMC2130_CS, HIGH); break;
 	}
 }
+#endif //TMC2209
+
+#ifdef TMC2209
+
+//! TMC2130 GCONF value -> TMC2209 GCONF value
+static uint32_t tmc2209_gconf(uint8_t axis, uint32_t gconf)
+{
+	if (gconf == TMC2130_GCONF_NORMAL) return TMC2209_GCONF_SPREAD;
+	if (gconf == TMC2130_GCONF_SILENT) return TMC2209_GCONF_STEALTH;
+	// stall detection requested (SGSENS, DYNAMIC_SGSENS)
+	if (axis == E_AXIS) return TMC2209_GCONF_SPREAD; // the extruder stall output is not used
+#ifdef TMC2209_NORMAL_MODE_SPREADCYCLE
+	if ((axis != Z_AXIS) && !(tmc2130_sg_homing_axes_mask & (1 << axis))) return TMC2209_GCONF_SPREAD;
+#endif
+	return TMC2209_GCONF_STEALTH; // StallGuard4 requires stealthChop
+}
+
+static void tmc2130_tx(uint8_t axis, uint8_t addr, uint32_t wval)
+{
+	addr &= 0x7F;
+	switch (addr)
+	{
+	case TMC2130_REG_GCONF:
+		wval = tmc2209_gconf(axis, wval);
+		break;
+	case TMC2130_REG_COOLCONF:
+		// StallGuard2 threshold -> StallGuard4 threshold, coolStep stays disabled
+		tmc2209_uart_write(tmc2209_slave[axis], TMC2209_REG_SGTHRS, (wval >> 16) & 0xFF);
+		addr = 0x42; // TMC2209 COOLCONF
+		wval = 0;
+		break;
+	case TMC2130_REG_THIGH:
+	case TMC2130_REG_XDIRECT:
+	case TMC2130_REG_VDCMIN:
+	case TMC2130_REG_MSLUT0: case TMC2130_REG_MSLUT1: case TMC2130_REG_MSLUT2: case TMC2130_REG_MSLUT3:
+	case TMC2130_REG_MSLUT4: case TMC2130_REG_MSLUT5: case TMC2130_REG_MSLUT6: case TMC2130_REG_MSLUT7:
+	case TMC2130_REG_MSLUTSEL:
+	case TMC2130_REG_MSLUTSTART:
+	case TMC2130_REG_DCCTRL:
+	case TMC2130_REG_ENCM_CTRL:
+		return; // not available on the TMC2209
+	}
+	tmc2209_uart_write(tmc2209_slave[axis], addr, wval);
+}
+
+static uint8_t tmc2130_rx(uint8_t axis, uint8_t addr, uint32_t* rval)
+{
+	uint32_t val32 = 0;
+	addr &= 0x7F;
+	if (addr == TMC2130_REG_IOIN) addr = 0x06; // TMC2209 IOIN
+	tmc2209_uart_read(tmc2209_slave[axis], addr, &val32);
+	if (rval != 0) *rval = val32;
+	return 0;
+}
+
+#else //TMC2209
 
 //spi
 #define TMC2130_SPI_ENTER()    spi_setup(TMC2130_SPCR, TMC2130_SPSR)
@@ -726,6 +945,8 @@ static uint8_t tmc2130_rx(uint8_t axis, uint8_t addr, uint32_t* rval)
 	if (rval != 0) *rval = val32;
 	return stat;
 }
+
+#endif //TMC2209
 
 uint16_t tmc2130_get_res(uint8_t axis)
 {

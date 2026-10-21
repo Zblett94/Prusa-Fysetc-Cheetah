@@ -23,7 +23,7 @@
 #include "Timer.h"
 #include "printer_state.h"
 
-#ifndef AT90USB
+#if !defined(AT90USB) && defined(__AVR__)
 #define  HardwareSerial_h // trick to disable the standard HWserial
 #endif
 
@@ -448,7 +448,11 @@ void gcode_M123();
 #endif //FANCHECK and TACH_0 and TACH_1
 void gcode_M701(float fastLoadLength, uint8_t mmuSlotIndex);
 
+#ifdef __AVR__
 #define UVLO !(PINE & (1<<4))
+#else
+#define UVLO (!READ(UVLO_PIN))
+#endif
 
 
 void M600_load_filament(const char* filament_name);

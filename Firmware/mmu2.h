@@ -4,7 +4,7 @@
 #include "mmu2_state.h"
 #include "mmu2_marlin.h"
 
-#ifdef __AVR__
+#if defined(__AVR__) || defined(PRUSA_MK3_FW)
     #include "mmu2_protocol_logic.h"
 typedef float feedRate_t;
 

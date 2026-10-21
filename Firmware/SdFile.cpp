@@ -65,6 +65,11 @@ void __attribute__((noinline)) SdFile::gfUpdateCurrentPosition(uint16_t inc){
     curPosition_ += inc;
 }
 
+#ifndef __AVR__
+// STM32 port: C version of the AVR "ld r22, Z+" loop below - returns the address after the '\n'
+#define find_endl(resultP, startP) \
+do { const uint8_t *_p = (startP); while (*_p++ != '\n') {} (resultP) = _p; } while (0)
+#else //!__AVR__
 #define find_endl(resultP, startP) \
 __asm__ __volatile__ (  \
 "cycle:          \n" \
@@ -75,6 +80,7 @@ __asm__ __volatile__ (  \
 : "z" (startP)   /* input of the ASM code - in our case the Z register as well (R30:R31) */ \
 : "r22"          /* modifying register R22 - so that the compiler knows */ \
 )
+#endif //!__AVR__
 
 // avoid calling the default heavy-weight read() for just one byte
 int16_t SdFile::readFilteredGcode(){

@@ -1,14 +1,14 @@
 /// @file
 #include "mmu2_crc.h"
 
-#ifdef __AVR__
+#if defined(__AVR__) || defined(PRUSA_MK3_FW)
     #include <util/crc16.h>
 #endif
 
 namespace modules {
 // clang-format off
 namespace crc {
-#ifdef __AVR__
+#if defined(__AVR__) || defined(PRUSA_MK3_FW)
 uint8_t CRC8::CCITT_update(uint8_t crc, uint8_t b) {
     return _crc8_ccitt_update(crc, b);
 }

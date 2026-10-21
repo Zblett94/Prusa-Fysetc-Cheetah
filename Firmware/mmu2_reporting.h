@@ -2,7 +2,7 @@
 
 #pragma once
 #include <stdint.h>
-#ifdef __AVR__
+#if defined(__AVR__) || defined(PRUSA_MK3_FW)
     #include "mmu2/error_codes.h"
     #include "mmu2/progress_codes.h"
 #else

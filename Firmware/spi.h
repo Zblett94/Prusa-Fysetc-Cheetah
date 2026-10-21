@@ -7,6 +7,11 @@
 #include "config.h"
 
 
+#ifndef __AVR__
+// STM32 port: the hardware SPI is used only by the SD card (Sd2Card.cpp, Arduino SPI library)
+static inline void spi_init() {}
+#else //!__AVR__
+
 #define SPI_SPCR(rat, pha, pol, mst, dor) ((rat & 3) | (pha?(1<<CPHA):0) | (pol?(1<<CPOL):0) | (mst?(1<<MSTR):0) | (dor?(1<<DORD):0) | (1<<SPE))
 #define SPI_SPSR(rat) ((rat & 4)?(1<<SPI2X):0)
 
@@ -45,5 +50,7 @@ static inline uint8_t spi_txrx(uint8_t tx)
 #if defined(__cplusplus)
 }
 #endif //defined(__cplusplus)
+
+#endif //!__AVR__
 
 #endif //SPI_H

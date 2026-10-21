@@ -26,7 +26,7 @@ typedef struct
     float bedKp;
     float bedKi;
     float bedKd;
-    int lcd_contrast; //!< unused
+    int16_t lcd_contrast; //!< unused (int16_t: same size on 8 and 32 bit MCUs)
     bool autoretract_enabled;
     float retract_length;
     float retract_feedrate;

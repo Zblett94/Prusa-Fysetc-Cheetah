@@ -4,6 +4,15 @@
 #include <stdint.h>
 #include "boards.h"
 
+#ifdef __AVR__
+#define TIMING_F_CPU F_CPU
+#else
+// STM32 port: the stepper timer and the temperature timers emulate the ones of the
+// 16 MHz ATmega2560 (e.g. the stepper timer runs at 2 MHz = 16 MHz / 8), so all the
+// timing constants derived from the AVR clock stay valid.
+#define TIMING_F_CPU 16000000UL
+#endif
+
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 #define _CONCAT(x,y) x##y
@@ -40,9 +49,13 @@ extern const char _sPrinterMmuName[] PROGMEM;
 
 // The full version string and repository source are set via cmake
 #ifndef CMAKE_CONTROL
+#ifndef FW_COMMIT_HASH
 #define FW_COMMIT_HASH_LENGTH 1
 #define FW_COMMIT_HASH "0"
+#endif
+#ifndef FW_REPOSITORY
 #define FW_REPOSITORY "Unknown"
+#endif
 #endif
 
 // G-code language level
@@ -137,7 +150,7 @@ extern const char _sPrinterMmuName[] PROGMEM;
   //#define SLOW_PWM_HEATERS // PWM with very low frequency (roughly 0.125Hz=8s) and minimum state time of approximately 1s useful for heaters driven by a relay
   #define PID_INTEGRAL_DRIVE_MAX PID_MAX  //limit for the integral term
   #define PID_K1 0.95 //smoothing factor within the PID
-  #define PID_dT ((OVERSAMPLENR * 10.0)/(F_CPU / 64.0 / 256.0)) //sampling period of the temperature routine
+  #define PID_dT ((OVERSAMPLENR * 10.0)/(TIMING_F_CPU / 64.0 / 256.0)) //sampling period of the temperature routine
 
 // If you are using a pre-configured hotend then you can use one of the value sets by uncommenting it
 // Ultimaker

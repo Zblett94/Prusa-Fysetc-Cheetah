@@ -8,9 +8,11 @@
 
 
 
+#ifdef __AVR__
 extern FILE _lcdout;
 
 #define lcdout (&_lcdout)
+#endif //__AVR__
 
 extern void lcd_init(void);
 

@@ -7,13 +7,29 @@
 #include "config.h"
 #include "macros.h"
 #include <inttypes.h>
+#ifndef __AVR__
+// STM32 port: newlib's ctype.h defines the character class flags _U _L _N _S _P _C _X _B.
+// Include it first so its include guard prevents redefinitions, then drop _N, which is
+// the "untranslated string" macro of the Prusa firmware.
+#include <ctype.h>
+#undef _N
+#endif
 #ifdef DEBUG_SEC_LANG
     #include <stdio.h>
 #endif //DEBUG_SEC_LANG
 
 #define PROTOCOL_VERSION "1.0"
 
-#if (LANG_MODE == 0) //primary language only
+#if (LANG_MODE == 0) && !defined(__AVR__) // primary language only, STM32: one flash address space, no sections needed
+#define PROGMEM_I2
+#define PROGMEM_I1
+#define PROGMEM_N1
+#define _I(s) (__extension__({static const char __c[] PROGMEM_I1 = s; &__c[0];}))
+#define ISTR(s) (s) // declare a translatable string
+#define _i(s) _I(s) // declare a translatable string and return the translated form
+#define _T(s) (s)   // return translated string from reference
+#define _O(s) (s)   // return original (untranslated) string from reference
+#elif (LANG_MODE == 0) //primary language only
 #define PROGMEM_I2 __attribute__((section(".progmem0")))
 #define PROGMEM_I1 __attribute__((section(".progmem1")))
 #define PROGMEM_N1 __attribute__((section(".progmem2")))

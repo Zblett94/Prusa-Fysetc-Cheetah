@@ -3,7 +3,7 @@
 /// Its purpose is to unify different macros in either of Marlin incarnations.
 #pragma once
 
-#ifdef __AVR__
+#if defined(__AVR__) || defined(PRUSA_MK3_FW)
     #include "Marlin.h"
     // brings _O and _T macros into MMU
     #include "language.h"

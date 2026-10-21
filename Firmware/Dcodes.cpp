@@ -31,6 +31,9 @@ void print_hex_byte(uint8_t val)
 
 #define DADDR_SIZE 32
 typedef uint32_t daddr_t; // XFLASH requires 24 bits
+#elif !defined(__AVR__)
+#define DADDR_SIZE 32
+typedef uint32_t daddr_t; // STM32 port: the RAM is at 0x20000000
 #else
 #define DADDR_SIZE 16
 typedef uint16_t daddr_t;
@@ -105,7 +108,11 @@ void print_mem(daddr_t address, daddr_t count, dcode_mem_t type, uint8_t countpe
             // sporadically call manage_heater, but only when interrupts are enabled (meaning
             // print_mem is called by D2). Don't do anything otherwise: we are inside a crash
             // handler where memory & stack needs to be preserved!
+#ifndef __AVR__
+            if((__get_PRIMASK() == 0) && !((uint16_t)count % 8192))
+#else
             if((SREG & (1 << SREG_I)) && !((uint16_t)count % 8192))
+#endif
                 manage_heater();
 		}
 		putchar('\n');
@@ -231,6 +238,8 @@ void dcode_0()
 	{
 #ifndef _NO_ASM
 		asm volatile("jmp 0x00000");
+#elif !defined(__AVR__)
+		hal_reset();
 #endif //_NO_ASM
 	}
 }

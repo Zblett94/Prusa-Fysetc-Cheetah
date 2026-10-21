@@ -28,7 +28,7 @@ uint8_t selectedSerialPort = 0;
 #ifndef AT90USB
 // this next line disables the entire HardwareSerial.cpp,
 // this is so I can support Attiny series and any other chip without a UART
-#if defined(UBRRH) || defined(UBRR0H) || defined(UBRR1H) || defined(UBRR2H) || defined(UBRR3H)
+#if defined(UBRRH) || defined(UBRR0H) || defined(UBRR1H) || defined(UBRR2H) || defined(UBRR3H) || !defined(__AVR__)
 
 #ifdef HAS_UART
   ring_buffer rx_buffer  =  { { 0 }, 0, 0 };
@@ -49,7 +49,7 @@ FORCE_INLINE void store_char(unsigned char c)
 }
 
 
-#if defined(M_USARTx_RX_vect)
+#if defined(M_USARTx_RX_vect) && defined(__AVR__)
 // The serial line receive interrupt routine for a baud rate 115200
 // ticks at maximum 11.76 kHz and blocks for 2.688 us at each tick.
 // If the serial line is fully utilized, this corresponds to 3.16%
@@ -97,6 +97,80 @@ ISR(USART1_RX_vect)
 	}
 }
 #endif
+
+#ifndef __AVR__
+
+// STM32 port: the host is connected to the native USB CDC (SerialUSB). The
+// AVR receive ISR is replaced by pulling the USB stack's buffer into rx_buffer,
+// so the command queue code that inspects rx_buffer keeps working unchanged.
+
+// Never fill rx_buffer completely: on the AVR a full buffer means lost
+// characters and the command queue flushes it. USB is flow controlled, so
+// nothing can be lost here.
+static void usb_pull_rx()
+{
+	int n = SerialUSB.available();
+	while (n-- > 0)
+	{
+		const int used = (unsigned int)(RX_BUFFER_SIZE + rx_buffer.head - rx_buffer.tail) % RX_BUFFER_SIZE;
+		if (used >= RX_BUFFER_SIZE - 2)
+			break;
+		const int c = SerialUSB.read();
+		if (c < 0)
+			break;
+		if (selectedSerialPort == 0)
+			store_char(c);
+	}
+}
+
+void MarlinSerial::begin(long baud)
+{
+	(void)baud;
+	SerialUSB.begin(baud);
+}
+
+void MarlinSerial::end()
+{
+}
+
+int MarlinSerial::available(void)
+{
+	usb_pull_rx();
+	return (unsigned int)(RX_BUFFER_SIZE + rx_buffer.head - rx_buffer.tail) % RX_BUFFER_SIZE;
+}
+
+void MarlinSerial::write(uint8_t c)
+{
+	// The USB transmit queue is not reentrant, but the firmware prints from
+	// interrupt context too (power panic, crash detection). Serialize the
+	// accesses and never block forever if the queue can not drain.
+	for (uint16_t retry = 0; ; retry++)
+	{
+		const uint32_t primask = __get_PRIMASK();
+		__disable_irq();
+		if (SerialUSB.availableForWrite() > 0)
+		{
+			SerialUSB.write(c);
+			__set_PRIMASK(primask);
+			return;
+		}
+		__set_PRIMASK(primask);
+		if (!SerialUSB || retry > 2000) // no host or the host does not read
+			return;
+		delayMicroseconds(10);
+	}
+}
+
+// newlib stdout (printf_P, puts_P, ...) -> host serial line
+extern "C" int _write(int fd, char *ptr, int len)
+{
+	(void)fd;
+	for (int i = 0; i < len; i++)
+		MarlinSerial::write((uint8_t)ptr[i]);
+	return len;
+}
+
+#else //!__AVR__
 
 // Public Methods //////////////////////////////////////////////////////////////
 
@@ -160,10 +234,15 @@ void MarlinSerial::end()
   cbi(UCSR1B, RXCIE1);
 }
 
+#endif //!__AVR__
+
 
 
 int MarlinSerial::peek(void)
 {
+#ifndef __AVR__
+  usb_pull_rx();
+#endif
   if (rx_buffer.head == rx_buffer.tail) {
     return -1;
   } else {
@@ -173,6 +252,9 @@ int MarlinSerial::peek(void)
 
 int MarlinSerial::read(void)
 {
+#ifndef __AVR__
+  usb_pull_rx();
+#endif
   // if the head isn't ahead of the tail, we don't have any characters
   if (rx_buffer.head == rx_buffer.tail) {
     return -1;

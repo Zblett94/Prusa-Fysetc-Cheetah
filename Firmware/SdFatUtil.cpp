@@ -44,6 +44,26 @@ int SdFatUtil::FreeRam() {
 }
 #endif  // __arm
 
+#ifdef __arm__
+// STM32 port: the heap (newlib, HardwareTimer objects) grows up from the end of
+// .bss, so the guard can not be placed right behind .bss like on the AVR. It is
+// placed at the bottom of the space reserved for the stack instead.
+#define HAL_STACK_RESERVED (16UL * 1024UL)
+static uint32_t *stack_guard_addr()
+{
+	return (uint32_t*)((((uintptr_t)&_estack) - HAL_STACK_RESERVED + STACK_GUARD_MARGIN) & ~(uintptr_t)3);
+}
+
+void SdFatUtil::set_stack_guard()
+{
+	*stack_guard_addr() = STACK_GUARD_TEST_VALUE;
+}
+
+bool SdFatUtil::test_stack_integrity()
+{
+	return (*stack_guard_addr() == STACK_GUARD_TEST_VALUE);
+}
+#else //__arm__
 void SdFatUtil::set_stack_guard()
 {
 	uint32_t *stack_guard;
@@ -57,6 +77,7 @@ bool SdFatUtil::test_stack_integrity()
 	uint32_t* stack_guard = (uint32_t*)(&__bss_end + STACK_GUARD_MARGIN);
 	return (*stack_guard == STACK_GUARD_TEST_VALUE);
 }
+#endif //__arm__
 
 //------------------------------------------------------------------------------
 /** %Print a string in flash memory.

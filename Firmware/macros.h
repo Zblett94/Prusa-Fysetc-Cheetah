@@ -2,6 +2,9 @@
 #define MACROS_H
 
 #include <avr/interrupt.h> //for cli() and sei()
+#ifndef __AVR__
+#include "hal_stm32/compat.h"
+#endif
 
 #define  FORCE_INLINE __attribute__((always_inline)) inline
 #define _UNUSED __attribute__((unused))

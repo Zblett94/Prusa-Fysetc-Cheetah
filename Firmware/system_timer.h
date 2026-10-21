@@ -37,7 +37,9 @@ extern volatile unsigned long timer0_millis;
 // An unsynchronized equivalent to a standard Arduino _millis() function.
 // To be used inside an interrupt routine.
 FORCE_INLINE unsigned long millis_nc() {
-#ifdef SYSTEM_TIMER_2
+#ifndef __AVR__
+	return HAL_GetTick(); // STM32 port: SysTick millisecond counter (32 bit, read atomically)
+#elif defined(SYSTEM_TIMER_2)
 	return timer2_millis;
 #else //SYSTEM_TIMER_2
 	return timer0_millis;

@@ -13,7 +13,12 @@
 /* Only GCC 4.2 calls the library function to convert an unsigned long
    to float.  Other GCC-es (including 4.3) use a signed long to float
    conversion along with a large inline code to correct the result.	*/
+#ifdef __AVR__
 extern double __floatunsisf(unsigned long);
+#else
+// STM32 port: plain conversion (avr-libc internal helper not available)
+#define __floatunsisf(u) ((float)(u))
+#endif
 
 PROGMEM static const float pwr_p10[6] = {
     1e+1, 1e+2, 1e+4, 1e+8, 1e+16, 1e+32

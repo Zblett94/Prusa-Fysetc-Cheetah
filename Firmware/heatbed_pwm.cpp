@@ -1,5 +1,12 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#ifndef __AVR__
+#include <Arduino.h>
+#include <HardwareTimer.h>
+#include "Configuration_var.h"
+#include "pins.h"
+#include "fastio.h"
+#endif
 
 // All this is about silencing the heat bed, as it behaves like a loudspeaker.
 // Basically, we want the PWM heating switched at 30Hz (or so) which is a well ballanced
@@ -95,7 +102,68 @@ static const uint8_t fastShift = 4;
 /// Due to the nature of bed heating the reduced PID precision may not be a major issue, however doing 8x less ISR(timer0_ovf) may significantly improve the performance
 static const uint8_t slowInc = 1;
 
+#ifdef __AVR__
+#define HB_TCNT(v)          TCNT0 = (v)
+#define HB_OCR(v)           OCR0B = (v)
+#define HB_PRESC_FAST()     TCCR0B = (1 << CS00)     // prescaler 1, i.e. 62.5kHz
+#define HB_PRESC_SLOW()     TCCR0B = (1 << CS01)     // prescaler 8, i.e. 7.8kHz
+#define HB_NONINVERTING()   TCCR0A &= ~(1 << COM0B0) // Clear OC0B on Compare Match, set OC0B at BOTTOM
+#define HB_INVERTING()      TCCR0A |= (1 << COM0B0)  // Set OC0B on Compare Match, clear OC0B at BOTTOM
+
 ISR(TIMER0_OVF_vect)          // timer compare interrupt service routine
+#else //__AVR__
+// STM32 port: TIM1 channel 2 on PC9 ("HB") replaces the AVR Timer0/OC0B.
+// TIM1 counts 0..255 like the 8 bit Timer0, the prescaler gives the same 62.5 kHz
+// and 7.8 kHz PWM frequencies and the update interrupt replaces TIMER0_OVF.
+// AVR fast PWM keeps the output active for OCR0B+1 ticks: CCR2 = OCR0B + 1.
+// The prescaler and CCR2 are preloaded (applied at the next overflow) like on the AVR.
+#define HB_TIM              TIM1
+#define HB_PSC_FAST         (F_CPU / 16000000UL - 1) // 64 MHz / 4 / 256 = 62.5 kHz
+#define HB_PSC_SLOW         (F_CPU / 2000000UL - 1)  // 64 MHz / 32 / 256 = 7.8 kHz
+#define HB_OC2M_PWM1        (TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1)                    // active while CNT < CCR
+#define HB_OC2M_PWM2        (TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1 | TIM_CCMR1_OC2M_0) // inactive while CNT < CCR
+#define HB_TCNT(v)          HB_TIM->CNT = (v)
+#define HB_OCR(v)           HB_TIM->CCR2 = (uint32_t)(v) + 1
+#define HB_PRESC_FAST()     HB_TIM->PSC = HB_PSC_FAST
+#define HB_PRESC_SLOW()     HB_TIM->PSC = HB_PSC_SLOW
+#define HB_NONINVERTING()   HB_TIM->CCMR1 = (HB_TIM->CCMR1 & ~TIM_CCMR1_OC2M) | HB_OC2M_PWM1 | TIM_CCMR1_OC2PE
+#define HB_INVERTING()      HB_TIM->CCMR1 = (HB_TIM->CCMR1 & ~TIM_CCMR1_OC2M) | HB_OC2M_PWM2 | TIM_CCMR1_OC2PE
+
+static void heatbed_pwm_isr();
+
+//! Replacement of the AVR timer0_init(): fast PWM, inverting mode, duty 255 (= bed off)
+void heatbed_pwm_init()
+{
+	static HardwareTimer *timer;
+	if (!timer) timer = new HardwareTimer(HB_TIM);
+	timer->pause();
+	timer->attachInterrupt(heatbed_pwm_isr);
+	timer->setInterruptPriority(HAL_PRIO_SOFTPWM, 0);
+
+	HB_TIM->CR1 = TIM_CR1_ARPE;
+	HB_TIM->ARR = 255;
+	HB_PRESC_SLOW();
+	HB_OCR(255);
+	HB_INVERTING();
+	HB_TIM->CCER = (HB_TIM->CCER & ~(TIM_CCER_CC2P | TIM_CCER_CC2NE)) | TIM_CCER_CC2E;
+	HB_TIM->BDTR |= TIM_BDTR_MOE;
+	HB_TIM->CNT = 0;
+	HB_TIM->EGR = TIM_EGR_UG; // load PSC and CCR2
+	HB_TIM->SR = 0;
+
+	// PC9 -> TIM1_CH2 (AF2)
+	GPIO_TypeDef *port = _FIO_PORT(HEATER_BED_PIN);
+	const uint32_t b = fastio::pin_bit(HEATER_BED_PIN);
+	port->BRR = 1UL << b;
+	port->AFR[b >> 3] = (port->AFR[b >> 3] & ~(0xFUL << ((b & 7) * 4))) | (2UL << ((b & 7) * 4));
+	port->MODER = (port->MODER & ~(3UL << (b * 2))) | (2UL << (b * 2));
+
+	HB_TIM->DIER |= TIM_DIER_UIE;
+	HB_TIM->CR1 |= TIM_CR1_CEN;
+}
+
+static void heatbed_pwm_isr()
+#endif //__AVR__
 {
 	switch(state){
 	case States::ZERO_START:
@@ -120,29 +188,29 @@ ISR(TIMER0_OVF_vect)          // timer compare interrupt service routine
 		// Also beware of the correct sequence of the following timer control registers initialization - it really matters!
 		state = States::RISE;     // prepare for standard RISE cycles
 		fastCounter = fastMax - 1;// we'll do 16-1 cycles of RISE
-		TCNT0 = 255;              // force overflow on the next clock cycle
-		TCCR0B = (1 << CS00);     // change prescaler to 1, i.e. 62.5kHz
-		TCCR0A &= ~(1 << COM0B0); // Clear OC0B on Compare Match, set OC0B at BOTTOM (non-inverting mode)
+		HB_TCNT(255);             // force overflow on the next clock cycle
+		HB_PRESC_FAST();          // change prescaler to 1, i.e. 62.5kHz
+		HB_NONINVERTING();        // Clear OC0B on Compare Match, set OC0B at BOTTOM (non-inverting mode)
 		break;
 	case States::RISE:
-		OCR0B = (fastMax - fastCounter) << fastShift;
+		HB_OCR((fastMax - fastCounter) << fastShift);
 		if( fastCounter ){
 			--fastCounter;
 		} else { // end of RISE cycles, changing into state ONE
 			state = States::RISE_TO_ONE;
-			OCR0B = 255;          // full duty
-			TCNT0 = 254;          // make the timer overflow in the next cycle
+			HB_OCR(255);          // full duty
+			HB_TCNT(254);         // make the timer overflow in the next cycle
 			// @@TODO these constants are still subject to investigation
 		}
 		break;
 	case States::RISE_TO_ONE:
 		state = States::ONE;
-		OCR0B = 255;              // full duty
-		TCNT0 = 255;              // make the timer overflow in the next cycle
-		TCCR0B = (1 << CS01);     // change prescaler to 8, i.e. 7.8kHz
+		HB_OCR(255);              // full duty
+		HB_TCNT(255);             // make the timer overflow in the next cycle
+		HB_PRESC_SLOW();          // change prescaler to 8, i.e. 7.8kHz
 		break;
 	case States::ONE:             // state ONE - we'll either stay in ONE or change to FALL
-		OCR0B = 255;
+		HB_OCR(255);
 		if (bedPWMDisabled) return; // stay in the ON state and do not change the output pin
 		slowCounter += slowInc;   // this does software timer_clk/256 or less
 		if( slowCounter < pwm ){
@@ -155,28 +223,28 @@ ISR(TIMER0_OVF_vect)          // timer compare interrupt service routine
 		// otherwise moving towards FALL
 		state=States::FALL;
 		fastCounter = fastMax - 1;// we'll do 16-1 cycles of RISE
-		TCNT0 = 255;              // force overflow on the next clock cycle
-		TCCR0B = (1 << CS00);     // change prescaler to 1, i.e. 62.5kHz
+		HB_TCNT(255);             // force overflow on the next clock cycle
+		HB_PRESC_FAST();          // change prescaler to 1, i.e. 62.5kHz
 		// must switch to inverting mode already here, because it takes a whole PWM cycle and it would make a "1" at the end of this pwm cycle
 		// COM0B1 remains set both in inverting and non-inverting mode
-		TCCR0A |= (1 << COM0B0);  // inverting mode
+		HB_INVERTING();           // inverting mode
 		break;
 	case States::FALL:
-		OCR0B = (fastMax - fastCounter) << fastShift; // this is the same as in RISE, because now we are setting the zero part of duty due to inverting mode
+		HB_OCR((fastMax - fastCounter) << fastShift); // this is the same as in RISE, because now we are setting the zero part of duty due to inverting mode
 		//TCCR0A |= (1 << COM0B0); // already set in ONE_TO_FALL
 		if( fastCounter ){
 			--fastCounter;
 		} else {   // end of FALL cycles, changing into state ZERO
 			state = States::FALL_TO_ZERO;
-			TCNT0 = 128; //@@TODO again - need to wait long enough to propagate the timer state changes
-			OCR0B = 255;
+			HB_TCNT(128); //@@TODO again - need to wait long enough to propagate the timer state changes
+			HB_OCR(255);
 		}
 		break;
 	case States::FALL_TO_ZERO:
 		state = States::ZERO_START; // go to read new soft_pwm_bed value for the next cycle
-		TCNT0 = 128;
-		OCR0B = 255;
-		TCCR0B = (1 << CS01); // change prescaler to 8, i.e. 7.8kHz
+		HB_TCNT(128);
+		HB_OCR(255);
+		HB_PRESC_SLOW(); // change prescaler to 8, i.e. 7.8kHz
 		break;
     }
 }

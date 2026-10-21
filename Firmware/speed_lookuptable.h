@@ -124,8 +124,22 @@ FORCE_INLINE unsigned short calc_timer(uint16_t step_rate, uint8_t& step_loops) 
     step_loops = 1;
   }
 
-  if(step_rate < (F_CPU/500000)) step_rate = (F_CPU/500000);
-  step_rate -= (F_CPU/500000); // Correct for minimal speed
+  if(step_rate < (TIMING_F_CPU/500000)) step_rate = (TIMING_F_CPU/500000);
+  step_rate -= (TIMING_F_CPU/500000); // Correct for minimal speed
+#ifndef __AVR__
+  // STM32 port: same table lookup, with 32 bit pointers
+  if(step_rate >= (8*256)){ // higher step rate
+    const uint16_t *table_address = &speed_lookuptable_fast[(unsigned char)(step_rate>>8)][0];
+    unsigned char tmp_step_rate = (step_rate & 0x00ff);
+    uint16_t gain = table_address[1];
+    timer = table_address[0] - MUL8x16R8(tmp_step_rate, gain);
+  }
+  else { // lower step rates
+    const uint16_t *table_address = &speed_lookuptable_slow[(step_rate >> 3) & 0xff][0];
+    timer = table_address[0];
+    timer -= (((unsigned short)table_address[1] * (unsigned char)(step_rate & 0x0007))>>3);
+  }
+#else //!__AVR__
   if(step_rate >= (8*256)){ // higher step rate
     unsigned short table_address = (unsigned short)&speed_lookuptable_fast[(unsigned char)(step_rate>>8)][0];
     unsigned char tmp_step_rate = (step_rate & 0x00ff);
@@ -138,6 +152,7 @@ FORCE_INLINE unsigned short calc_timer(uint16_t step_rate, uint8_t& step_loops) 
     timer = (unsigned short)pgm_read_word_near(table_address);
     timer -= (((unsigned short)pgm_read_word_near(table_address+2) * (unsigned char)(step_rate & 0x0007))>>3);
   }
+#endif //!__AVR__
   if(timer < 100) { timer = 100; }//(20kHz this should never happen)////MSG_STEPPER_TOO_HIGH c=0 r=0
   return timer;
 }

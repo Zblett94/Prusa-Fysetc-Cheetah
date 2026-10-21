@@ -7,7 +7,18 @@
 
 
 //ADC configuration
-#if defined(FILAMENT_SENSOR) && (FILAMENT_SENSOR_TYPE == FSENSOR_IR_ANALOG)
+#if MOTHERBOARD == BOARD_SKR_MINI_E3_V3
+// ADC1 channels: 0 = hotend (PA0), 1 = PINDA (PA1), 12 = MCU temperature ("ambient"),
+// 13 = internal reference, 17 = bed (PC4)
+#ifdef PINDA_THERMISTOR
+#define ADC_CHAN_MSK      ((1UL << 0) | (1UL << 1) | (1UL << 12) | (1UL << 13) | (1UL << 17))
+#define ADC_CHAN_CNT      5         //number of used channels)
+#else
+#define ADC_CHAN_MSK      ((1UL << 0) | (1UL << 12) | (1UL << 13) | (1UL << 17))
+#define ADC_CHAN_CNT      4         //number of used channels)
+#endif
+#define ADC_DIDR_MSK      ADC_CHAN_MSK
+#elif defined(FILAMENT_SENSOR) && (FILAMENT_SENSOR_TYPE == FSENSOR_IR_ANALOG)
 #define ADC_CHAN_MSK      0b0000001101011111 //used AD channels bit mask (0,1,2,3,4,6,8,9)
 #define ADC_DIDR_MSK      0b0000001001011111 //AD channels DIDR mask (1 ~ disabled digital input)
 #define ADC_CHAN_CNT      8         //number of used channels)
@@ -57,7 +68,7 @@
 
 // This is set by the cmake build to be able to take control of
 // the language flag, without breaking existing build mechanisms.
-#ifndef CMAKE_CONTROL
+#if !defined(CMAKE_CONTROL) && !defined(LANG_MODE)
 //LANG - Multi-language support
 //#define LANG_MODE              0 // primary language only
 #define LANG_MODE              1 // sec. language support

@@ -66,7 +66,9 @@
 
 constexpr uint8_t row_offsets[] PROGMEM = { 0x00, 0x40, 0x14, 0x54 };
 
+#ifdef __AVR__
 FILE _lcdout; // = {0}; Global variable is always zero initialized, no need to explicitly state that.
+#endif //__AVR__
 
 static uint8_t lcd_displayfunction = 0;
 static uint8_t lcd_displaycontrol = 0;
@@ -206,7 +208,9 @@ void lcd_init(void)
 	lcd_displayfunction |= LCD_2LINE;
 	_delay_us(50000);
 	lcd_begin(1); //first time init
+#ifdef __AVR__
 	fdev_setup_stream(lcdout, lcd_putchar, NULL, _FDEV_SETUP_WRITE); //setup lcdout stream
+#endif //__AVR__
 }
 
 void lcd_refresh(void)
@@ -296,6 +300,20 @@ void lcd_createChar_P(uint8_t location, const CustomCharacter *char_p)
 	//
 	// The bits marked as ** in the unpacked data are don't care and they will contain garbage.
 
+#ifndef __AVR__
+	// STM32 port: C version of the AVR assembly unpacker below
+	{
+		const uint8_t *p = (const uint8_t *)char_p;
+		uint8_t colByte = p[0];
+		for (uint8_t i = 0; i < 4; i++) {
+			const uint8_t d = p[1 + i];
+			charmap[2 * i] = (uint8_t)(((d >> 4) << 1) | (colByte & 1));
+			colByte >>= 1;
+			charmap[2 * i + 1] = (uint8_t)(((d & 0x0F) << 1) | (colByte & 1));
+			colByte >>= 1;
+		}
+	}
+#else //!__AVR__
 	uint8_t temp;
 	uint8_t colByte;
 	__asm__ __volatile__ (
@@ -322,6 +340,7 @@ void lcd_createChar_P(uint8_t location, const CustomCharacter *char_p)
 		: "=&d" (temp), "=&r" (colByte)
 		: "z" (char_p), "e" (charmap)
 	);
+#endif //!__AVR__
 
 	lcd_command(LCD_SETCGRAMADDR | (location << 3));
 	for (uint8_t i = 0; i < 8; i++) {
@@ -330,6 +349,46 @@ void lcd_createChar_P(uint8_t location, const CustomCharacter *char_p)
 	lcd_command(LCD_SETDDRAMADDR | lcd_ddram_address); // no need for masking the address
 }
 
+#ifndef __AVR__
+// STM32 port: newlib has no fdev_setup_stream(); the characters are sent to
+// lcd_putchar() directly, which is what the AVR lcdout stream did.
+
+int lcd_putc(char c)
+{
+	lcd_putchar(c, NULL);
+	return (uint8_t)c;
+}
+
+int lcd_putc_at(uint8_t c, uint8_t r, char ch)
+{
+	lcd_set_cursor(c, r);
+	return lcd_putc(ch);
+}
+
+int lcd_puts_P(const char* str)
+{
+	while (*str)
+		lcd_putchar(*str++, NULL);
+	return 0;
+}
+
+int lcd_puts_at_P(uint8_t c, uint8_t r, const char* str)
+{
+	lcd_set_cursor(c, r);
+	return lcd_puts_P(str);
+}
+
+int lcd_printf_P(const char* format, ...)
+{
+	char buf[128];
+	va_list args;
+	va_start(args, format);
+	int ret = vsnprintf(buf, sizeof(buf), format, args);
+	va_end(args);
+	lcd_puts_P(buf);
+	return ret;
+}
+#else //!__AVR__
 int lcd_putc(char c)
 {
 	return fputc(c, lcdout);
@@ -360,6 +419,7 @@ int lcd_printf_P(const char* format, ...)
 	va_end(args);
 	return ret;
 }
+#endif //!__AVR__
 
 void lcd_space(uint8_t n)
 {

@@ -117,10 +117,16 @@ static_assert (NUM_AXIS == 4, "ConfigurationStore M500_conf not implemented for 
         "Fix axis_steps_per_mm max_feedrate_normal max_acceleration_mm_per_s2_normal max_jerk max_feedrate_silent"
         " max_acceleration_mm_per_s2_silent array size.");
 
+#ifndef __AVR__
+// STM32 port: M500_conf is kept naturally aligned (the Cortex-M0+ can not access
+// unaligned floats), it is 216 bytes instead of 209 and still fits the EEPROM area.
+static_assert (sizeof(M500_conf) == 216, "sizeof(M500_conf) has changed, ensure that EEPROM_VERSION has been incremented.");
+#else //!__AVR__
 static_assert (sizeof(M500_conf) == 209, "sizeof(M500_conf) has changed, ensure that EEPROM_VERSION has been incremented, "
         "or if you added members in the end of struct, ensure that historically uninitialized values will be initialized."
         "If this is caused by change to more then 8bit processor, decide whether make this struct packed to save EEPROM,"
         "leave as it is to keep fast code, or reorder struct members to pack more tightly.");
+#endif //!__AVR__
 
 static const M500_conf default_conf PROGMEM =
 {
