@@ -2247,7 +2247,7 @@ BedSkewOffsetDetectionResultType find_bed_offset_and_skew(int8_t verbosity_level
 		lcd_printf_P(PSTR("%d/4"),(k+1));
 
 		if (iteration > 0) {
-			lcd_printf_P(PSTR(" %S %d/1"),_T(MSG_ITERATION),int(iteration + 1));
+			lcd_printf_P(PSTR(" %s %d/1"),_T(MSG_ITERATION),int(iteration + 1));
 		}
 #endif /* MESH_BED_CALIBRATION_SHOW_LCD */
 		float *pt = pts + k * 2;
@@ -3047,7 +3047,7 @@ void babystep_load()
         check_babystep(); //checking if babystep is in allowed range, otherwise setting babystep to 0
 
         // End of G80: Apply the baby stepping value.
-        babystepLoadZ = eeprom_read_word(reinterpret_cast<uint16_t *>(&(EEPROM_Sheets_base->
+        babystepLoadZ = (int16_t)eeprom_read_word(reinterpret_cast<uint16_t *>(&(EEPROM_Sheets_base->
                     s[(eeprom_read_byte(&(EEPROM_Sheets_base->active_sheet)))].z_offset)));
 
     #if 0

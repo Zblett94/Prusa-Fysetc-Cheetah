@@ -288,7 +288,7 @@ uint16_t lang_print_sec_lang()
 	uint16_t _lt_chsum = pgm_read_word(((uint16_t*)(ptr_lang_table0 + 8)));
 	uint16_t _lt_resv0 = pgm_read_word(((uint16_t*)(ptr_lang_table0 + 10)));
 	uint32_t _lt_resv1 = pgm_read_dword(((uint32_t*)(ptr_lang_table0 + 12)));
-	printf_P(_n(" _lt_magic        = 0x%08lx %S\n"), _lt_magic, (_lt_magic==LANG_MAGIC)?_n("OK"):_n("NA"));
+	printf_P(_n(" _lt_magic        = 0x%08lx %s\n"), _lt_magic, (_lt_magic==LANG_MAGIC)?_n("OK"):_n("NA"));
 	printf_P(_n(" _lt_size         = 0x%04x (%d)\n"), _lt_size, _lt_size);
 	printf_P(_n(" _lt_count        = 0x%04x (%d)\n"), _lt_count, _lt_count);
 	printf_P(_n(" _lt_chsum        = 0x%04x\n"), _lt_chsum);
@@ -298,7 +298,7 @@ uint16_t lang_print_sec_lang()
 	puts_P(_n(" strings:\n"));
 	uint16_t ui = _SEC_LANG_TABLE; //table pointer
 	for (ui = 0; ui < _lt_count; ui++)
-		printf_P(_n("  %3d %S\n"), ui, lang_get_sec_lang_str_by_id(ui));
+		printf_P(_n("  %3d %s\n"), ui, lang_get_sec_lang_str_by_id(ui));
 	return _lt_count;
 }
 #endif //DEBUG_SEC_LANG

@@ -295,7 +295,9 @@ static void uvlo_isr();
 
 void setup_uvlo_interrupt() {
     SET_INPUT(UVLO_PIN);
-    WRITE(UVLO_PIN, LOW); //no internal pull-up
+    // The EINSy input is driven by the PSU. On the SKR the "PWR-DET" input may be
+    // left unconnected: keep it at the "power good" level with the internal pull-up.
+    WRITE(UVLO_PIN, HIGH);
 
     // sensing any logical change (ISC41 = 0, ISC40 = 1)
     hal_exti_attach(UVLO_PIN, CHANGE, uvlo_isr);

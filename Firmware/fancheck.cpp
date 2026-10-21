@@ -171,7 +171,10 @@ static volatile bool tach1_sense_rising; // == ISC70 bit
 static void tach1_isr();
 
 void setup_fan_interrupt() {
-	// the EINSy has external pull-ups on the tach lines, the SKR has none: use the internal ones
+	// the EINSy has external pull-ups on the tach lines, the SKR has none: use the internal ones.
+	// TACH_0 (polled by readFanTach()) is a debug pin (SWCLK) after reset: make it an input too.
+	SET_INPUT(TACH_0);
+	WRITE(TACH_0, HIGH);
 	SET_INPUT(TACH_1);
 	WRITE(TACH_1, HIGH);
 

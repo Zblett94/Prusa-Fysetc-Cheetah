@@ -380,7 +380,7 @@ void lcdui_print_percent_done(void)
         lcd_space(1);    // Blank space
         lcd_print(hostName); // Two characters
     } else {
-        lcd_printf_P(PSTR("%3S"), src);
+        lcd_printf_P(PSTR("%3s"), src);
     }
 
     lcd_printf_P(num ? _N("%3d%%"):_N("---%%"), calc_percent_done());
@@ -604,7 +604,7 @@ void lcdui_print_status_line(void) {
             break;
         case CustomMsg::TempCal: // PINDA temp calibration in progress
             lcd_set_cursor(0, 3);
-            lcd_printf_P(PSTR("%-12.12S%-d/6"), _T(MSG_PINDA_CALIBRATION), custom_message_state);
+            lcd_printf_P(PSTR("%-12.12s%-d/6"), _T(MSG_PINDA_CALIBRATION), custom_message_state);
             break;
         case CustomMsg::TempCompPreheat:              // temp compensation preheat
             lcd_puts_at_P(0, 3, _T(MSG_PINDA_PREHEAT));
@@ -1113,7 +1113,7 @@ void lcd_menu_extruder_info()                     // NOT static due to using ins
 
     lcd_timeoutToStatus.stop(); //infinite timeout
     lcd_home();
-	lcd_printf_P(PSTR("%-15.15S%-5d\n" "%-15.15S%-5d\n"), _T(MSG_HOTEND_FAN_SPEED), 60*fan_speed[0], _T(MSG_PRINT_FAN_SPEED), 60*fan_speed[1] );
+	lcd_printf_P(PSTR("%-15.15s%-5d\n" "%-15.15s%-5d\n"), _T(MSG_HOTEND_FAN_SPEED), 60*fan_speed[0], _T(MSG_PRINT_FAN_SPEED), 60*fan_speed[1] );
     menu_back_if_clicked();
 }
 
@@ -1155,9 +1155,9 @@ static void lcd_menu_fails_stats_mmu_print() {
     lcd_timeoutToStatus.stop(); //infinite timeout
     lcd_home();
     lcd_printf_P(
-        PSTR("%S\n"
-             " %-16.16S%-3d\n"
-             " %-16.16S%-3d"
+        PSTR("%s\n"
+             " %-16.16s%-3d\n"
+             " %-16.16s%-3d"
         ),
         _T(MSG_LAST_PRINT_FAILURES),
         _T(MSG_MMU_FAILS), clamp999( eeprom_read_byte((uint8_t*)EEPROM_MMU_FAIL) ),
@@ -1179,10 +1179,10 @@ static void lcd_menu_fails_stats_mmu_total() {
     lcd_timeoutToStatus.stop(); //infinite timeout
     lcd_home();
     lcd_printf_P(
-        PSTR("%S\n"
-             " %-16.16S%-3d\n"
-             " %-16.16S%-3d\n"
-             " %-16.16S%-3d"
+        PSTR("%s\n"
+             " %-16.16s%-3d\n"
+             " %-16.16s%-3d\n"
+             " %-16.16s%-3d"
         ),
         _T(MSG_TOTAL_FAILURES),
         _T(MSG_MMU_FAILS), clamp999( eeprom_read_word((uint16_t*)EEPROM_MMU_FAIL_TOT) ),
@@ -1221,7 +1221,7 @@ static void lcd_menu_toolchange_stats_mmu_total()
 }
 
 #if defined(TMC2130) && defined(FILAMENT_SENSOR)
-static const char failStatsFmt[] PROGMEM = "%S\n" " %-16.16S%-3d\n" " %-16.16S%-3d\n" " %-7.7SX %-3d  Y %-3d";
+static const char failStatsFmt[] PROGMEM = "%s\n" " %-16.16s%-3d\n" " %-16.16s%-3d\n" " %-7.7sX %-3d  Y %-3d";
 
 //! @brief Show Total Failures Statistics MMU
 //!
@@ -1299,7 +1299,7 @@ static void lcd_menu_fails_stats()
 }
 
 #elif defined(FILAMENT_SENSOR)
-static const char failStatsFmt[] PROGMEM = "%S\n" " %-16.16S%-3d\n" "%S\n" " %-16.16S%-3d\n";
+static const char failStatsFmt[] PROGMEM = "%s\n" " %-16.16s%-3d\n" "%s\n" " %-16.16s%-3d\n";
 //!
 //! @brief Print last print and total filament run outs
 //!
@@ -1451,7 +1451,7 @@ static void lcd_menu_voltages()
 static void lcd_menu_belt_status()
 {
 	lcd_home();
-    lcd_printf_P(PSTR("%S\n" " X %d\n" " Y %d"), _T(MSG_BELT_STATUS), eeprom_read_word((uint16_t*)(EEPROM_BELTSTATUS_X)), eeprom_read_word((uint16_t*)(EEPROM_BELTSTATUS_Y)));
+    lcd_printf_P(PSTR("%s\n" " X %d\n" " Y %d"), _T(MSG_BELT_STATUS), eeprom_read_word((uint16_t*)(EEPROM_BELTSTATUS_X)), eeprom_read_word((uint16_t*)(EEPROM_BELTSTATUS_Y)));
     menu_back_if_clicked();
 }
 #endif //TMC2130
@@ -2356,9 +2356,9 @@ void lcd_menu_statistics()
 
         lcd_home();
 		lcd_printf_P(_N(
-			"%S:\n"
+			"%s:\n"
 			"%18.2fm \n"
-			"%S:\n"
+			"%s:\n"
 			"%10ldh %02dm %02ds"
 		    ),
             _T(MSG_FILAMENT_USED), _met,
@@ -2378,9 +2378,9 @@ void lcd_menu_statistics()
 
 		lcd_home();
 		lcd_printf_P(_N(
-			"%S:\n"
+			"%s:\n"
 			"%18.2fm \n"
-			"%S:\n"
+			"%s:\n"
 			"%10ldd %02dh %02dm"
             ),
             _T(MSG_TOTAL_FILAMENT), _filament_m,
@@ -2485,10 +2485,10 @@ static void lcd_menu_xyz_y_min()
     count_xyz_details(distanceMin);
 	lcd_home();
 	lcd_printf_P(_N(
-	  "%S\n"
-	  "%S\n"
-	  "%S:\n"
-	  "%S:"
+	  "%s\n"
+	  "%s\n"
+	  "%s:\n"
+	  "%s:"
 	 ),
 	 _T(MSG_Y_DIST_FROM_MIN),
 	 STR_SEPARATOR,
@@ -2528,10 +2528,10 @@ static void lcd_menu_xyz_skew()
     float angleDiff = eeprom_read_float((float*)(EEPROM_XYZ_CAL_SKEW));
 	lcd_home();
 	lcd_printf_P(_N(
-	  "%-14.14S:\n"
-	  "%S\n"
-	  "%-14.14S:%3.2f" LCD_STR_DEGREE "\n"
-	  "%-14.14S:%3.2f" LCD_STR_DEGREE
+	  "%-14.14s:\n"
+	  "%s\n"
+	  "%-14.14s:%3.2f" LCD_STR_DEGREE "\n"
+	  "%-14.14s:%3.2f" LCD_STR_DEGREE
 	 ),
 	 _T(MSG_MEASURED_SKEW),
 	 STR_SEPARATOR,
@@ -5402,7 +5402,7 @@ static void lcd_colorprint_change() {
 #ifdef LA_LIVE_K
 // @wavexx: looks like there's no generic float editing function in menu.cpp so we
 //          redefine our custom handling functions to mimick other tunables
-const char menu_fmt_float13off[] PROGMEM = "%c%-13.13S%6.6S";
+const char menu_fmt_float13off[] PROGMEM = "%c%-13.13s%6.6s";
 
 static void lcd_advance_draw_K(char chr, float val)
 {
@@ -5957,7 +5957,7 @@ void lcd_belttest()
 #if defined(FILAMENT_SENSOR) && (FILAMENT_SENSOR_TYPE == FSENSOR_IR_ANALOG)
 // called also from marlin_main.cpp
 void printf_IRSensorAnalogBoardChange(){
-    printf_P(PSTR("Filament sensor board change detected: revision%S\n"), fsensor.getIRVersionText());
+    printf_P(PSTR("Filament sensor board change detected: revision%s\n"), fsensor.getIRVersionText());
 }
 
 static bool lcd_selftest_IRsensor(bool bStandalone)

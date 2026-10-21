@@ -77,7 +77,7 @@ static void ReportErrorHookStaticRender(uint8_t ei) {
     lcd_clear();
 
     // Print title and header
-    lcd_printf_P(PSTR("%.20S\nprusa.io/04%hu"), _T(PrusaErrorTitle(ei)), PrusaErrorCode(ei) );
+    lcd_printf_P(PSTR("%.20s\nprusa.io/04%hu"), _T(PrusaErrorTitle(ei)), PrusaErrorCode(ei) );
 
     ReportErrorHookSensorLineRender();
 

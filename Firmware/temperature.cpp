@@ -2441,8 +2441,8 @@ void thermal_model_report_settings()
     SERIAL_ECHO_START;
     SERIAL_ECHOLNPGM("Thermal Model settings:");
     for(uint8_t i = 0; i != THERMAL_MODEL_R_SIZE; ++i)
-        printf_P(PSTR("%S  M310 I%u R%.2f\n"), echomagic, (unsigned)i, (double)thermal_model::data.R[i]);
-    printf_P(PSTR("%S  M310 P%.2f U%.4f V%.2f C%.2f D%.4f L%u S%u B%u E%.2f W%.2f T%.2f\n"),
+        printf_P(PSTR("%s  M310 I%u R%.2f\n"), echomagic, (unsigned)i, (double)thermal_model::data.R[i]);
+    printf_P(PSTR("%s  M310 P%.2f U%.4f V%.2f C%.2f D%.4f L%u S%u B%u E%.2f W%.2f T%.2f\n"),
         echomagic, (double)thermal_model::data.P, (double)thermal_model::data.U, (double)thermal_model::data.V,
         (double)thermal_model::data.C, (double)thermal_model::data.fS, (unsigned)thermal_model::data.L,
         (unsigned)thermal_model::enabled, (unsigned)thermal_model::warn_beep,
@@ -2697,7 +2697,7 @@ static bool autotune(int16_t cal_temp)
             wait(10000);
         }
 
-        sprintf_P(tm_message, PSTR("TM: %S C est."), verb);
+        sprintf_P(tm_message, PSTR("TM: %s C est."), verb);
         lcd_setstatus_serial(tm_message);
         target_temperature[0] = cal_temp;
         samples = record();
@@ -2719,7 +2719,7 @@ static bool autotune(int16_t cal_temp)
         if(i) break; // we don't need to refine R
         wait(30000); // settle PID regulation
 
-        sprintf_P(tm_message, PSTR("TM: %S R %dC"), verb, cal_temp);
+        sprintf_P(tm_message, PSTR("TM: %s R %dC"), verb, cal_temp);
         lcd_setstatus_serial(tm_message);
         samples = record();
         if(temp_error_state.v || !samples)

@@ -5,6 +5,9 @@
 
 #include <avr/pgmspace.h>
 #include <ctype.h>
+#ifndef __AVR__
+#include <strings.h> // strncasecmp
+#endif
 #include <errno.h>
 #include <limits.h>
 #include <math.h>		/* INFINITY, NAN		*/

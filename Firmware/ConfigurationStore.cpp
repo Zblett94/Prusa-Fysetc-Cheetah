@@ -20,15 +20,15 @@ void Config_PrintSettings(uint8_t level)
 {  // Always have this function, even with EEPROM_SETTINGS disabled, the current values will be shown
 #ifdef TMC2130
   printf_P(PSTR(
-    "%SSteps per unit:\n%S  M92 X%.2f Y%.2f Z%.2f E%.2f\n"
-        "%SUStep resolution: \n%S M350 X%d Y%d Z%d E%d\n"
-		"%SMaximum feedrates - normal (mm/s):\n%S  M203 X%.2f Y%.2f Z%.2f E%.2f\n"
-		"%SMaximum feedrates - stealth (mm/s):\n%S  M203 X%.2f Y%.2f Z%.2f E%.2f\n"
-		"%SMaximum acceleration - normal (mm/s2):\n%S  M201 X%lu Y%lu Z%lu E%lu\n"
-		"%SMaximum acceleration - stealth (mm/s2):\n%S  M201 X%lu Y%lu Z%lu E%lu\n"
-		"%SAcceleration: P=print, R=retract, T=travel\n%S  M204 P%.2f R%.2f T%.2f\n"
-		"%SAdvanced variables: S=Min feedrate (mm/s), T=Min travel feedrate (mm/s), B=minimum segment time (us), X=maximum XY jerk (mm/s),  Z=maximum Z jerk (mm/s),  E=maximum E jerk (mm/s)\n%S  M205 S%.2f T%.2f B%lu X%.2f Y%.2f Z%.2f E%.2f\n"
-		"%SHome offset (mm):\n%S  M206 X%.2f Y%.2f Z%.2f\n"
+    "%sSteps per unit:\n%s  M92 X%.2f Y%.2f Z%.2f E%.2f\n"
+        "%sUStep resolution: \n%s M350 X%d Y%d Z%d E%d\n"
+		"%sMaximum feedrates - normal (mm/s):\n%s  M203 X%.2f Y%.2f Z%.2f E%.2f\n"
+		"%sMaximum feedrates - stealth (mm/s):\n%s  M203 X%.2f Y%.2f Z%.2f E%.2f\n"
+		"%sMaximum acceleration - normal (mm/s2):\n%s  M201 X%lu Y%lu Z%lu E%lu\n"
+		"%sMaximum acceleration - stealth (mm/s2):\n%s  M201 X%lu Y%lu Z%lu E%lu\n"
+		"%sAcceleration: P=print, R=retract, T=travel\n%s  M204 P%.2f R%.2f T%.2f\n"
+		"%sAdvanced variables: S=Min feedrate (mm/s), T=Min travel feedrate (mm/s), B=minimum segment time (us), X=maximum XY jerk (mm/s),  Z=maximum Z jerk (mm/s),  E=maximum E jerk (mm/s)\n%s  M205 S%.2f T%.2f B%lu X%.2f Y%.2f Z%.2f E%.2f\n"
+		"%sHome offset (mm):\n%s  M206 X%.2f Y%.2f Z%.2f\n"
 		),
 		echomagic, echomagic, cs.axis_steps_per_mm[X_AXIS], cs.axis_steps_per_mm[Y_AXIS], cs.axis_steps_per_mm[Z_AXIS], cs.axis_steps_per_mm[E_AXIS],
 		echomagic, echomagic, cs.axis_ustep_resolution[X_AXIS], cs.axis_ustep_resolution[Y_AXIS], cs.axis_ustep_resolution[Z_AXIS], cs.axis_ustep_resolution[E_AXIS],
@@ -41,12 +41,12 @@ void Config_PrintSettings(uint8_t level)
 		echomagic, echomagic, cs.add_homing[X_AXIS], cs.add_homing[Y_AXIS], cs.add_homing[Z_AXIS]
 #else //TMC2130
 	printf_P(PSTR(
-		"%SSteps per unit:\n%S  M92 X%.2f Y%.2f Z%.2f E%.2f\n"
-		"%SMaximum feedrates (mm/s):\n%S  M203 X%.2f Y%.2f Z%.2f E%.2f\n"
-		"%SMaximum acceleration (mm/s2):\n%S  M201 X%lu Y%lu Z%lu E%lu\n"
-		"%SAcceleration: P=print, R=retract, T=travel\n%S  M204 P%.2f R%.2f T%.2f\n"
-		"%SAdvanced variables: S=Min feedrate (mm/s), T=Min travel feedrate (mm/s), B=minimum segment time (us), X=maximum XY jerk (mm/s),  Z=maximum Z jerk (mm/s),  E=maximum E jerk (mm/s)\n%S  M205 S%.2f T%.2f B%lu X%.2f Y%.2f Z%.2f E%.2f\n"
-		"%SHome offset (mm):\n%S  M206 X%.2f Y%.2f Z%.2f\n"
+		"%sSteps per unit:\n%s  M92 X%.2f Y%.2f Z%.2f E%.2f\n"
+		"%sMaximum feedrates (mm/s):\n%s  M203 X%.2f Y%.2f Z%.2f E%.2f\n"
+		"%sMaximum acceleration (mm/s2):\n%s  M201 X%lu Y%lu Z%lu E%lu\n"
+		"%sAcceleration: P=print, R=retract, T=travel\n%s  M204 P%.2f R%.2f T%.2f\n"
+		"%sAdvanced variables: S=Min feedrate (mm/s), T=Min travel feedrate (mm/s), B=minimum segment time (us), X=maximum XY jerk (mm/s),  Z=maximum Z jerk (mm/s),  E=maximum E jerk (mm/s)\n%s  M205 S%.2f T%.2f B%lu X%.2f Y%.2f Z%.2f E%.2f\n"
+		"%sHome offset (mm):\n%s  M206 X%.2f Y%.2f Z%.2f\n"
 		),
 		echomagic, echomagic, cs.axis_steps_per_mm[X_AXIS], cs.axis_steps_per_mm[Y_AXIS], cs.axis_steps_per_mm[Z_AXIS], cs.axis_steps_per_mm[E_AXIS],
 		echomagic, echomagic, max_feedrate[X_AXIS], max_feedrate[Y_AXIS], max_feedrate[Z_AXIS], max_feedrate[E_AXIS],
@@ -57,51 +57,51 @@ void Config_PrintSettings(uint8_t level)
 #endif //TMC2130
   );
 #ifdef PIDTEMP
-  printf_P(PSTR("%SPID settings:\n%S   M301 P%.2f I%.2f D%.2f\n"),
+  printf_P(PSTR("%sPID settings:\n%s   M301 P%.2f I%.2f D%.2f\n"),
     echomagic, echomagic, cs.Kp, unscalePID_i(cs.Ki), unscalePID_d(cs.Kd));
 #endif
 #ifdef PIDTEMPBED
-  printf_P(PSTR("%SPID heatbed settings:\n%S   M304 P%.2f I%.2f D%.2f\n"),
+  printf_P(PSTR("%sPID heatbed settings:\n%s   M304 P%.2f I%.2f D%.2f\n"),
     echomagic, echomagic, cs.bedKp, unscalePID_i(cs.bedKi), unscalePID_d(cs.bedKd));
 #endif
 #ifdef FWRETRACT
   printf_P(PSTR(
-    "%SRetract: S=Length (mm) F:Speed (mm/m) Z: ZLift (mm)\n%S   M207 S%.2f F%.2f Z%.2f\n"
-    "%SRecover: S=Extra length (mm) F:Speed (mm/m)\n%S   M208 S%.2f F%.2f\n"
-    "%SAuto-Retract: S=0 to disable, 1 to interpret extrude-only moves as retracts or recoveries\n%S   M209 S%d\n"
+    "%sRetract: S=Length (mm) F:Speed (mm/m) Z: ZLift (mm)\n%s   M207 S%.2f F%.2f Z%.2f\n"
+    "%sRecover: S=Extra length (mm) F:Speed (mm/m)\n%s   M208 S%.2f F%.2f\n"
+    "%sAuto-Retract: S=0 to disable, 1 to interpret extrude-only moves as retracts or recoveries\n%s   M209 S%d\n"
     ),
     echomagic, echomagic, cs.retract_length, cs.retract_feedrate*60, cs.retract_zlift,
     echomagic, echomagic, cs.retract_recover_length, cs.retract_recover_feedrate*60,
     echomagic, echomagic, (cs.autoretract_enabled ? 1 : 0)
   );
 #if EXTRUDERS > 1
-  printf_P(PSTR("%SMulti-extruder settings:\n%S   Swap retract length (mm):    %.2f\n%S   Swap rec. addl. length (mm): %.2f\n"),
+  printf_P(PSTR("%sMulti-extruder settings:\n%s   Swap retract length (mm):    %.2f\n%s   Swap rec. addl. length (mm): %.2f\n"),
     echomagic, echomagic, retract_length_swap, echomagic, retract_recover_length_swap);
 #endif
   if (cs.volumetric_enabled) {
-    printf_P(PSTR("%SFilament settings:\n%S   M200 D%.2f\n"),
+    printf_P(PSTR("%sFilament settings:\n%s   M200 D%.2f\n"),
       echomagic, echomagic, cs.filament_size[0]);
 #if EXTRUDERS > 1
-    printf_P(PSTR("%S   M200 T1 D%.2f\n"),
+    printf_P(PSTR("%s   M200 T1 D%.2f\n"),
       echomagic, echomagic, cs.filament_size[1]);
 #if EXTRUDERS > 2
-    printf_P(PSTR("%S   M200 T1 D%.2f\n"),
+    printf_P(PSTR("%s   M200 T1 D%.2f\n"),
       echomagic, echomagic, cs.filament_size[2]);
 #endif
 #endif
     } else {
-        printf_P(PSTR("%SFilament settings: Disabled\n"), echomagic);
+        printf_P(PSTR("%sFilament settings: Disabled\n"), echomagic);
     }
 #endif
   if (level >= 10) {
 #ifdef LIN_ADVANCE
-    printf_P(PSTR("%SLinear advance settings:%S   M900 K%.2f\n"),
+    printf_P(PSTR("%sLinear advance settings:%s   M900 K%.2f\n"),
                  echomagic, echomagic, extruder_advance_K);
 #endif //LIN_ADVANCE
   }
     // Arc Interpolation Settings
     printf_P(PSTR(
-        "%SArc Settings: P:Max length(mm) S:Min length (mm) N:Corrections R:Min segments F:Segments/sec.\n%S  M214 P%.2f S%.2f N%d R%d F%d\n"),
+        "%sArc Settings: P:Max length(mm) S:Min length (mm) N:Corrections R:Min segments F:Segments/sec.\n%s  M214 P%.2f S%.2f N%d R%d F%d\n"),
         echomagic, echomagic, cs.mm_per_arc_segment, cs.min_mm_per_arc_segment, cs.n_arc_correction, cs.min_arc_segments, cs.arc_segments_per_sec);
 #ifdef THERMAL_MODEL
     thermal_model_report_settings();

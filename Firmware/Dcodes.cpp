@@ -120,7 +120,7 @@ void print_mem(daddr_t address, daddr_t count, dcode_mem_t type, uint8_t countpe
 }
 
 // TODO: this only handles SRAM/EEPROM 16bit addresses
-void write_mem(uint16_t address, uint16_t count, const uint8_t* data, const dcode_mem_t type)
+void write_mem(daddr_t address, uint16_t count, const uint8_t* data, const dcode_mem_t type)
 {
     for (uint16_t i = 0; i < count; i++)
     {
@@ -139,7 +139,7 @@ void dcode_core(daddr_t addr_start, const daddr_t addr_end, const dcode_mem_t ty
                 uint8_t dcode, const char* type_desc)
 {
     KEEPALIVE_STATE(NOT_BUSY);
-    DBG(_N("D%d - Read/Write %S\n"), dcode, type_desc);
+    DBG(_N("D%d - Read/Write %s\n"), dcode, type_desc);
     daddr_t count = -1; // RW the entire space by default
     if (code_seen('A'))
         addr_start = (strchr_pointer[1] == 'x')?strtol(strchr_pointer + 2, 0, 16):(int)code_value();
@@ -155,9 +155,9 @@ void dcode_core(daddr_t addr_start, const daddr_t addr_end, const dcode_mem_t ty
         count = parse_hex(strchr_pointer + 1, data, 16);
         write_mem(addr_start, count, data, type);
 #if DADDR_SIZE > 16
-        DBG(_N("%lu bytes written to %S at address 0x%04lx\n"), count, type_desc, addr_start);
+        DBG(_N("%lu bytes written to %s at address 0x%04lx\n"), count, type_desc, addr_start);
 #else
-        DBG(_N("%u bytes written to %S at address 0x%08x\n"), count, type_desc, addr_start);
+        DBG(_N("%u bytes written to %s at address 0x%08x\n"), count, type_desc, addr_start);
 #endif
     }
     print_mem(addr_start, count, type);
@@ -573,7 +573,7 @@ void dcode_9()
 	if ((strchr_pointer[1+1] == '?') || (strchr_pointer[1+1] == 0))
 	{
 		for (uint8_t i = 0; i < ADC_CHAN_CNT; i++)
-			printf_P(PSTR("\tADC%d=%4d\t(%S)\n"), i, dcode_9_ADC_val(i) >> 4, dcode_9_ADC_name(i));
+			printf_P(PSTR("\tADC%d=%4d\t(%s)\n"), i, dcode_9_ADC_val(i) >> 4, dcode_9_ADC_name(i));
 	}
 #if 0
 	else

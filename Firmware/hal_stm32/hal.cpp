@@ -4,9 +4,10 @@
 #include <Arduino.h>
 #include <HardwareTimer.h>
 #include "hal.h"
-#include "../Configuration_var.h"
+#include "../Configuration.h"
 #include "../pins.h"
 #include "include/avr/wdt.h"
+#include "include/avr/eeprom.h"
 
 namespace fastio {
 void init() {
@@ -40,6 +41,29 @@ static void read_reset_cause() {
 void hal_init(void) {
 	fastio::init();
 	read_reset_cause();
+}
+
+extern "C" bool hal_eeprom_init(void);
+extern "C" void hal_eeprom_erase(void);
+
+//! Runs right after the STM32 core init() (constructor 101) and before the static
+//! constructors and setup() of the firmware, which already read the EEPROM.
+__attribute__((constructor(102))) static void hal_early_init(void) {
+	hal_init();
+	if (hal_eeprom_init()) {
+		// The AT24C32 may hold the settings of another firmware (e.g. Marlin).
+		// Start from the state of a virgin ATmega2560 (all 0xFF) in that case,
+		// exactly like a new EINSy board.
+		static const char magic[] = FW_PRUSA3D_MAGIC;
+		bool prusa = true, empty = true;
+		for (uint8_t i = 0; i < sizeof(magic); i++) {
+			const uint8_t b = eeprom_read_byte((const uint8_t *)(uintptr_t)i);
+			if (b != (uint8_t)magic[i]) prusa = false;
+			if (b != 0xFF) empty = false;
+		}
+		if (!prusa && !empty)
+			hal_eeprom_erase();
+	}
 }
 
 void hal_reset(void) {

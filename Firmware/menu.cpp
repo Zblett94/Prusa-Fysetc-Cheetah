@@ -192,7 +192,7 @@ static void menu_draw_toggle_puts_P(const char* str, const char* toggle, const u
 //! @param[out] buffer for formatted output
 void menu_format_sheet_E(const Sheet &sheet_E, SheetFormatBuffer &buffer)
 {
-    uint_least8_t index = sprintf_P(buffer.c, PSTR("%.10S "), _T(MSG_SHEET));
+    uint_least8_t index = sprintf_P(buffer.c, PSTR("%.10s "), _T(MSG_SHEET));
     eeprom_read_block(&(buffer.c[index]), sheet_E.name, 7);
     //index += 7;
     buffer.c[index + 7] = '\0';
@@ -204,7 +204,7 @@ void menu_format_sheet_E(const Sheet &sheet_E, SheetFormatBuffer &buffer)
 //! @param[out] buffer for formatted output
 void menu_format_sheet_select_E(const Sheet &sheet_E, SheetFormatBuffer &buffer)
 {
-    uint_least8_t index = sprintf_P(buffer.c,PSTR("%-9.9S["), _T(MSG_SHEET));
+    uint_least8_t index = sprintf_P(buffer.c,PSTR("%-9.9s["), _T(MSG_SHEET));
     eeprom_read_block(&(buffer.c[index]), sheet_E.name, sizeof(sheet_E.name)/sizeof(sheet_E.name[0]));
     for (const uint_least8_t start = index; static_cast<uint_least8_t>(index - start) < sizeof(sheet_E.name)/sizeof(sheet_E.name[0]); ++index)
     {
@@ -410,8 +410,8 @@ void menu_item_gcode_P(const char* str, const char* str_gcode)
 	menu_item++;
 }
 
-const char menu_fmt_float31[] PROGMEM = "%-12.12S%+8.1f";
-const char menu_fmt_float13[] PROGMEM = "%c%-13.13S%+5.3f";
+const char menu_fmt_float31[] PROGMEM = "%-12.12s%+8.1f";
+const char menu_fmt_float13[] PROGMEM = "%c%-13.13s%+5.3f";
 
 /// @brief Draw the label and value for a menu edit item
 /// @param chr 1 byte character

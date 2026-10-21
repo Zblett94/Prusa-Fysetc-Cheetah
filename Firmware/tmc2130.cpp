@@ -404,7 +404,7 @@ static void tmc2130_XYZ_reg_init(uint8_t axis)
 
 void tmc2130_init(TMCInitParams params)
 {
-//	DBG(_n("tmc2130_init(), mode=%S\n"), tmc2130_mode?_n("STEALTH"):_n("NORMAL"));
+//	DBG(_n("tmc2130_init(), mode=%s\n"), tmc2130_mode?_n("STEALTH"):_n("NORMAL"));
 #ifdef TMC2209
 	tmc2209_uart_init();
 	// DIAG outputs are push-pull, active high: no pull-ups

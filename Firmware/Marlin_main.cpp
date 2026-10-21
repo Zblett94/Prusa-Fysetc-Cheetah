@@ -814,7 +814,7 @@ int uart_putchar(char c, FILE *)
 void lcd_splash()
 {
 	lcd_clear(); // clears display and homes screen
-	lcd_printf_P(PSTR("\n Original Prusa i3\n   Prusa Research\n%20.20S"), PSTR(FW_VERSION));
+	lcd_printf_P(PSTR("\n Original Prusa i3\n   Prusa Research\n%20.20s"), PSTR(FW_VERSION));
 }
 
 
@@ -944,7 +944,7 @@ uint8_t lang_xflash_enum_codes(uint16_t* codes)
 			break;
 		}
 		puts_P(_n("OK"));
-		printf_P(_n(" _lt_magic        = 0x%08lx %S\n"), header.magic, (header.magic==LANG_MAGIC)?_n("OK"):_n("NA"));
+		printf_P(_n(" _lt_magic        = 0x%08lx %s\n"), header.magic, (header.magic==LANG_MAGIC)?_n("OK"):_n("NA"));
 		printf_P(_n(" _lt_size         = 0x%04x (%d)\n"), header.size, header.size);
 		printf_P(_n(" _lt_count        = 0x%04x (%d)\n"), header.count, header.count);
 		printf_P(_n(" _lt_chsum        = 0x%04x\n"), header.checksum);
@@ -1152,7 +1152,7 @@ void setup()
 		printf_P(
 		 _n(
 		  " _src_addr = 0x%08lx\n"
-		  " _lt_magic = 0x%08lx %S\n"
+		  " _lt_magic = 0x%08lx %s\n"
 		  " _lt_size  = 0x%04x (%d)\n"
 		  " _lt_count = 0x%04x (%d)\n"
 		  " _lt_chsum = 0x%04x\n"
@@ -2854,7 +2854,7 @@ static void gcode_G80()
                 // Verify value is within allowed range
                 int16_t temp = code_value_short();
                 if (abs(temp) > BED_ADJUSTMENT_UM_MAX) {
-                    printf_P(PSTR("%SExcessive bed leveling correction: %i microns\n"), errormagic, temp);
+                    printf_P(PSTR("%sExcessive bed leveling correction: %i microns\n"), errormagic, temp);
                 } else {
                     return (int8_t)temp; // Value is valid, use it
                 }
@@ -3599,7 +3599,7 @@ static void gcode_M861_print_pinda_cal_eeprom() {
 #ifdef EXTENDED_CAPABILITIES_REPORT
 
 static void cap_line(const char* name, bool ena = false) {
-    printf_P(PSTR("Cap:%S:%c\n"), name, (char)ena + '0');
+    printf_P(PSTR("Cap:%s:%c\n"), name, (char)ena + '0');
 }
 
 static void extended_capabilities_report()
@@ -4271,7 +4271,7 @@ void process_commands()
 
             find_bed_induction_sensor_point_z(-10.f, 3);
 
-			printf_P(_N("%S X: %.5f Y: %.5f Z: %.5f\n"), _T(MSG_BED), _x, _y, _z);
+			printf_P(_N("%s X: %.5f Y: %.5f Z: %.5f\n"), _T(MSG_BED), _x, _y, _z);
 
             clean_up_after_endstop_move(l_feedmultiply);
             homing_flag = false;
@@ -5227,7 +5227,7 @@ void process_commands()
             print_time_to_change_silent = ( print_time_to_change_silent_f <= 0 ) ? PRINT_TIME_REMAINING_INIT : print_time_to_change_silent_f;
         }
         {
-            const char* _msg_mode_done_remain = _N("%S MODE: Percent done: %hhd; print time remaining in mins: %d; Change in mins: %d\n");
+            const char* _msg_mode_done_remain = _N("%s MODE: Percent done: %hhd; print time remaining in mins: %d; Change in mins: %d\n");
             printf_P(_msg_mode_done_remain, _N("NORMAL"), int8_t(print_percent_done_normal), print_time_remaining_normal, print_time_to_change_normal);
             printf_P(_msg_mode_done_remain, _N("SILENT"), int8_t(print_percent_done_silent), print_time_remaining_silent, print_time_to_change_silent);
         }
@@ -7690,7 +7690,7 @@ void process_commands()
     }
     else if (code_seen('Q'))
     {
-        printf_P(PSTR("%S: %S\n"), _O(MSG_MODE),
+        printf_P(PSTR("%s: %s\n"), _O(MSG_MODE),
             tmc2130_mode == TMC2130_MODE_NORMAL ?
             _O(MSG_NORMAL) : _O(MSG_SILENT)
         );
@@ -8590,7 +8590,7 @@ void FlushSerialRequestResend()
 {
   //char cmdbuffer[bufindr][100]="Resend:";
   MYSERIAL.flush();
-  printf_P(_N("%S: %ld\n%S\n"), _n("Resend"), gcode_LastN + 1, MSG_OK);
+  printf_P(_N("%s: %ld\n%s\n"), _n("Resend"), gcode_LastN + 1, MSG_OK);
 }
 
 // Confirm the execution of a command, if sent from a serial line.
@@ -9304,7 +9304,7 @@ static void wait_for_heater(long codenum, uint8_t extruder) {
 
 void check_babystep()
 {
-	int babystep_z = eeprom_read_word(reinterpret_cast<uint16_t *>(&(EEPROM_Sheets_base->
+	int babystep_z = (int16_t)eeprom_read_word(reinterpret_cast<uint16_t *>(&(EEPROM_Sheets_base->
             s[(eeprom_read_byte(&(EEPROM_Sheets_base->active_sheet)))].z_offset)));
 
 	if ((babystep_z < Z_BABYSTEP_MIN) || (babystep_z > Z_BABYSTEP_MAX)) {
@@ -9779,7 +9779,7 @@ static void temp_compensation_apply() {
 	if (calibration_status_pinda()) {
 		if (target_temperature_bed % 10 == 0 && target_temperature_bed >= 60 && target_temperature_bed <= 100) {
 			i_add = (target_temperature_bed - 60) / 10;
-			z_shift = eeprom_read_word((uint16_t*)EEPROM_PROBE_TEMP_SHIFT + i_add);
+			z_shift = (int16_t)eeprom_read_word((uint16_t*)EEPROM_PROBE_TEMP_SHIFT + i_add);
 			z_shift_mm = z_shift / cs.axis_steps_per_mm[Z_AXIS];
 		}else {
 			//interpolation
@@ -9811,7 +9811,7 @@ float temp_comp_interpolation(float inp_temperature) {
 	for (i = 0; i < n; i++) {
 		if (i > 0) {
 			//read shift in steps from EEPROM
-			shift[i] = eeprom_read_word((uint16_t*)EEPROM_PROBE_TEMP_SHIFT + (i - 1));
+			shift[i] = (int16_t)eeprom_read_word((uint16_t*)EEPROM_PROBE_TEMP_SHIFT + (i - 1));
 		}
 		temp_C[i] = 50 + i * 10; //temperature in C
 #ifdef PINDA_THERMISTOR
