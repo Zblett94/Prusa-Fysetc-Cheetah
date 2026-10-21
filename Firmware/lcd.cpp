@@ -117,8 +117,15 @@ static void lcd_writebits(uint8_t value)
 	lcd_pulseEnable();
 }
 
+#ifdef EMULATION
+void emulation_lcd_send(uint8_t data, uint8_t flags);
+#endif
+
 static void lcd_send(uint8_t data, uint8_t flags, uint16_t duration = LCD_DEFAULT_DELAY)
 {
+#ifdef EMULATION
+	emulation_lcd_send(data, flags);
+#endif
 	WRITE(LCD_PINS_RS,flags&LCD_RS_FLAG);
 	_delay_us(5);
 	lcd_writebits(data);

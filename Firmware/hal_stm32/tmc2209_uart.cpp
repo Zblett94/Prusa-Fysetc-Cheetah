@@ -100,6 +100,10 @@ static bool tx_datagram(const uint8_t *d, uint8_t len)
 
 bool tmc2209_uart_write(uint8_t slave, uint8_t reg, uint32_t val)
 {
+#ifdef EMULATION
+	(void)slave; (void)reg; (void)val;
+	return true; // no TMC2209 model in the emulator
+#endif
 	tmc2209_uart_init();
 	uint8_t d[8] = {
 		TMC_SYNC, slave, (uint8_t)(reg | 0x80),
@@ -116,6 +120,11 @@ bool tmc2209_uart_write(uint8_t slave, uint8_t reg, uint32_t val)
 
 bool tmc2209_uart_read(uint8_t slave, uint8_t reg, uint32_t *val)
 {
+#ifdef EMULATION
+	(void)slave;
+	*val = (reg == 0x6F) ? 0x80000000UL : 0; // DRV_STATUS: standstill
+	return true;
+#endif
 	tmc2209_uart_init();
 	uint8_t req[4] = { TMC_SYNC, slave, (uint8_t)(reg & 0x7F), 0 };
 	req[3] = tmc_crc(req, 3);

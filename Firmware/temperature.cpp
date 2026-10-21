@@ -1904,6 +1904,56 @@ static void ambient_raw_from_mcu_sensor()
 }
 #endif
 
+#ifdef EMULATION
+// Renode test build: first order thermal simulation of the hotend, heatbed and
+// P.I.N.D.A., driven by the heater/fan PWM. Produces ADC samples (10 bit).
+static float emu_t_hotend = 25.f, emu_t_bed = 25.f, emu_t_pinda = 25.f;
+static uint32_t emu_last_ms;
+
+static uint16_t emu_raw_for(float t, bool bed)
+{
+    // bisection over the thermistor table (raw decreases with the temperature)
+    int lo = 0, hi = 1023 * OVERSAMPLENR;
+    while (hi - lo > 1) {
+        const int mid = (lo + hi) / 2;
+        const float tm = bed ? analog2tempBed(mid) : analog2temp(mid, 0);
+        if (tm > t) lo = mid; else hi = mid;
+    }
+    return hi / OVERSAMPLENR;
+}
+
+uint16_t emulation_adc_sample(uint8_t ch)
+{
+    if (ch == TEMP_0_PIN) {
+        const uint32_t now = millis();
+        const float dt = emu_last_ms ? (now - emu_last_ms) / 1000.f : 0.f;
+        emu_last_ms = now;
+        const float ta = 25.f;
+        // hotend: 38 W, C = 12.1 J/K, R = 20.5 K/W (fan off) .. 12 K/W (fan on)
+        const float r = 20.5f - 8.5f * soft_pwm_fan / ((1 << FAN_SOFT_PWM_BITS) - 1.f);
+        emu_t_hotend += dt * (38.f * soft_pwm[0] / 127.f - (emu_t_hotend - ta) / r) / 12.1f;
+        // heatbed: 200 W, C = 700 J/K, R = 0.6 K/W
+        emu_t_bed += dt * (200.f * soft_pwm_bed / 127.f - (emu_t_bed - ta) / 0.6f) / 700.f;
+        emu_t_pinda += dt * (0.8f * emu_t_bed + 0.2f * ta - emu_t_pinda) / 60.f;
+        return emu_raw_for(emu_t_hotend, false);
+    }
+    if (ch == TEMP_BED_PIN) return emu_raw_for(emu_t_bed, true);
+#ifdef PINDA_THERMISTOR
+    if (ch == TEMP_PINDA_PIN) return emu_raw_for(emu_t_pinda, true);
+#endif
+#ifdef AMBIENT_THERMISTOR
+    // STM32 at 35 C, VDDA = 3.3 V, factory calibration values from the system memory
+    const float vref12 = (float)(*VREFINT_CAL_ADDR) * 3000.f / 3300.f;
+    if (ch == VREFINT_ADC_CHANNEL) return (uint16_t)(vref12 + 0.5f) >> 2;
+    if (ch == TEMP_AMBIENT_PIN) {
+        const float ts30 = (float)(*TEMPSENSOR_CAL1_ADDR) + (35.f - 30.f) * ((float)(*TEMPSENSOR_CAL2_ADDR) - (float)(*TEMPSENSOR_CAL1_ADDR)) / 100.f;
+        return (uint16_t)(ts30 * 3000.f / 3300.f + 0.5f) >> 2;
+    }
+#endif
+    return 0;
+}
+#endif //EMULATION
+
 // ISR callback from adc when sampling finished
 void adc_callback()
 {

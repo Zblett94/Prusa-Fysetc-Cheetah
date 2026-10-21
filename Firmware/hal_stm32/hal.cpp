@@ -64,6 +64,12 @@ __attribute__((constructor(102))) static void hal_early_init(void) {
 		if (!prusa && !empty)
 			hal_eeprom_erase();
 	}
+#ifdef EMULATION
+	else {
+		void hal_emulation_eeprom_preset();
+		hal_emulation_eeprom_preset();
+	}
+#endif
 }
 
 void hal_reset(void) {
@@ -187,6 +193,11 @@ static IRQn_Type exti_irqn(uint32_t line) {
 }
 
 void hal_exti_attach(uint32_t pin, uint32_t mode, hal_isr_t isr) {
+#ifdef EMULATION
+	// the EXTI model of the Renode emulator does not match the STM32G0 registers
+	(void)pin; (void)mode; (void)isr;
+	return;
+#endif
 	pin &= ~FASTIO_INVERTED;
 	attachInterrupt(digitalPinToInterrupt(pin), isr, mode);
 	HAL_NVIC_SetPriority(exti_irqn(fastio::pin_bit(pin)), HAL_PRIO_EXTI, 0);

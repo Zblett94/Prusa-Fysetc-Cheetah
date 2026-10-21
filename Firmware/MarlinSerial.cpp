@@ -100,6 +100,12 @@ ISR(USART1_RX_vect)
 
 #ifndef __AVR__
 
+#ifdef EMULATION
+// Test build for the Renode emulator (no USB model): the host port is USART2 (PA2/PA3)
+static HardwareSerial emuSerial(PA3_ALT1, PA2_ALT1);
+#define SerialUSB emuSerial
+#endif
+
 // STM32 port: the host is connected to the native USB CDC (SerialUSB). The
 // AVR receive ISR is replaced by pulling the USB stack's buffer into rx_buffer,
 // so the command queue code that inspects rx_buffer keeps working unchanged.
@@ -123,10 +129,13 @@ static void usb_pull_rx()
 	}
 }
 
+static bool usb_started;
+
 void MarlinSerial::begin(long baud)
 {
 	(void)baud;
 	SerialUSB.begin(baud);
+	usb_started = true;
 }
 
 void MarlinSerial::end()
@@ -141,6 +150,10 @@ int MarlinSerial::available(void)
 
 void MarlinSerial::write(uint8_t c)
 {
+	// output before MYSERIAL.begin() (e.g. core error messages printed before the
+	// static constructors ran) is dropped
+	if (!usb_started)
+		return;
 	// The USB transmit queue is not reentrant, but the firmware prints from
 	// interrupt context too (power panic, crash detection). Serialize the
 	// accesses and never block forever if the queue can not drain.

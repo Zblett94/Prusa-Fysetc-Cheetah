@@ -69,7 +69,7 @@ void adc_init()
 	ADC1->CR = ADC_CR_ADVREGEN;
 	delayMicroseconds(25); // tADCVREG_STUP
 	ADC1->CR |= ADC_CR_ADCAL;
-	while (ADC1->CR & ADC_CR_ADCAL) {}
+	for (uint32_t i = 0; i < 100000 && (ADC1->CR & ADC_CR_ADCAL); i++) {}
 	delayMicroseconds(5);
 	ADC1->CFGR1 = 0; // 12 bit, right aligned, single conversion, software trigger
 	ADC1_COMMON->CCR |= ADC_CCR_TSEN | ADC_CCR_VREFEN; // temperature sensor and VREFINT channels
@@ -77,7 +77,7 @@ void adc_init()
 	ADC1->SMPR = 7UL << ADC_SMPR_SMP1_Pos; // 160.5 cycles: high impedance thermistor dividers
 	ADC1->ISR = ADC_ISR_ADRDY;
 	ADC1->CR |= ADC_CR_ADEN;
-	while (!(ADC1->ISR & ADC_ISR_ADRDY)) {}
+	for (uint32_t i = 0; i < 100000 && !(ADC1->ISR & ADC_ISR_ADRDY); i++) {}
 	ADC1->IER = ADC_IER_EOCIE;
 	NVIC_SetPriority(ADC1_COMP_IRQn, HAL_PRIO_SOFTPWM);
 	NVIC_EnableIRQ(ADC1_COMP_IRQn);
@@ -85,14 +85,16 @@ void adc_init()
 
 static void adc_setmux(uint8_t ch)
 {
-	// CHSELR may only be written when no conversion is ongoing
-	ADC1->ISR = ADC_ISR_CCRDY;
+	// CHSELR may only be written when no conversion is ongoing (ADSTART is cleared by
+	// the hardware at the end of the single conversion sequence)
+	for (uint16_t i = 0; i < 1000 && (ADC1->CR & ADC_CR_ADSTART); i++) {}
+	ADC1->ISR = ADC_ISR_CCRDY | ADC_ISR_EOS;
 	ADC1->CHSELR = 1UL << ch;
-	while (!(ADC1->ISR & ADC_ISR_CCRDY)) {}
+	for (uint16_t i = 0; i < 1000 && !(ADC1->ISR & ADC_ISR_CCRDY); i++) {} // a few ADC clocks
 }
 
 #define ADC_START_CONVERSION() (ADC1->CR |= ADC_CR_ADSTART)
-#define ADC_STOP_CONVERSION()  do { if (ADC1->CR & ADC_CR_ADSTART) { ADC1->CR |= ADC_CR_ADSTP; while (ADC1->CR & ADC_CR_ADSTP) {} } } while (0)
+#define ADC_STOP_CONVERSION()  do { if (ADC1->CR & ADC_CR_ADSTART) { ADC1->CR |= ADC_CR_ADSTP; for (uint16_t _i = 0; _i < 1000 && (ADC1->CR & ADC_CR_ADSTP); _i++) {} } } while (0)
 #define ADC_RESULT()           (ADC1->DR >> 2)
 
 #endif //__AVR__
@@ -110,10 +112,28 @@ static void adc_reset()
     memset((void*)adc_values, 0, sizeof(adc_values));
 }
 
+#ifdef EMULATION
+// Renode test build: the samples come from the thermal simulation in temperature.cpp
+extern uint16_t emulation_adc_sample(uint8_t ch);
+#ifdef ADC_CALLBACK
+extern void ADC_CALLBACK();
+#endif
+void adc_start_cycle() {
+	adc_reset();
+	for (uint8_t ch = 0, i = 0; ch < 32; ch++)
+		if (ADC_CHAN_MSK & (1UL << ch))
+			adc_values[i++] = emulation_adc_sample(ch) * ADC_OVRSAMPL;
+	adc_channel = ADC_CHAN_CNT;
+#ifdef ADC_CALLBACK
+	ADC_CALLBACK();
+#endif
+}
+#else //EMULATION
 void adc_start_cycle() {
 	adc_reset();
 	ADC_START_CONVERSION(); //start conversion
 }
+#endif //EMULATION
 
 #ifdef ADC_CALLBACK
 extern void ADC_CALLBACK();
