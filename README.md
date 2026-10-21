@@ -55,7 +55,7 @@ settings of another firmware, the printer then starts like a new MK3S: run the
 
 ## Wiring
 
-See [docs/WIRING.md](docs/WIRING.md). In short: motors, heaters and thermistors go to
+See [docs/WIRING.md](docs/WIRING.md) and the [wiring picture](docs/wiring.png). In short: motors, heaters and thermistors go to
 the usual headers, the P.I.N.D.A. to the PROBE header (its thermistor to SERVO with a
 4.7 kΩ pull-up), the IR filament sensor to E0-STOP, the TMC2209 DIAG jumpers X/Y/Z
 must be installed, and the MK3S LCD needs a custom harness (EXP1 plus three spare

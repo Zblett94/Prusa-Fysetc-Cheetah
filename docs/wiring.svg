@@ -1,0 +1,326 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1900" height="1330" viewBox="0 0 1900 1330" font-family="Helvetica, Arial, sans-serif">
+<rect x="0" y="0" width="1900" height="1330" rx="0" fill="#f1f5f9" stroke="none" stroke-width="1.5"/>
+<text x="950.0" y="46" font-size="28" text-anchor="middle" font-weight="bold" fill="#0f172a">Original Prusa i3 MK3S  →  BigTreeTech SKR Mini E3 V3.0</text>
+<text x="950.0" y="74" font-size="15" text-anchor="middle" font-weight="normal" fill="#475569">Where every cable plugs in (firmware: Prusa-SKR-Mini). Simplified layout: positions are approximate, match the names printed on the board.</text>
+<rect x="540" y="300" width="740" height="580" rx="14" fill="#14532d" stroke="#0b3d20" stroke-width="3"/>
+<rect x="552" y="312" width="716" height="556" rx="10" fill="none" stroke="#1e7a45" stroke-width="1"/>
+<text x="910.0" y="580.0" font-size="26" text-anchor="middle" font-weight="bold" fill="#d1fae5">SKR Mini E3 V3.0</text>
+<text x="910.0" y="608.0" font-size="15" text-anchor="middle" font-weight="normal" fill="#a7f3d0">STM32G0B1RET6 · 4× TMC2209 on board</text>
+<rect x="865.0" y="630.0" width="90" height="90" rx="4" fill="#111827" stroke="#374151" stroke-width="1.5"/>
+<text x="910.0" y="680.0" font-size="13" text-anchor="middle" font-weight="bold" fill="#9ca3af">STM32</text>
+<rect x="650" y="380" width="46" height="46" rx="3" fill="#111827" stroke="#374151" stroke-width="1.5"/>
+<text x="673" y="408" font-size="13" text-anchor="middle" font-weight="bold" fill="#9ca3af">X</text>
+<rect x="704" y="388" width="30" height="30" rx="3" fill="#fbbf24" stroke="#92400e" stroke-width="1.5"/>
+<text x="719" y="407" font-size="10.5" text-anchor="middle" font-weight="bold" fill="#78350f">ON</text>
+<rect x="800" y="380" width="46" height="46" rx="3" fill="#111827" stroke="#374151" stroke-width="1.5"/>
+<text x="823" y="408" font-size="13" text-anchor="middle" font-weight="bold" fill="#9ca3af">Y</text>
+<rect x="854" y="388" width="30" height="30" rx="3" fill="#fbbf24" stroke="#92400e" stroke-width="1.5"/>
+<text x="869" y="407" font-size="10.5" text-anchor="middle" font-weight="bold" fill="#78350f">ON</text>
+<rect x="950" y="380" width="46" height="46" rx="3" fill="#111827" stroke="#374151" stroke-width="1.5"/>
+<text x="973" y="408" font-size="13" text-anchor="middle" font-weight="bold" fill="#9ca3af">Z</text>
+<rect x="1004" y="388" width="30" height="30" rx="3" fill="#fbbf24" stroke="#92400e" stroke-width="1.5"/>
+<text x="1019" y="407" font-size="10.5" text-anchor="middle" font-weight="bold" fill="#78350f">ON</text>
+<rect x="1100" y="380" width="46" height="46" rx="3" fill="#111827" stroke="#374151" stroke-width="1.5"/>
+<text x="1123" y="408" font-size="13" text-anchor="middle" font-weight="bold" fill="#9ca3af">E</text>
+<rect x="1154" y="388" width="30" height="30" rx="3" fill="#f8fafc" stroke="#92400e" stroke-width="1.5"/>
+<text x="1169" y="407" font-size="10.5" text-anchor="middle" font-weight="bold" fill="#78350f">off</text>
+<text x="650" y="450" font-size="12.5" text-anchor="start" font-weight="normal" fill="#fde68a">DIAG jumpers next to the drivers: X, Y, Z installed (sensorless homing,</text>
+<text x="650" y="468" font-size="12.5" text-anchor="start" font-weight="normal" fill="#fde68a">crash detection, Z calibration), E0 removed (E0-STOP is the filament sensor)</text>
+<rect x="600" y="296" width="78" height="30" rx="3" fill="#f8fafc" stroke="#2563eb" stroke-width="2"/>
+<text x="639.0" y="315.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">XM</text>
+<path d="M639,296 L330,151" stroke="#2563eb" stroke-width="2" fill="none"/>
+<circle cx="639" cy="296" r="3.5" fill="#2563eb"/>
+<rect x="120" y="110" width="230" height="41" rx="6" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+<rect x="120" y="110" width="6" height="41" rx="3" fill="#2563eb" stroke="none" stroke-width="1.5"/>
+<text x="134" y="128" font-size="14" text-anchor="start" font-weight="bold" fill="#2563eb">X motor</text>
+<text x="134" y="146" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">TMC2209, UART address 0</text>
+<rect x="720" y="296" width="78" height="30" rx="3" fill="#f8fafc" stroke="#2563eb" stroke-width="2"/>
+<text x="759.0" y="315.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">YM</text>
+<path d="M759,296 L580,151" stroke="#2563eb" stroke-width="2" fill="none"/>
+<circle cx="759" cy="296" r="3.5" fill="#2563eb"/>
+<rect x="370" y="110" width="230" height="41" rx="6" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+<rect x="370" y="110" width="6" height="41" rx="3" fill="#2563eb" stroke="none" stroke-width="1.5"/>
+<text x="384" y="128" font-size="14" text-anchor="start" font-weight="bold" fill="#2563eb">Y motor</text>
+<text x="384" y="146" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">TMC2209, UART address 2</text>
+<rect x="840" y="296" width="78" height="30" rx="3" fill="#f8fafc" stroke="#2563eb" stroke-width="2"/>
+<text x="879.0" y="315.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">ZAM</text>
+<path d="M879,296 L830,185" stroke="#2563eb" stroke-width="2" fill="none"/>
+<circle cx="879" cy="296" r="3.5" fill="#2563eb"/>
+<rect x="620" y="110" width="230" height="75" rx="6" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+<rect x="620" y="110" width="6" height="75" rx="3" fill="#2563eb" stroke="none" stroke-width="1.5"/>
+<text x="634" y="128" font-size="14" text-anchor="start" font-weight="bold" fill="#2563eb">Z motor (left)</text>
+<text x="634" y="146" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">both Z motors are driven</text>
+<text x="634" y="163" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">by one TMC2209, like on</text>
+<text x="634" y="180" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">the EINSy</text>
+<rect x="960" y="296" width="78" height="30" rx="3" fill="#f8fafc" stroke="#2563eb" stroke-width="2"/>
+<text x="999.0" y="315.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">ZBM</text>
+<path d="M999,296 L999,168" stroke="#2563eb" stroke-width="2" fill="none"/>
+<circle cx="999" cy="296" r="3.5" fill="#2563eb"/>
+<rect x="870" y="110" width="230" height="58" rx="6" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+<rect x="870" y="110" width="6" height="58" rx="3" fill="#2563eb" stroke="none" stroke-width="1.5"/>
+<text x="884" y="128" font-size="14" text-anchor="start" font-weight="bold" fill="#2563eb">Z motor (right)</text>
+<text x="884" y="146" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">second Z connector,</text>
+<text x="884" y="163" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">same driver as ZAM</text>
+<rect x="1080" y="296" width="78" height="30" rx="3" fill="#f8fafc" stroke="#2563eb" stroke-width="2"/>
+<text x="1119.0" y="315.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">EM</text>
+<path d="M1119,296 L1140,151" stroke="#2563eb" stroke-width="2" fill="none"/>
+<circle cx="1119" cy="296" r="3.5" fill="#2563eb"/>
+<rect x="1120" y="110" width="230" height="41" rx="6" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+<rect x="1120" y="110" width="6" height="41" rx="3" fill="#2563eb" stroke="none" stroke-width="1.5"/>
+<text x="1134" y="128" font-size="14" text-anchor="start" font-weight="bold" fill="#2563eb">Extruder motor</text>
+<text x="1134" y="146" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">TMC2209, UART address 3</text>
+<rect x="600" y="854" width="84" height="30" rx="3" fill="#f8fafc" stroke="#dc2626" stroke-width="2"/>
+<text x="642.0" y="873.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">POWER</text>
+<path d="M642,884 L630,1019.0" stroke="#dc2626" stroke-width="2" fill="none"/>
+<circle cx="642" cy="884" r="3.5" fill="#dc2626"/>
+<rect x="480" y="990" width="150" height="58" rx="6" fill="#ffffff" stroke="#dc2626" stroke-width="2"/>
+<rect x="480" y="990" width="6" height="58" rx="3" fill="#dc2626" stroke="none" stroke-width="1.5"/>
+<text x="494" y="1008" font-size="14" text-anchor="start" font-weight="bold" fill="#dc2626">PSU 24 V</text>
+<text x="494" y="1026" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">+ / − (DCIN)</text>
+<text x="494" y="1043" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">mind the polarity</text>
+<rect x="715" y="854" width="84" height="30" rx="3" fill="#f8fafc" stroke="#dc2626" stroke-width="2"/>
+<text x="757.0" y="873.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">HB</text>
+<path d="M757,884 L757,990" stroke="#dc2626" stroke-width="2" fill="none"/>
+<circle cx="757" cy="884" r="3.5" fill="#dc2626"/>
+<rect x="638" y="990" width="150" height="75" rx="6" fill="#ffffff" stroke="#dc2626" stroke-width="2"/>
+<rect x="638" y="990" width="6" height="75" rx="3" fill="#dc2626" stroke="none" stroke-width="1.5"/>
+<text x="652" y="1008" font-size="14" text-anchor="start" font-weight="bold" fill="#dc2626">Heatbed MK52</text>
+<text x="652" y="1026" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">24 V, ~9 A: external</text>
+<text x="652" y="1043" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">MOSFET module</text>
+<text x="652" y="1060" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">recommended</text>
+<rect x="830" y="854" width="84" height="30" rx="3" fill="#f8fafc" stroke="#dc2626" stroke-width="2"/>
+<text x="872.0" y="873.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">HE</text>
+<path d="M872,884 L872,990" stroke="#dc2626" stroke-width="2" fill="none"/>
+<circle cx="872" cy="884" r="3.5" fill="#dc2626"/>
+<rect x="796" y="990" width="150" height="41" rx="6" fill="#ffffff" stroke="#dc2626" stroke-width="2"/>
+<rect x="796" y="990" width="6" height="41" rx="3" fill="#dc2626" stroke="none" stroke-width="1.5"/>
+<text x="810" y="1008" font-size="14" text-anchor="start" font-weight="bold" fill="#dc2626">Hotend heater</text>
+<text x="810" y="1026" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">40 W heater cartridge</text>
+<rect x="945" y="854" width="84" height="30" rx="3" fill="#f8fafc" stroke="#7c3aed" stroke-width="2"/>
+<text x="987.0" y="873.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">FAN0</text>
+<path d="M987,884 L987,990" stroke="#7c3aed" stroke-width="2" fill="none"/>
+<circle cx="987" cy="884" r="3.5" fill="#7c3aed"/>
+<rect x="954" y="990" width="150" height="58" rx="6" fill="#ffffff" stroke="#7c3aed" stroke-width="2"/>
+<rect x="954" y="990" width="6" height="58" rx="3" fill="#7c3aed" stroke="none" stroke-width="1.5"/>
+<text x="968" y="1008" font-size="14" text-anchor="start" font-weight="bold" fill="#7c3aed">Print fan</text>
+<text x="968" y="1026" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">5 V blower</text>
+<text x="968" y="1043" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">fan jumper on 5 V</text>
+<rect x="1060" y="854" width="84" height="30" rx="3" fill="#f8fafc" stroke="#7c3aed" stroke-width="2"/>
+<text x="1102.0" y="873.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">FAN1</text>
+<path d="M1102,884 L1112,1019.0" stroke="#7c3aed" stroke-width="2" fill="none"/>
+<circle cx="1102" cy="884" r="3.5" fill="#7c3aed"/>
+<rect x="1112" y="990" width="150" height="58" rx="6" fill="#ffffff" stroke="#7c3aed" stroke-width="2"/>
+<rect x="1112" y="990" width="6" height="58" rx="3" fill="#7c3aed" stroke="none" stroke-width="1.5"/>
+<text x="1126" y="1008" font-size="14" text-anchor="start" font-weight="bold" fill="#7c3aed">Hotend fan</text>
+<text x="1126" y="1026" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">5 V Noctua</text>
+<text x="1126" y="1043" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">fan jumper on 5 V</text>
+<rect x="1175" y="854" width="84" height="30" rx="3" fill="#f8fafc" stroke="#9ca3af" stroke-width="2"/>
+<text x="1217.0" y="873.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">FAN2</text>
+<path d="M1217,884 L1270,1010.5" stroke="#9ca3af" stroke-width="2" fill="none"/>
+<circle cx="1217" cy="884" r="3.5" fill="#9ca3af"/>
+<rect x="1270" y="990" width="150" height="41" rx="6" fill="#ffffff" stroke="#9ca3af" stroke-width="2"/>
+<rect x="1270" y="990" width="6" height="41" rx="3" fill="#9ca3af" stroke="none" stroke-width="1.5"/>
+<text x="1284" y="1008" font-size="14" text-anchor="start" font-weight="bold" fill="#9ca3af">FAN2</text>
+<text x="1284" y="1026" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">not used</text>
+<rect x="1188" y="357.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#9ca3af" stroke-width="2"/>
+<text x="1236.0" y="374.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">X-STOP</text>
+<path d="M1284,370.0 L1430,129.0" stroke="#9ca3af" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="370.0" r="3.5" fill="#9ca3af"/>
+<rect x="1430" y="100" width="440" height="58" rx="6" fill="#ffffff" stroke="#9ca3af" stroke-width="2"/>
+<rect x="1430" y="100" width="6" height="58" rx="3" fill="#9ca3af" stroke="none" stroke-width="1.5"/>
+<text x="1444" y="118" font-size="14" text-anchor="start" font-weight="bold" fill="#9ca3af">X-STOP</text>
+<text x="1444" y="136" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">not used: X homes on the</text>
+<text x="1444" y="153" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">DIAG jumper (StallGuard)</text>
+<rect x="1188" y="404.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#9ca3af" stroke-width="2"/>
+<text x="1236.0" y="421.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">Y-STOP</text>
+<path d="M1284,417.0 L1430,200.5" stroke="#9ca3af" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="417.0" r="3.5" fill="#9ca3af"/>
+<rect x="1430" y="180" width="440" height="41" rx="6" fill="#ffffff" stroke="#9ca3af" stroke-width="2"/>
+<rect x="1430" y="180" width="6" height="41" rx="3" fill="#9ca3af" stroke="none" stroke-width="1.5"/>
+<text x="1444" y="198" font-size="14" text-anchor="start" font-weight="bold" fill="#9ca3af">Y-STOP</text>
+<text x="1444" y="216" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">not used (DIAG jumper)</text>
+<rect x="1188" y="451.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#9ca3af" stroke-width="2"/>
+<text x="1236.0" y="468.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">Z-STOP</text>
+<path d="M1284,464.0 L1430,280.5" stroke="#9ca3af" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="464.0" r="3.5" fill="#9ca3af"/>
+<rect x="1430" y="260" width="440" height="41" rx="6" fill="#ffffff" stroke="#9ca3af" stroke-width="2"/>
+<rect x="1430" y="260" width="6" height="41" rx="3" fill="#9ca3af" stroke="none" stroke-width="1.5"/>
+<text x="1444" y="278" font-size="14" text-anchor="start" font-weight="bold" fill="#9ca3af">Z-STOP</text>
+<text x="1444" y="296" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">not used (DIAG jumper)</text>
+<rect x="1188" y="498.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#059669" stroke-width="2"/>
+<text x="1236.0" y="515.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">E0-STOP</text>
+<path d="M1284,511.0 L1430,360.5" stroke="#059669" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="511.0" r="3.5" fill="#059669"/>
+<rect x="1430" y="340" width="440" height="41" rx="6" fill="#ffffff" stroke="#059669" stroke-width="2"/>
+<rect x="1430" y="340" width="6" height="41" rx="3" fill="#059669" stroke="none" stroke-width="1.5"/>
+<text x="1444" y="358" font-size="14" text-anchor="start" font-weight="bold" fill="#059669">IR filament sensor</text>
+<text x="1444" y="376" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">signal + 5 V + GND (PC15)</text>
+<rect x="1188" y="545.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#059669" stroke-width="2"/>
+<text x="1236.0" y="562.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">PROBE</text>
+<path d="M1284,558.0 L1430,449.0" stroke="#059669" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="558.0" r="3.5" fill="#059669"/>
+<rect x="1430" y="420" width="440" height="58" rx="6" fill="#ffffff" stroke="#059669" stroke-width="2"/>
+<rect x="1430" y="420" width="6" height="58" rx="3" fill="#059669" stroke="none" stroke-width="1.5"/>
+<text x="1444" y="438" font-size="14" text-anchor="start" font-weight="bold" fill="#059669">P.I.N.D.A. / SuperPINDA</text>
+<text x="1444" y="456" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">signal + 5 V + GND (PC14)</text>
+<text x="1444" y="473" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">check the 5 V output level</text>
+<rect x="1188" y="592.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#059669" stroke-width="2"/>
+<text x="1236.0" y="609.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">SERVO</text>
+<path d="M1284,605.0 L1430,529.0" stroke="#059669" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="605.0" r="3.5" fill="#059669"/>
+<rect x="1430" y="500" width="440" height="58" rx="6" fill="#ffffff" stroke="#059669" stroke-width="2"/>
+<rect x="1430" y="500" width="6" height="58" rx="3" fill="#059669" stroke="none" stroke-width="1.5"/>
+<text x="1444" y="518" font-size="14" text-anchor="start" font-weight="bold" fill="#059669">P.I.N.D.A. thermistor</text>
+<text x="1444" y="536" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">signal pin + GND (PA1)</text>
+<text x="1444" y="553" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">ADD 4.7 kΩ PA1 → 3.3 V</text>
+<rect x="1188" y="639.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#059669" stroke-width="2"/>
+<text x="1236.0" y="656.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">TH0</text>
+<path d="M1284,652.0 L1430,600.5" stroke="#059669" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="652.0" r="3.5" fill="#059669"/>
+<rect x="1430" y="580" width="440" height="41" rx="6" fill="#ffffff" stroke="#059669" stroke-width="2"/>
+<rect x="1430" y="580" width="6" height="41" rx="3" fill="#059669" stroke="none" stroke-width="1.5"/>
+<text x="1444" y="598" font-size="14" text-anchor="start" font-weight="bold" fill="#059669">Hotend thermistor</text>
+<text x="1444" y="616" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">Semitec 104GT-2</text>
+<rect x="1188" y="686.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#059669" stroke-width="2"/>
+<text x="1236.0" y="703.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">TB</text>
+<path d="M1284,699.0 L1430,672.0" stroke="#059669" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="699.0" r="3.5" fill="#059669"/>
+<rect x="1430" y="660" width="440" height="24" rx="6" fill="#ffffff" stroke="#059669" stroke-width="2"/>
+<rect x="1430" y="660" width="6" height="24" rx="3" fill="#059669" stroke="none" stroke-width="1.5"/>
+<text x="1444" y="678" font-size="14" text-anchor="start" font-weight="bold" fill="#059669">Heatbed thermistor</text>
+<rect x="1188" y="733.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#dc2626" stroke-width="2"/>
+<text x="1236.0" y="750.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">PWR-DET</text>
+<path d="M1284,746.0 L1430,769.0" stroke="#dc2626" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="746.0" r="3.5" fill="#dc2626"/>
+<rect x="1430" y="740" width="440" height="58" rx="6" fill="#ffffff" stroke="#dc2626" stroke-width="2"/>
+<rect x="1430" y="740" width="6" height="58" rx="3" fill="#dc2626" stroke="none" stroke-width="1.5"/>
+<text x="1444" y="758" font-size="14" text-anchor="start" font-weight="bold" fill="#dc2626">Power panic signal</text>
+<text x="1444" y="776" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">from the PSU, active low</text>
+<text x="1444" y="793" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">(open = power good)</text>
+<rect x="1188" y="780.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#d97706" stroke-width="2"/>
+<text x="1236.0" y="797.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">PS-ON</text>
+<path d="M1284,793.0 L1430,840.5" stroke="#d97706" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="793.0" r="3.5" fill="#d97706"/>
+<rect x="1430" y="820" width="440" height="41" rx="6" fill="#ffffff" stroke="#d97706" stroke-width="2"/>
+<rect x="1430" y="820" width="6" height="41" rx="3" fill="#d97706" stroke="none" stroke-width="1.5"/>
+<text x="1444" y="838" font-size="14" text-anchor="start" font-weight="bold" fill="#d97706">LCD encoder B (BTN_EN2)</text>
+<text x="1444" y="856" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">signal pin (PC13)</text>
+<rect x="1188" y="827.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#d97706" stroke-width="2"/>
+<text x="1236.0" y="844.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">NEOPIXEL</text>
+<path d="M1284,840.0 L1430,920.5" stroke="#d97706" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="840.0" r="3.5" fill="#d97706"/>
+<rect x="1430" y="900" width="440" height="41" rx="6" fill="#ffffff" stroke="#d97706" stroke-width="2"/>
+<rect x="1430" y="900" width="6" height="41" rx="3" fill="#d97706" stroke="none" stroke-width="1.5"/>
+<text x="1444" y="918" font-size="14" text-anchor="start" font-weight="bold" fill="#d97706">LCD beeper</text>
+<text x="1444" y="936" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">signal pin (PA8)</text>
+<rect x="536" y="336.0" width="92" height="28" rx="3" fill="#f8fafc" stroke="#d97706" stroke-width="2"/>
+<text x="582.0" y="354.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">EXP1</text>
+<path d="M536,350.0 L420,319.0" stroke="#d97706" stroke-width="2" fill="none"/>
+<circle cx="536" cy="350.0" r="3.5" fill="#d97706"/>
+<rect x="40" y="290" width="380" height="58" rx="6" fill="#ffffff" stroke="#d97706" stroke-width="2"/>
+<rect x="40" y="290" width="6" height="58" rx="3" fill="#d97706" stroke="none" stroke-width="1.5"/>
+<text x="54" y="308" font-size="14" text-anchor="start" font-weight="bold" fill="#d97706">MK3S LCD (custom cable)</text>
+<text x="54" y="326" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">LCD RS/EN/D4–D7, encoder push,</text>
+<text x="54" y="343" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">5 V, GND: see the table below</text>
+<rect x="536" y="430.0" width="92" height="28" rx="3" fill="#f8fafc" stroke="#d97706" stroke-width="2"/>
+<text x="582.0" y="448.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">SPI1</text>
+<path d="M536,444.0 L420,410.5" stroke="#d97706" stroke-width="2" fill="none"/>
+<circle cx="536" cy="444.0" r="3.5" fill="#d97706"/>
+<rect x="40" y="390" width="380" height="41" rx="6" fill="#ffffff" stroke="#d97706" stroke-width="2"/>
+<rect x="40" y="390" width="6" height="41" rx="3" fill="#d97706" stroke="none" stroke-width="1.5"/>
+<text x="54" y="408" font-size="14" text-anchor="start" font-weight="bold" fill="#d97706">LCD encoder A (BTN_EN1)</text>
+<text x="54" y="426" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">SPI1 header pin 3 = CS (PD9)</text>
+<rect x="536" y="524.0" width="92" height="28" rx="3" fill="#f8fafc" stroke="#475569" stroke-width="2"/>
+<text x="582.0" y="542.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">TFT</text>
+<path d="M536,538.0 L420,527.5" stroke="#475569" stroke-width="2" fill="none"/>
+<circle cx="536" cy="538.0" r="3.5" fill="#475569"/>
+<rect x="40" y="490" width="380" height="75" rx="6" fill="#ffffff" stroke="#475569" stroke-width="2"/>
+<rect x="40" y="490" width="6" height="75" rx="3" fill="#475569" stroke="none" stroke-width="1.5"/>
+<text x="54" y="508" font-size="14" text-anchor="start" font-weight="bold" fill="#475569">MMU2S / MMU3 (optional)</text>
+<text x="54" y="526" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">TX (PA2) → MMU RX,</text>
+<text x="54" y="543" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">RX (PA3) ← MMU TX, GND</text>
+<text x="54" y="560" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">no reset wire needed</text>
+<rect x="536" y="618.0" width="92" height="28" rx="3" fill="#f8fafc" stroke="#7c3aed" stroke-width="2"/>
+<text x="582.0" y="636.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">SWD</text>
+<path d="M536,632.0 L420,619.0" stroke="#7c3aed" stroke-width="2" fill="none"/>
+<circle cx="536" cy="632.0" r="3.5" fill="#7c3aed"/>
+<rect x="40" y="590" width="380" height="58" rx="6" fill="#ffffff" stroke="#7c3aed" stroke-width="2"/>
+<rect x="40" y="590" width="6" height="58" rx="3" fill="#7c3aed" stroke="none" stroke-width="1.5"/>
+<text x="54" y="608" font-size="14" text-anchor="start" font-weight="bold" fill="#7c3aed">Fan tachometers</text>
+<text x="54" y="626" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">SWDIO (PA13) ← print fan tach</text>
+<text x="54" y="643" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">SWCLK (PA14) ← hotend fan tach</text>
+<rect x="536" y="712.0" width="92" height="28" rx="3" fill="#f8fafc" stroke="#475569" stroke-width="2"/>
+<text x="582.0" y="730.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">USB</text>
+<path d="M536,726.0 L420,710.5" stroke="#475569" stroke-width="2" fill="none"/>
+<circle cx="536" cy="726.0" r="3.5" fill="#475569"/>
+<rect x="40" y="690" width="380" height="41" rx="6" fill="#ffffff" stroke="#475569" stroke-width="2"/>
+<rect x="40" y="690" width="6" height="41" rx="3" fill="#475569" stroke="none" stroke-width="1.5"/>
+<text x="54" y="708" font-size="14" text-anchor="start" font-weight="bold" fill="#475569">USB to PC / Raspberry Pi</text>
+<text x="54" y="726" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">PrusaSlicer, OctoPrint</text>
+<rect x="536" y="806.0" width="92" height="28" rx="3" fill="#f8fafc" stroke="#475569" stroke-width="2"/>
+<text x="582.0" y="824.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">microSD</text>
+<path d="M536,820.0 L420,819.0" stroke="#475569" stroke-width="2" fill="none"/>
+<circle cx="536" cy="820.0" r="3.5" fill="#475569"/>
+<rect x="40" y="790" width="380" height="58" rx="6" fill="#ffffff" stroke="#475569" stroke-width="2"/>
+<rect x="40" y="790" width="6" height="58" rx="3" fill="#475569" stroke="none" stroke-width="1.5"/>
+<text x="54" y="808" font-size="14" text-anchor="start" font-weight="bold" fill="#475569">micro-SD card</text>
+<text x="54" y="826" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">firmware.bin to flash,</text>
+<text x="54" y="843" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">G-code files to print</text>
+<rect x="40" y="990" width="420" height="260" rx="6" fill="#ffffff" stroke="#d97706" stroke-width="2"/>
+<text x="54" y="1014" font-size="15" text-anchor="start" font-weight="bold" fill="#d97706">EXP1 → MK3S LCD board</text>
+<text x="54" y="1038" font-size="12.5" text-anchor="start" font-weight="bold" fill="#1f2933">EXP1-1</text>
+<text x="130" y="1038" font-size="12.5" text-anchor="start" font-weight="normal" fill="#475569">PB5</text>
+<text x="190" y="1038" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">LCD_D7</text>
+<text x="54" y="1058" font-size="12.5" text-anchor="start" font-weight="bold" fill="#1f2933">EXP1-2</text>
+<text x="130" y="1058" font-size="12.5" text-anchor="start" font-weight="normal" fill="#475569">PA15</text>
+<text x="190" y="1058" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">encoder push</text>
+<text x="54" y="1078" font-size="12.5" text-anchor="start" font-weight="bold" fill="#1f2933">EXP1-3</text>
+<text x="130" y="1078" font-size="12.5" text-anchor="start" font-weight="normal" fill="#475569">PA9</text>
+<text x="190" y="1078" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">LCD_D6</text>
+<text x="54" y="1098" font-size="12.5" text-anchor="start" font-weight="bold" fill="#1f2933">EXP1-4</text>
+<text x="130" y="1098" font-size="12.5" text-anchor="start" font-weight="normal" fill="#475569">—</text>
+<text x="190" y="1098" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">RESET (not used)</text>
+<text x="54" y="1118" font-size="12.5" text-anchor="start" font-weight="bold" fill="#1f2933">EXP1-5</text>
+<text x="130" y="1118" font-size="12.5" text-anchor="start" font-weight="normal" fill="#475569">PA10</text>
+<text x="190" y="1118" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">LCD_D5</text>
+<text x="54" y="1138" font-size="12.5" text-anchor="start" font-weight="bold" fill="#1f2933">EXP1-6</text>
+<text x="130" y="1138" font-size="12.5" text-anchor="start" font-weight="normal" fill="#475569">PB9</text>
+<text x="190" y="1138" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">LCD_D4</text>
+<text x="54" y="1158" font-size="12.5" text-anchor="start" font-weight="bold" fill="#1f2933">EXP1-7</text>
+<text x="130" y="1158" font-size="12.5" text-anchor="start" font-weight="normal" fill="#475569">PB8</text>
+<text x="190" y="1158" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">LCD_RS</text>
+<text x="54" y="1178" font-size="12.5" text-anchor="start" font-weight="bold" fill="#1f2933">EXP1-8</text>
+<text x="130" y="1178" font-size="12.5" text-anchor="start" font-weight="normal" fill="#475569">PD6</text>
+<text x="190" y="1178" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">LCD_EN</text>
+<text x="54" y="1198" font-size="12.5" text-anchor="start" font-weight="bold" fill="#1f2933">EXP1-9</text>
+<text x="130" y="1198" font-size="12.5" text-anchor="start" font-weight="normal" fill="#475569"></text>
+<text x="190" y="1198" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">GND</text>
+<text x="54" y="1218" font-size="12.5" text-anchor="start" font-weight="bold" fill="#1f2933">EXP1-10</text>
+<text x="130" y="1218" font-size="12.5" text-anchor="start" font-weight="normal" fill="#475569"></text>
+<text x="190" y="1218" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">5 V</text>
+<text x="290" y="1038" font-size="11.5" text-anchor="start" font-weight="normal" fill="#475569">Pin 1 = PB5 (BTT/Marlin</text>
+<text x="290" y="1054" font-size="11.5" text-anchor="start" font-weight="normal" fill="#475569">numbering). Check the notch</text>
+<text x="290" y="1070" font-size="11.5" text-anchor="start" font-weight="normal" fill="#475569">against the silkscreen.</text>
+<rect x="1430" y="1010" width="440" height="180" rx="6" fill="#fff7ed" stroke="#c2410c" stroke-width="2"/>
+<text x="1444" y="1034" font-size="15" text-anchor="start" font-weight="bold" fill="#c2410c">Before powering up</text>
+<text x="1444" y="1058" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">The STM32 is a 3.3 V part: check that 5 V signals (P.I.N.D.A.,</text>
+<text x="1444" y="1078" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">IR sensor, MMU, PSU power-panic) go to 5 V tolerant pins or</text>
+<text x="1444" y="1098" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">add a divider (10 kΩ series / 20 kΩ to GND).</text>
+<text x="1444" y="1118" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">Fan voltage jumper on 5 V (MK3S fans are 5 V fans).</text>
+<text x="1444" y="1138" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">Flash firmware.bin from the SD card, run the Wizard.</text>
+<text x="1444" y="1158" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">Full pin list: docs/WIRING.md</text>
+<rect x="480" y="1290" width="22" height="14" rx="2" fill="#2563eb" stroke="none" stroke-width="1.5"/>
+<text x="510" y="1302" font-size="13" text-anchor="start" font-weight="normal" fill="#1f2933">motors</text>
+<rect x="595.0" y="1290" width="22" height="14" rx="2" fill="#dc2626" stroke="none" stroke-width="1.5"/>
+<text x="625.0" y="1302" font-size="13" text-anchor="start" font-weight="normal" fill="#1f2933">power / heaters</text>
+<rect x="777.5" y="1290" width="22" height="14" rx="2" fill="#059669" stroke="none" stroke-width="1.5"/>
+<text x="807.5" y="1302" font-size="13" text-anchor="start" font-weight="normal" fill="#1f2933">sensors / thermistors</text>
+<rect x="1005.0" y="1290" width="22" height="14" rx="2" fill="#7c3aed" stroke="none" stroke-width="1.5"/>
+<text x="1035.0" y="1302" font-size="13" text-anchor="start" font-weight="normal" fill="#1f2933">fans</text>
+<rect x="1105.0" y="1290" width="22" height="14" rx="2" fill="#d97706" stroke="none" stroke-width="1.5"/>
+<text x="1135.0" y="1302" font-size="13" text-anchor="start" font-weight="normal" fill="#1f2933">LCD</text>
+<rect x="1197.5" y="1290" width="22" height="14" rx="2" fill="#475569" stroke="none" stroke-width="1.5"/>
+<text x="1227.5" y="1302" font-size="13" text-anchor="start" font-weight="normal" fill="#1f2933">USB / SD / MMU</text>
+<rect x="1372.5" y="1290" width="22" height="14" rx="2" fill="#9ca3af" stroke="none" stroke-width="1.5"/>
+<text x="1402.5" y="1302" font-size="13" text-anchor="start" font-weight="normal" fill="#1f2933">not used</text>
+</svg>
