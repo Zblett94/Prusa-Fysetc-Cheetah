@@ -209,6 +209,43 @@ void hal_motion_timer_irq_enable(bool enable) {
 	else STEP_TIMER->DIER &= ~TIM_DIER_UIE;
 }
 
+//------------------------------------------------------------------------------
+// ST7920 display transfer timer (TIM7, register level)
+//------------------------------------------------------------------------------
+
+static hal_isr_t lcd_isr;
+
+static void lcd_timer_irq(void) {
+	TIM7->SR = 0;
+	lcd_isr();
+}
+
+void hal_lcd_timer_init(hal_isr_t isr) {
+	lcd_isr = isr;
+	__HAL_RCC_TIM7_CLK_ENABLE();
+	TIM7->CR1 = 0;
+	TIM7->PSC = F_CPU / 1000000UL - 1; // 1 MHz
+	TIM7->ARR = 40 - 1;                // one byte every 40 us (a byte takes 10..16 us)
+	TIM7->EGR = TIM_EGR_UG;
+	TIM7->SR = 0;
+	TIM7->DIER = TIM_DIER_UIE;
+	hal_set_irq_handler(TIM7_LPTIM2_IRQn, lcd_timer_irq);
+	NVIC_SetPriority(TIM7_LPTIM2_IRQn, HAL_PRIO_LCD);
+	NVIC_ClearPendingIRQ(TIM7_LPTIM2_IRQn);
+	NVIC_EnableIRQ(TIM7_LPTIM2_IRQn);
+}
+
+void hal_lcd_timer_kick(void) {
+	if (!(TIM7->CR1 & TIM_CR1_CEN)) {
+		TIM7->CNT = 0;
+		TIM7->CR1 |= TIM_CR1_CEN;
+	}
+}
+
+void hal_lcd_timer_stop(void) {
+	TIM7->CR1 &= ~TIM_CR1_CEN;
+}
+
 void hal_softpwm_timer_init(hal_isr_t isr) {
 	softpwm_isr = isr;
 	if (!softpwm_timer) softpwm_timer = new HardwareTimer(TIM16);

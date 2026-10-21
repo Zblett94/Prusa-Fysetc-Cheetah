@@ -44,6 +44,7 @@
 #define HAL_PRIO_SOFTPWM  2
 #define HAL_PRIO_EXTI     2
 #define HAL_PRIO_TEMPMGR  3
+#define HAL_PRIO_LCD      3
 
 //! Stepper timer. Runs at 2 MHz like Timer1 with the /8 prescaler on a 16 MHz AVR,
 //! so the stepper/planner timing math and speed_lookuptable work unchanged.
@@ -79,6 +80,12 @@ void hal_motion_timer_init(hal_isr_t isr);
 void hal_motion_timer_start(uint32_t period);
 void hal_motion_timer_stop(void);
 void hal_motion_timer_irq_enable(bool enable);
+
+//! Background transfer of the ST7920 display (TIM7, 25 kHz, lowest priority).
+//! kick() starts the timer if it is stopped, the ISR stops it when it has nothing to send.
+void hal_lcd_timer_init(hal_isr_t isr);
+void hal_lcd_timer_kick(void);
+void hal_lcd_timer_stop(void);
 //! Called at the end of every soft PWM tick (~976 Hz, priority 2): motion engine producer
 extern hal_isr_t hal_motion_tick;
 

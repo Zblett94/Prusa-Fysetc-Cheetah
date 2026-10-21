@@ -24,6 +24,9 @@ jobs:
       - name: Motion engine unit test
         run: sh test/motion/run.sh
 
+      - name: Display driver unit test
+        run: sh test/lcd/run.sh
+
       - name: Install PlatformIO
         run: pip install platformio
 
@@ -35,3 +38,6 @@ jobs:
         with:
           name: firmware-MK3S_SKR_MINI_E3_V3
           path: .pio/build/MK3S_SKR_MINI_E3_V3/firmware.bin
+
+      - name: Build with the original MK3S LCD (compile check)
+        run: PLATFORMIO_BUILD_FLAGS=-DLCD_MK3S pio run -e MK3S_SKR_MINI_E3_V3

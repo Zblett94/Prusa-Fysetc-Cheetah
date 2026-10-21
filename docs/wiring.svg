@@ -197,39 +197,39 @@
 <text x="1444" y="758" font-size="14" text-anchor="start" font-weight="bold" fill="#dc2626">Power panic signal</text>
 <text x="1444" y="776" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">from the PSU, active low</text>
 <text x="1444" y="793" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">(open = power good)</text>
-<rect x="1188" y="780.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#d97706" stroke-width="2"/>
+<rect x="1188" y="780.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#9ca3af" stroke-width="2"/>
 <text x="1236.0" y="797.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">PS-ON</text>
-<path d="M1284,793.0 L1430,840.5" stroke="#d97706" stroke-width="2" fill="none"/>
-<circle cx="1284" cy="793.0" r="3.5" fill="#d97706"/>
-<rect x="1430" y="820" width="440" height="41" rx="6" fill="#ffffff" stroke="#d97706" stroke-width="2"/>
-<rect x="1430" y="820" width="6" height="41" rx="3" fill="#d97706" stroke="none" stroke-width="1.5"/>
-<text x="1444" y="838" font-size="14" text-anchor="start" font-weight="bold" fill="#d97706">LCD encoder B (BTN_EN2)</text>
-<text x="1444" y="856" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">signal pin (PC13)</text>
-<rect x="1188" y="827.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#d97706" stroke-width="2"/>
+<path d="M1284,793.0 L1430,840.5" stroke="#9ca3af" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="793.0" r="3.5" fill="#9ca3af"/>
+<rect x="1430" y="820" width="440" height="41" rx="6" fill="#ffffff" stroke="#9ca3af" stroke-width="2"/>
+<rect x="1430" y="820" width="6" height="41" rx="3" fill="#9ca3af" stroke="none" stroke-width="1.5"/>
+<text x="1444" y="838" font-size="14" text-anchor="start" font-weight="bold" fill="#9ca3af">PS-ON</text>
+<text x="1444" y="856" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">free (the MK3S LCD option uses it)</text>
+<rect x="1188" y="827.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#9ca3af" stroke-width="2"/>
 <text x="1236.0" y="844.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">NEOPIXEL</text>
-<path d="M1284,840.0 L1430,920.5" stroke="#d97706" stroke-width="2" fill="none"/>
-<circle cx="1284" cy="840.0" r="3.5" fill="#d97706"/>
-<rect x="1430" y="900" width="440" height="41" rx="6" fill="#ffffff" stroke="#d97706" stroke-width="2"/>
-<rect x="1430" y="900" width="6" height="41" rx="3" fill="#d97706" stroke="none" stroke-width="1.5"/>
-<text x="1444" y="918" font-size="14" text-anchor="start" font-weight="bold" fill="#d97706">LCD beeper</text>
-<text x="1444" y="936" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">signal pin (PA8)</text>
+<path d="M1284,840.0 L1430,920.5" stroke="#9ca3af" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="840.0" r="3.5" fill="#9ca3af"/>
+<rect x="1430" y="900" width="440" height="41" rx="6" fill="#ffffff" stroke="#9ca3af" stroke-width="2"/>
+<rect x="1430" y="900" width="6" height="41" rx="3" fill="#9ca3af" stroke="none" stroke-width="1.5"/>
+<text x="1444" y="918" font-size="14" text-anchor="start" font-weight="bold" fill="#9ca3af">NEOPIXEL</text>
+<text x="1444" y="936" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">free (the MK3S LCD option uses it)</text>
 <rect x="536" y="336.0" width="92" height="28" rx="3" fill="#f8fafc" stroke="#d97706" stroke-width="2"/>
 <text x="582.0" y="354.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">EXP1</text>
 <path d="M536,350.0 L420,319.0" stroke="#d97706" stroke-width="2" fill="none"/>
 <circle cx="536" cy="350.0" r="3.5" fill="#d97706"/>
 <rect x="40" y="290" width="380" height="58" rx="6" fill="#ffffff" stroke="#d97706" stroke-width="2"/>
 <rect x="40" y="290" width="6" height="58" rx="3" fill="#d97706" stroke="none" stroke-width="1.5"/>
-<text x="54" y="308" font-size="14" text-anchor="start" font-weight="bold" fill="#d97706">MK3S LCD (custom cable)</text>
-<text x="54" y="326" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">LCD RS/EN/D4–D7, encoder push,</text>
-<text x="54" y="343" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">5 V, GND: see the table below</text>
-<rect x="536" y="430.0" width="92" height="28" rx="3" fill="#f8fafc" stroke="#d97706" stroke-width="2"/>
+<text x="54" y="308" font-size="14" text-anchor="start" font-weight="bold" fill="#d97706">Creality Ender-3 display</text>
+<text x="54" y="326" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">stock 10-pin cable to its EXP3 plug:</text>
+<text x="54" y="343" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">screen, knob and beeper, see below</text>
+<rect x="536" y="430.0" width="92" height="28" rx="3" fill="#f8fafc" stroke="#9ca3af" stroke-width="2"/>
 <text x="582.0" y="448.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">SPI1</text>
-<path d="M536,444.0 L420,410.5" stroke="#d97706" stroke-width="2" fill="none"/>
-<circle cx="536" cy="444.0" r="3.5" fill="#d97706"/>
-<rect x="40" y="390" width="380" height="41" rx="6" fill="#ffffff" stroke="#d97706" stroke-width="2"/>
-<rect x="40" y="390" width="6" height="41" rx="3" fill="#d97706" stroke="none" stroke-width="1.5"/>
-<text x="54" y="408" font-size="14" text-anchor="start" font-weight="bold" fill="#d97706">LCD encoder A (BTN_EN1)</text>
-<text x="54" y="426" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">SPI1 header pin 3 = CS (PD9)</text>
+<path d="M536,444.0 L420,410.5" stroke="#9ca3af" stroke-width="2" fill="none"/>
+<circle cx="536" cy="444.0" r="3.5" fill="#9ca3af"/>
+<rect x="40" y="390" width="380" height="41" rx="6" fill="#ffffff" stroke="#9ca3af" stroke-width="2"/>
+<rect x="40" y="390" width="6" height="41" rx="3" fill="#9ca3af" stroke="none" stroke-width="1.5"/>
+<text x="54" y="408" font-size="14" text-anchor="start" font-weight="bold" fill="#9ca3af">SPI1</text>
+<text x="54" y="426" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">free (the MK3S LCD option uses it)</text>
 <rect x="536" y="524.0" width="92" height="28" rx="3" fill="#f8fafc" stroke="#475569" stroke-width="2"/>
 <text x="582.0" y="542.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">TFT</text>
 <path d="M536,538.0 L420,527.5" stroke="#475569" stroke-width="2" fill="none"/>
@@ -266,41 +266,46 @@
 <text x="54" y="808" font-size="14" text-anchor="start" font-weight="bold" fill="#475569">micro-SD card</text>
 <text x="54" y="826" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">firmware.bin to flash,</text>
 <text x="54" y="843" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">G-code files to print</text>
-<rect x="40" y="990" width="420" height="260" rx="6" fill="#ffffff" stroke="#d97706" stroke-width="2"/>
-<text x="54" y="1014" font-size="15" text-anchor="start" font-weight="bold" fill="#d97706">EXP1 → MK3S LCD board</text>
+<rect x="40" y="990" width="425" height="260" rx="6" fill="#ffffff" stroke="#d97706" stroke-width="2"/>
+<text x="54" y="1014" font-size="15" text-anchor="start" font-weight="bold" fill="#d97706">EXP1 → Ender-3 display (ST7920)</text>
 <text x="54" y="1038" font-size="12.5" text-anchor="start" font-weight="bold" fill="#1f2933">EXP1-1</text>
 <text x="130" y="1038" font-size="12.5" text-anchor="start" font-weight="normal" fill="#475569">PB5</text>
-<text x="190" y="1038" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">LCD_D7</text>
+<text x="190" y="1038" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">beeper</text>
 <text x="54" y="1058" font-size="12.5" text-anchor="start" font-weight="bold" fill="#1f2933">EXP1-2</text>
 <text x="130" y="1058" font-size="12.5" text-anchor="start" font-weight="normal" fill="#475569">PA15</text>
-<text x="190" y="1058" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">encoder push</text>
+<text x="190" y="1058" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">knob push</text>
 <text x="54" y="1078" font-size="12.5" text-anchor="start" font-weight="bold" fill="#1f2933">EXP1-3</text>
 <text x="130" y="1078" font-size="12.5" text-anchor="start" font-weight="normal" fill="#475569">PA9</text>
-<text x="190" y="1078" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">LCD_D6</text>
+<text x="190" y="1078" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">knob B</text>
 <text x="54" y="1098" font-size="12.5" text-anchor="start" font-weight="bold" fill="#1f2933">EXP1-4</text>
 <text x="130" y="1098" font-size="12.5" text-anchor="start" font-weight="normal" fill="#475569">—</text>
-<text x="190" y="1098" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">RESET (not used)</text>
+<text x="190" y="1098" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">RESET (n.c.)</text>
 <text x="54" y="1118" font-size="12.5" text-anchor="start" font-weight="bold" fill="#1f2933">EXP1-5</text>
 <text x="130" y="1118" font-size="12.5" text-anchor="start" font-weight="normal" fill="#475569">PA10</text>
-<text x="190" y="1118" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">LCD_D5</text>
+<text x="190" y="1118" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">knob A</text>
 <text x="54" y="1138" font-size="12.5" text-anchor="start" font-weight="bold" fill="#1f2933">EXP1-6</text>
 <text x="130" y="1138" font-size="12.5" text-anchor="start" font-weight="normal" fill="#475569">PB9</text>
-<text x="190" y="1138" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">LCD_D4</text>
+<text x="190" y="1138" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">ST7920 SCLK</text>
 <text x="54" y="1158" font-size="12.5" text-anchor="start" font-weight="bold" fill="#1f2933">EXP1-7</text>
 <text x="130" y="1158" font-size="12.5" text-anchor="start" font-weight="normal" fill="#475569">PB8</text>
-<text x="190" y="1158" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">LCD_RS</text>
+<text x="190" y="1158" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">ST7920 CS</text>
 <text x="54" y="1178" font-size="12.5" text-anchor="start" font-weight="bold" fill="#1f2933">EXP1-8</text>
 <text x="130" y="1178" font-size="12.5" text-anchor="start" font-weight="normal" fill="#475569">PD6</text>
-<text x="190" y="1178" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">LCD_EN</text>
+<text x="190" y="1178" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">ST7920 SID</text>
 <text x="54" y="1198" font-size="12.5" text-anchor="start" font-weight="bold" fill="#1f2933">EXP1-9</text>
 <text x="130" y="1198" font-size="12.5" text-anchor="start" font-weight="normal" fill="#475569"></text>
 <text x="190" y="1198" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">GND</text>
 <text x="54" y="1218" font-size="12.5" text-anchor="start" font-weight="bold" fill="#1f2933">EXP1-10</text>
 <text x="130" y="1218" font-size="12.5" text-anchor="start" font-weight="normal" fill="#475569"></text>
 <text x="190" y="1218" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">5 V</text>
-<text x="290" y="1038" font-size="11.5" text-anchor="start" font-weight="normal" fill="#475569">Pin 1 = PB5 (BTT/Marlin</text>
-<text x="290" y="1054" font-size="11.5" text-anchor="start" font-weight="normal" fill="#475569">numbering). Check the notch</text>
-<text x="290" y="1070" font-size="11.5" text-anchor="start" font-weight="normal" fill="#475569">against the silkscreen.</text>
+<text x="292" y="1038" font-size="11.5" text-anchor="start" font-weight="normal" fill="#475569">Pin 1 = PB5 (BTT/Marlin</text>
+<text x="292" y="1054" font-size="11.5" text-anchor="start" font-weight="normal" fill="#475569">numbering). Check the notch</text>
+<text x="292" y="1070" font-size="11.5" text-anchor="start" font-weight="normal" fill="#475569">against the silkscreen.</text>
+<text x="292" y="1102" font-size="11.5" text-anchor="start" font-weight="normal" fill="#475569">Plug and play with the</text>
+<text x="292" y="1118" font-size="11.5" text-anchor="start" font-weight="normal" fill="#475569">cable of the display.</text>
+<text x="292" y="1150" font-size="11.5" text-anchor="start" font-weight="normal" fill="#475569">Original MK3S LCD: build</text>
+<text x="292" y="1166" font-size="11.5" text-anchor="start" font-weight="normal" fill="#475569">with -DLCD_MK3S and wire</text>
+<text x="292" y="1182" font-size="11.5" text-anchor="start" font-weight="normal" fill="#475569">it as in docs/WIRING.md.</text>
 <rect x="1430" y="1010" width="440" height="180" rx="6" fill="#fff7ed" stroke="#c2410c" stroke-width="2"/>
 <text x="1444" y="1034" font-size="15" text-anchor="start" font-weight="bold" fill="#c2410c">Before powering up</text>
 <text x="1444" y="1058" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">The STM32 is a 3.3 V part: check that 5 V signals (P.I.N.D.A.,</text>
@@ -318,9 +323,9 @@
 <rect x="1005.0" y="1290" width="22" height="14" rx="2" fill="#7c3aed" stroke="none" stroke-width="1.5"/>
 <text x="1035.0" y="1302" font-size="13" text-anchor="start" font-weight="normal" fill="#1f2933">fans</text>
 <rect x="1105.0" y="1290" width="22" height="14" rx="2" fill="#d97706" stroke="none" stroke-width="1.5"/>
-<text x="1135.0" y="1302" font-size="13" text-anchor="start" font-weight="normal" fill="#1f2933">LCD</text>
-<rect x="1197.5" y="1290" width="22" height="14" rx="2" fill="#475569" stroke="none" stroke-width="1.5"/>
-<text x="1227.5" y="1302" font-size="13" text-anchor="start" font-weight="normal" fill="#1f2933">USB / SD / MMU</text>
-<rect x="1372.5" y="1290" width="22" height="14" rx="2" fill="#9ca3af" stroke="none" stroke-width="1.5"/>
-<text x="1402.5" y="1302" font-size="13" text-anchor="start" font-weight="normal" fill="#1f2933">not used</text>
+<text x="1135.0" y="1302" font-size="13" text-anchor="start" font-weight="normal" fill="#1f2933">display</text>
+<rect x="1227.5" y="1290" width="22" height="14" rx="2" fill="#475569" stroke="none" stroke-width="1.5"/>
+<text x="1257.5" y="1302" font-size="13" text-anchor="start" font-weight="normal" fill="#1f2933">USB / SD / MMU</text>
+<rect x="1402.5" y="1290" width="22" height="14" rx="2" fill="#9ca3af" stroke="none" stroke-width="1.5"/>
+<text x="1432.5" y="1302" font-size="13" text-anchor="start" font-weight="normal" fill="#1f2933">not used</text>
 </svg>

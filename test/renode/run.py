@@ -30,6 +30,19 @@ def elf_symbol(elf, name):
             return int(parts[0], 16)
     raise SystemExit(f'symbol {name} not found')
 
+def write_screen(path, data, scale=4, border=8):
+    # ST7920 frame: 64 rows x 16 bytes, MSB = left pixel; dark pixels on a light background
+    w, h = 128 * scale + 2 * border, 64 * scale + 2 * border
+    img = bytearray([200]) * (w * h)
+    for y in range(64):
+        for x in range(128):
+            if data[y * 16 + x // 8] & (0x80 >> (x % 8)):
+                for dy in range(scale):
+                    o = (border + y * scale + dy) * w + border + x * scale
+                    img[o:o + scale] = bytes([20]) * scale
+    with open(path, 'wb') as f:
+        f.write(b'P5 %d %d 255\n' % (w, h) + bytes(img))
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--renode', default=os.environ.get('RENODE', 'renode'))
@@ -41,6 +54,7 @@ def main():
     ap.add_argument('--expect', action='append', default=[], help='regex that must appear in the serial output')
     ap.add_argument('--forbid', action='append', default=[], help='regex that must not appear in the serial output')
     ap.add_argument('--expect-lcd', action='append', default=[], help='regex that must appear on the LCD')
+    ap.add_argument('--screen', help='write the picture shown on the Ender-3 display (PGM) to this file')
     ap.add_argument('gcode', nargs='*')
     a = ap.parse_args()
 
@@ -82,7 +96,11 @@ def main():
         lines.append(f'emulation RunFor "{a.wait}"')
     if a.profile:
         lines.append('cpu DisableProfiler')
-    lines += [f'echo "LCD:"', f'sysbus ReadBytes {lcd:#x} 128', 'quit']
+    lines += [f'echo "LCD:"', f'sysbus ReadBytes {lcd:#x} 128']
+    if a.screen:
+        shown = elf_symbol(a.elf, 'st7920_shown')
+        lines += [f'echo "SCREEN:"', f'sysbus ReadBytes {shown:#x} 1024']
+    lines.append('quit')
     resc = os.path.join(tmp, 'test.resc')
     open(resc, 'w').write('\n'.join(lines) + '\n')
 
@@ -94,7 +112,12 @@ def main():
     print(serial)
     # LCD: DDRAM rows start at 0x00, 0x40, 0x14, 0x54
     m = re.search(r'LCD:(.*)', out, re.S)
-    data = [int(x, 16) for x in re.findall(r'0x([0-9A-Fa-f]{2})\b', m.group(1))][:128] if m else []
+    data = [int(x, 16) for x in re.findall(r'0x([0-9A-Fa-f]{2})\b', m.group(1).split('SCREEN:')[0])][:128] if m else []
+    if a.screen:
+        m2 = re.search(r'SCREEN:(.*)', out, re.S)
+        px = [int(x, 16) for x in re.findall(r'0x([0-9A-Fa-f]{2})\b', m2.group(1))][:1024] if m2 else []
+        if len(px) == 1024:
+            write_screen(a.screen, px)
     print('=== LCD ===')
     screen = ''
     if len(data) == 128:

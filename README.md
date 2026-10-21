@@ -58,8 +58,8 @@ settings of another firmware, the printer then starts like a new MK3S: run the
 See [docs/WIRING.md](docs/WIRING.md) and the [wiring picture](docs/wiring.png). In short: motors, heaters and thermistors go to
 the usual headers, the P.I.N.D.A. to the PROBE header (its thermistor to SERVO with a
 4.7 kΩ pull-up), the IR filament sensor to E0-STOP, the TMC2209 DIAG jumpers X/Y/Z
-must be installed, and the MK3S LCD needs a custom harness (EXP1 plus three spare
-pins).
+must be installed, and the display is a stock **Creality Ender-3 LCD** on EXP1 with its
+own cable (the original MK3S LCD still works with `-DLCD_MK3S` and a custom harness).
 
 ## Feature status
 
@@ -69,7 +69,7 @@ pins).
 | Input shaper (MK3.5) | **new**: MZV X 50.7 Hz / Y 40.6 Hz (MK3.5 defaults), Y lowered with the bed weight (M74); M593 to change |
 | Pressure advance (MK3.5, M572) | **new**, replaces Linear Advance 1.5; M900 K values are used as the pressure advance |
 | Speeds / accelerations | MK3.5 limits: up to 300 mm/s and 7000 mm/s² on X/Y (M203/M201), MK3.5 defaults and jerk |
-| LCD menus, wizard, self test, statistics, fail stats | unchanged, original 20x4 LCD |
+| LCD menus, wizard, self test, statistics, fail stats | unchanged, shown as 20x4 text on the Creality Ender-3 display (ST7920), or on the original MK3S LCD (`-DLCD_MK3S`) |
 | Print from SD | on-board micro-SD slot |
 | Print over USB (PrusaSlicer, OctoPrint, M862 checks) | native USB, reports as MK3S |
 | Thermal model, temperature runaway, min/max temp protection | unchanged; "ambient" is the STM32 temperature sensor instead of the EINSy board thermistor |

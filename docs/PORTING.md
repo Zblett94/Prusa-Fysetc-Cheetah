@@ -33,6 +33,7 @@ shows every change.
 | USART0 (to the 32u2 USB bridge) | native USB CDC | `MarlinSerial.cpp` |
 | USART2 (MMU) | USART2 on PA2/PA3 | `mmu2_serial.cpp` |
 | SPI (SD card on the LCD) | SPI1, on-board micro-SD | `Sd2Card.cpp` |
+| HD44780 20x4 LCD, 4 bit parallel | Creality Ender-3 display (ST7920 128x64, serial) emulating the HD44780, sent in the background by TIM7; or the MK3S LCD with `-DLCD_MK3S` | `lcd_st7920.cpp`, `lcd.cpp` |
 | INT4 (power panic), INT6/INT7 (fan tach) | EXTI lines, the INT7 edge toggling is emulated | `power_panic.cpp`, `fancheck.cpp` |
 | WDT | IWDG. "Disabling" it keeps it fed from SysTick (the IWDG can not be stopped) | `hal.cpp` |
 | avr-libc (`pgmspace`, `eeprom`, `wdt`, `atomic`, `delay`, `crc16`, `%S`) | compatibility headers in `hal_stm32/include`, `%S` replaced by `%s` | |
@@ -47,7 +48,7 @@ interrupt can preempt them. On the Cortex-M0+ this is done with NVIC priorities:
 | 0 | stepper (TIM17), SysTick |
 | 1 | USB, MMU UART |
 | 2 | soft PWM tick (with the motion engine producer), heatbed PWM, ADC, power panic, fan tach |
-| 3 | temperature manager |
+| 3 | temperature manager, display transfer (TIM7) |
 
 ### Timing constants
 
@@ -149,6 +150,32 @@ hardware layer.
 
 `test/motion/run.sh` builds the motion engine for the host and compares its steps with
 an exact (double precision) model of the shaped motion.
+
+## Display
+
+The Prusa UI writes to a 20x4 HD44780 character LCD (`lcd.cpp`). With the default
+Creality Ender-3 display, `lcd_send()` hands the HD44780 commands to
+`lcd_st7920.cpp`, which emulates the HD44780: DDRAM with its address layout and
+wrap-around, the 8 CGRAM custom characters (the Prusa slot management in `lcd.cpp`
+is unchanged) and the character ROM (font A00, `lcd_st7920_font.h`). Each character
+is a 6x16 pixel cell (the 5x8 glyph doubled vertically) in a 128x64 frame buffer;
+20 x 4 cells fill the screen with a 4 pixel margin left and right.
+
+The ST7920 is driven in serial mode (3 wires, bit-banged at about 1.5 MHz, timing as
+in Marlin for this board). A low priority interrupt (TIM7, every 40 µs, priority 3)
+compares the frame buffer with what the display shows and sends one byte of the
+changed 16 bit words per tick, so the UI never waits for the display: a changed
+value is on the screen in about 2 ms, a full screen in about 50 ms, at about 30% of
+the CPU during the transfer and 0% when nothing changes. Menus that clear the screen
+and draw the same text again cause no traffic. `lcd_refresh()` (called by the UI to
+revive a disturbed display) sets the controller up again and resends the screen.
+
+`test/lcd/run.sh` runs the driver on the host against a model of the ST7920 serial
+interface and graphic RAM, and compares the picture with an independent rendering
+of the expected text (custom characters, address wrap, interleaved updates, refresh
+during a transfer). `test/lcd/run.sh screen.pgm` writes a picture of the test screen, and
+`test/renode/run.py --screen screen.pgm ...` the picture the emulated firmware sent to
+the display.
 
 ## TMC2209 instead of TMC2130
 

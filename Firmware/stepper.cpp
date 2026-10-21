@@ -1340,11 +1340,16 @@ static void motion_tick_body()
     tmc2130_st_isr();
 #endif
     for (uint8_t n = 0; n < 4; ++n) {
-        bool running;
+        bool running, work;
         CRITICAL_SECTION_START;
         running = motion_running;
-        if (running) motion_draining = false;
+        work = motion::busy() || block_buffer_motion != block_buffer_head;
+        // Only leave the draining state when there is something to generate: otherwise
+        // the step interrupt could empty the queue before the end of this tick sets the
+        // flag again, and count the normal end of the motion as an underrun.
+        if (running && work) motion_draining = false;
         CRITICAL_SECTION_END;
+        if (running && !work) break;
         if (!running && !motion::busy() && !motion::events_queued()) {
             if (block_buffer_motion == block_buffer_head) return; // idle
             if (motion_config_dirty) motion_apply_config();

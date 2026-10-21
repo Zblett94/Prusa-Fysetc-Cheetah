@@ -114,7 +114,9 @@ static inline uint32_t adc_channel_pin(uint8_t ch) {
 #define KILL_PIN             -1
 #define SUICIDE_PIN          -1
 
-// Original Prusa i3 MK3S LCD (20x4 HD44780 + encoder + beeper), see docs/WIRING.md
+#ifdef LCD_MK3S
+// Original Prusa i3 MK3S LCD (20x4 HD44780 + encoder + beeper) on a custom cable,
+// see docs/WIRING.md. Build with -DLCD_MK3S.
 //#define LCD_BL_PIN         not connected
 #define BEEPER               PA8    // "NEOPIXEL" header
 #define LCD_PINS_RS          PB8    // EXP1-7
@@ -127,6 +129,21 @@ static inline uint32_t adc_channel_pin(uint8_t ch) {
 #define BTN_EN1              PD9    // "SPI1" header pin 3 (CS)
 #define BTN_EN2              PC13   // "PS-ON" header (PC13 is an input-only grade pin, fine for the encoder)
 #define BTN_ENC              PA15   // EXP1-2
+#else
+// Creality Ender-3 display (ST7920 128x64, serial mode + encoder + beeper) on EXP1 with
+// its stock 10 pin cable (default). Same pins as Marlin's CR10_STOCKDISPLAY on this board.
+#define LCD_ST7920
+#define BEEPER               PB5    // EXP1-1
+#define BTN_ENC              PA15   // EXP1-2
+#define ST7920_CS_PIN        PB8    // EXP1-7 ("RS")
+#define ST7920_DAT_PIN       PD6    // EXP1-8 ("EN")
+#define ST7920_CLK_PIN       PB9    // EXP1-6 ("D4")
+// Encoder: EN1/EN2 are swapped relative to Marlin (EXP1-3 / EXP1-5) because the Prusa
+// encoder table counts the other way; clockwise moves down in the menus.
+// If the knob works backwards on your display, swap these two lines.
+#define BTN_EN1              PA10   // EXP1-5
+#define BTN_EN2              PA9    // EXP1-3
+#endif
 
 // Fan tachometers. The SWD header pins are used (no other free pins left),
 // so a debugger can not be connected while the tach wires are attached.
