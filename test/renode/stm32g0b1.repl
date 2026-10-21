@@ -231,7 +231,8 @@ elif request.isRead:
         request.value = lastVal * 0xFFFFFFF8
     elif request.offset == 0x24:
         request.value = 0x0
-    elif request.offset in (0x34, 0x38, 0x3C, 0x40, 0x54):
+    elif request.offset in (0x0C, 0x34, 0x38, 0x3C, 0x40, 0x54):
+        # PLLCFGR and the clock enable registers read back what was written
         request.value = data['regs'].get(request.offset, 0)
     elif request.offset == 0x60:
         request.value = (data['lsion'] << 1)
@@ -239,7 +240,7 @@ elif request.isRead:
         # RCC_CFGR [doc = "0x08 - Clock configuration register"]
         # SWS_R [doc = "Bits 3:5 - System clock switch status"]
         # request.value = lastVal * 0xFFFFFFFF
-        request.value = data['sw'] << 3
+        request.value = (data['regs'].get(0x8, 0) & ~0x38) | (data['sw'] << 3)
 
 self.NoisyLog("  0x%x (%s)" % (request.value, str(data)))
 '''

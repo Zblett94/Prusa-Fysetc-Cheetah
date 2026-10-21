@@ -7,7 +7,8 @@ given emulated times, collects the serial output and the LCD contents (DDRAM sha
 emu_lcd_ddram kept by the test build) and prints them.
 
 usage: run.py [--renode PATH] [--elf PATH] [--boot SECONDS] [--wait SECONDS] [--lang N]
-              [--expect REGEX ...] [--forbid REGEX ...] [--expect-lcd REGEX ...] [GCODE | @SECONDS ...]
+              [--expect REGEX ...] [--forbid REGEX ...] [--expect-lcd REGEX ...]
+              [GCODE | @SECONDS | !MONITOR_COMMAND ...]
 
 The firmware is loaded from firmware.bin (next to the ELF file), which contains the
 language tables added after linking.
@@ -35,6 +36,7 @@ def main():
     ap.add_argument('--elf', default=os.path.join(ROOT, '.pio/build/renode_test/firmware.elf'))
     ap.add_argument('--boot', type=float, default=6.0, help='emulated seconds before the first command')
     ap.add_argument('--wait', type=float, default=2.0, help='emulated seconds after each command')
+    ap.add_argument('--profile', help='write a collapsed stack profile of the commands to this file')
     ap.add_argument('--lang', type=int, default=0, help='language preset: 0 English, 1.. language tables, 255 ask')
     ap.add_argument('--expect', action='append', default=[], help='regex that must appear in the serial output')
     ap.add_argument('--forbid', action='append', default=[], help='regex that must not appear in the serial output')
@@ -55,6 +57,10 @@ def main():
         f'sysbus LoadBinary @{fw_bin} 0x08002000',
         f'sysbus WriteByte {lang:#x} {a.lang}',
         'cpu VectorTableOffset 0x08002000',
+        # one instruction per clock at 64 MHz (the real Cortex-M0+ needs a bit more)
+        'cpu PerformanceInMips 64',
+        # fine time synchronization between the CPU and the timers (step timing)
+        'emulation SetGlobalQuantum "0.00001"',
         # typical STM32G0B1 factory calibration: TS_CAL1 (30 C), TS_CAL2 (130 C), VREFINT_CAL
         'sysbus WriteWord 0x1FFF75A8 1034',
         'sysbus WriteWord 0x1FFF75CA 1386',
@@ -63,12 +69,19 @@ def main():
         'logLevel 3',
         f'emulation RunFor "{a.boot}"',
     ]
+    if a.profile:
+        lines.append(f'cpu EnableProfilerCollapsedStack @{os.path.abspath(a.profile)} true')
     for g in a.gcode:
         if g.startswith('@'):  # @<seconds>: just run
             lines.append(f'emulation RunFor "{float(g[1:])}"')
             continue
+        if g.startswith('!'):  # !<monitor command>, e.g. !gpioPortC OnGPIO 14 true
+            lines.append(g[1:])
+            continue
         lines.append(f'usart2 WriteLine "{g}"')
         lines.append(f'emulation RunFor "{a.wait}"')
+    if a.profile:
+        lines.append('cpu DisableProfiler')
     lines += [f'echo "LCD:"', f'sysbus ReadBytes {lcd:#x} 128', 'quit']
     resc = os.path.join(tmp, 'test.resc')
     open(resc, 'w').write('\n'.join(lines) + '\n')
