@@ -106,6 +106,13 @@ typedef struct {
   // Pre-calculated division for the calculate_trapezoid_for_block() routine to run faster.
   float speed_factor;
 
+#ifdef MOTION_ENGINE
+  // Exit speed of the trapezoid (mm/s), set with initial_rate/final_rate.
+  float exit_speed;
+  // Exit speed the motion engine actually used (mm/s), when the block was taken by it.
+  float motion_exit_speed;
+#endif
+
 #ifdef LIN_ADVANCE
   bool use_advance_lead;            // Whether the current block uses LA
   uint16_t advance_rate,            // Step-rate for extruder speed
@@ -189,6 +196,11 @@ extern volatile uint8_t block_buffer_head;
 // This is the block, which is being currently processed by the stepper routine,
 // or which is first to be processed by the stepper routine.
 extern volatile uint8_t block_buffer_tail;
+#ifdef MOTION_ENGINE
+// Index of the first block not yet taken by the motion engine. The blocks from the tail
+// up to here are being executed (busy), the planner only re-plans the following ones.
+extern volatile uint8_t block_buffer_motion;
+#endif
 // Called when the current block is no longer needed. Discards the block and makes the memory
 // available for new blocks.
 FORCE_INLINE void plan_discard_current_block()

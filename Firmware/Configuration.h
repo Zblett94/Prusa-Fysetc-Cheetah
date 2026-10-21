@@ -305,10 +305,12 @@ your extruder heater takes 2 minutes to hit the target on heating.
 // For deltabots this means top and center of the Cartesian print volume.
 
 // The speed change that does not require acceleration (i.e. the software might assume it can be done instantaneously)
+#ifndef DEFAULT_XJERK // STM32 port: the variant may set them
 #define DEFAULT_XJERK                10       // (mm/sec)
 #define DEFAULT_YJERK                10       // (mm/sec)
 #define DEFAULT_ZJERK                 0.4     // (mm/sec)
 #define DEFAULT_EJERK                 4.5     // (mm/sec)
+#endif
 
 //===========================================================================
 //=============================Additional Features===========================

@@ -668,8 +668,11 @@ static Sheets * const EEPROM_Sheets_base = (Sheets*)(EEPROM_SHEETS_BASE);
 #define EEPROM_UVLO_MIN_SEGMENT_TIME_US (EEPROM_UVLO_MIN_TRAVEL_FEEDRATE-4) //uint32_t
 #define EEPROM_UVLO_MAX_JERK (EEPROM_UVLO_MIN_SEGMENT_TIME_US-4*4) // 4 x float
 #define EEPROM_CHECK_FILAMENT (EEPROM_UVLO_MAX_JERK-1) // uint8_t
+// STM32 port: input shaper configuration of the motion engine (motion/motion.cpp)
+#define EEPROM_INPUT_SHAPER_SIZE 56
+#define EEPROM_INPUT_SHAPER (EEPROM_CHECK_FILAMENT-EEPROM_INPUT_SHAPER_SIZE) // StoredShaper
 //This is supposed to point to last item to allow EEPROM overrun check. Please update when adding new items.
-#define EEPROM_LAST_ITEM EEPROM_CHECK_FILAMENT
+#define EEPROM_LAST_ITEM EEPROM_INPUT_SHAPER
 // !!!!!
 // !!!!! this is end of EEPROM section ... all updates MUST BE inserted before this mark !!!!!
 // !!!!!

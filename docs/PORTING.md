@@ -1,9 +1,11 @@
 # How the port works
 
 The goal is to run the **unchanged printer logic** of Prusa-Firmware 3.14.1 for the
-Original Prusa i3 MK3S (G-code handling, planner, stepper ISR, mesh bed leveling,
-XYZ calibration, thermal model, menus, power panic, crash detection, MMU support,
-filament sensor, self test, ...) on the STM32G0B1 of the BigTreeTech SKR Mini E3 V3.
+Original Prusa i3 MK3S (G-code handling, planner, mesh bed leveling, XYZ calibration,
+thermal model, menus, power panic, crash detection, MMU support, filament sensor, self
+test, ...) on the STM32G0B1 of the BigTreeTech SKR Mini E3 V3. The stepper interrupt
+is replaced by a motion engine with the input shaper and pressure advance of the MK3.5
+(see [Motion engine](#motion-engine-input-shaper-and-pressure-advance)).
 
 Instead of rewriting these parts on top of another firmware, the AVR (ATmega2560)
 peripherals the Prusa code uses are emulated by a hardware abstraction layer in
@@ -18,7 +20,7 @@ shows every change.
 | ATmega2560 (EINSy) | STM32G0B1 (SKR Mini E3 V3) | Where |
 |---|---|---|
 | `PORTx`/`PINx`/`DDRx` (`fastio.h`) | GPIO BSRR/IDR/MODER, constexpr pin tables. Writing an input pin still switches its pull-up, as on the AVR | `hal_stm32/fastio_stm32.h` |
-| Timer1 CTC, /8 = 2 MHz, `OCR1A`/`TCNT1` | TIM17 at 2 MHz, `OCR1A` = ARR, `TCNT1` = CNT, update interrupt. Same tick, so `speed_lookuptable` and all step timing math are unchanged | `hal.cpp`, `stepper.cpp` |
+| Timer1 CTC, /8 = 2 MHz (stepper interrupt) | TIM17 at 2 MHz, update interrupt, executes the step events of the motion engine; its handler is installed in a RAM copy of the vector table | `hal.cpp`, `stepper.cpp`, `motion/` |
 | Timer2 COMPB, 976.5 Hz (soft PWM, buttons, babystepping, fan tach) | TIM16 at 976.5625 Hz | `hal.cpp`, `temperature.cpp` |
 | Timer5 COMPA, 3.7 Hz (temperature manager, PID, thermal model) | TIM15, 0.27 s | `hal.cpp`, `temperature.cpp` |
 | Timer0 fast PWM 62.5 kHz / 7.8 kHz (quiet heatbed PWM automaton) | TIM1 CH2 on PC9, same frequencies, same state machine | `heatbed_pwm.cpp` |
@@ -44,7 +46,7 @@ interrupt can preempt them. On the Cortex-M0+ this is done with NVIC priorities:
 |---|---|
 | 0 | stepper (TIM17), SysTick |
 | 1 | USB, MMU UART |
-| 2 | soft PWM tick, heatbed PWM, ADC, power panic, fan tach |
+| 2 | soft PWM tick (with the motion engine producer), heatbed PWM, ADC, power panic, fan tach |
 | 3 | temperature manager |
 
 ### Timing constants
@@ -84,6 +86,50 @@ The tables have the Prusa format and are built by the Prusa tools. After linking
 
 The ELF file is not patched; it runs in English only.
 
+## Motion engine (input shaper and pressure advance)
+
+The MK3.5 (Prusa-Firmware-Buddy) computes the time of every step with floating point
+math ("PreciseStepping"). The Cortex-M0+ has no FPU: that way one step costs ~2500
+cycles, too much for the 20-40k steps/s of the MK3.5 speeds. The engine in
+`Firmware/motion` keeps the planner of 3.14 and the shaper/pressure advance math of
+Buddy (both based on Klipper), and changes how steps are generated:
+
+1. **Segments.** Each planner block becomes up to three constant acceleration
+   segments along its path (`motion_core.cpp`, `add_block`). The blocks stay in the
+   planner queue (`BLOCK_BUFFER_SIZE` 64) until the shaped motion has left them, so
+   `current_block`, `blocks_queued()`, the SD position for power panic and the
+   crash recovery work as before; the planner re-plans only the blocks after
+   `block_buffer_motion` (the ones not yet taken by the engine).
+2. **Sampling.** Every millisecond the position of each motor is sampled:
+   X and Y through the input shaper, x_s(t) = Σ aᵢ·x(t − tᵢ) (MZV/ZV/ZVD/EI... of
+   Buddy, pulses centered around their weighted average so that shaped and unshaped
+   axes stay in sync), E with pressure advance e(t) + K·v_e(t), smoothed by a
+   triangular window (`M572 W`, 40 ms by default; two box filters with integer
+   running sums). Inside a segment a motor position is a quadratic function of time,
+   so it is advanced by forward differencing in 32.32 fixed point; floating point is
+   only used when a motor enters a new segment.
+3. **Steps.** Between two samples a motor moves linearly, so its steps are evenly
+   spaced: one integer division per motor and sample, then additions. The steps of all
+   motors are merged into one time ordered event queue (with markers that discard the
+   finished planner blocks and apply E resets).
+4. **Step interrupt.** TIM17 executes the events: direction and step pins (double edge
+   stepping), `count_position`, endstops (an endstop hit stops the motion and discards
+   the block, like the AVR interrupt did).
+
+The producer (steps 1-3) runs in the 1 kHz soft PWM interrupt and stays 12 ms ahead
+of the step interrupt. Compared to exact step times the position error is below 0.1
+step (`test/motion`); the position after a move is exact.
+
+CPU load measured in the emulator (one instruction per clock) at the MK3.5 limits,
+300 mm/s and 7000 mm/s² diagonal with input shaping: step interrupt 11 %, producer
+14 %. The real Cortex-M0+ needs more cycles per instruction (flash wait states), so
+expect roughly a third of the CPU at full speed; `M593` prints the measured load.
+
+G-codes: `M593` (input shaper, as on the MK3.5), `M74` (weight on the bed), `M572`
+(pressure advance), `M900 K` (Linear Advance K values are used as the pressure
+advance, both are filament mm per mm/s). Settings: `motion/motion.cpp`, EEPROM area
+`EEPROM_INPUT_SHAPER`.
+
 ## Emulator tests
 
 `pio run -e renode_test` builds a test variant (`-DEMULATION`) for the
@@ -94,8 +140,15 @@ and the LCD contents are mirrored into RAM. `test/renode/run.py`
 boots it, sends G-code and checks the serial output and the LCD;
 `test/renode/smoke_test.sh` checks start-up, M115, M503 and moves,
 `test/renode/heat_test.sh` heating and temperature regulation,
-`test/renode/lang_test.sh` the language menu and a German message. The emulator does not model the TMC2209 drivers, EXTI and the ADC, so
-these tests cover the firmware logic, not the hardware layer.
+`test/renode/lang_test.sh` the language menu and a German message,
+`test/renode/motion_test.sh` fast moves at the MK3.5 limits with input shaping and
+pressure advance (exact end positions, no step underruns) and
+`test/renode/endstop_test.sh` an endstop stopping a move. The emulator does not model
+the TMC2209 drivers, EXTI and the ADC, so these tests cover the firmware logic, not the
+hardware layer.
+
+`test/motion/run.sh` builds the motion engine for the host and compares its steps with
+an exact (double precision) model of the shaped motion.
 
 ## TMC2209 instead of TMC2130
 
@@ -107,10 +160,12 @@ interface and translates:
   motor current is the same as on the EINSy.
 - **StallGuard.** StallGuard4 (SGTHRS/SG_RESULT) replaces StallGuard2 (COOLCONF SGT).
   StallGuard4 only works in stealthChop, so the axes that need stall detection run in
-  stealthChop where the TMC2130 used spreadCycle: X/Y in the Normal mode (crash
-  detection) and during homing, Z always. The extruder keeps spreadCycle. Define
-  `TMC2209_NORMAL_MODE_SPREADCYCLE` to keep spreadCycle on X/Y in the Normal mode
-  (crash detection is then not available).
+  stealthChop where the TMC2130 used spreadCycle: X/Y during homing and in the Normal
+  mode when crash detection is on, Z always. With crash detection off, X/Y use
+  spreadCycle in the Normal mode (full torque for the MK3.5 speeds); the setting is
+  applied when crash detection is switched in the menu. The extruder keeps
+  spreadCycle. Define `TMC2209_NORMAL_MODE_SPREADCYCLE` to use spreadCycle on X/Y in
+  the Normal mode in any case (crash detection is then not available).
   The thresholds are `TMC2209_SGTHRS_*` in the variant file, `M916 X<n> Y<n>`
   changes them at run time. **Higher values are more sensitive** (the opposite of the
   TMC2130).

@@ -87,6 +87,9 @@
 
 #ifndef LA_NOCOMPAT
 #include "la10compat.h"
+#ifdef MOTION_ENGINE
+#include "motion/motion.h"
+#endif
 #endif
 
 #include "spi.h"
@@ -1917,15 +1920,22 @@ static void clean_up_after_endstop_move(int original_feedmultiply) {
     */
 inline void gcode_M900() {
     float newK = code_seen('K') ? code_value() : -2;
+#ifdef MOTION_ENGINE
+    // STM32: the K factor (filament mm per mm/s, Linear Advance 1.5) is the pressure advance
+    // time constant (s) of the motion engine, see M572
+#define LA_SET_K(k) motion_set_pressure_advance((k), motion_pa_smooth_time())
+#else
+#define LA_SET_K(k) (extruder_advance_K = (k))
+#endif
 #ifdef LA_NOCOMPAT
     if (newK >= 0 && newK < LA_K_MAX)
-        extruder_advance_K = newK;
+        LA_SET_K(newK);
     else
         SERIAL_ECHOLNPGM("K out of allowed range!");
 #else
     if (newK == 0)
     {
-        extruder_advance_K = 0;
+        LA_SET_K(0);
         la10c_reset();
     }
     else
@@ -1934,15 +1944,138 @@ inline void gcode_M900() {
         if (newK < 0)
             SERIAL_ECHOLNPGM("K out of allowed range!");
         else
-            extruder_advance_K = newK;
+            LA_SET_K(newK);
     }
 #endif
+#undef LA_SET_K
 
     SERIAL_ECHO_START;
     SERIAL_ECHOPGM("Advance K=");
     SERIAL_ECHOLN(extruder_advance_K);
 }
 #endif // LIN_ADVANCE
+
+#ifdef MOTION_ENGINE
+/**
+ * M572: Set or report the pressure advance (Prusa-Firmware-Buddy / MK3.5)
+ *  S<seconds>  pressure advance (0 = off, same as M900 K)
+ *  W<seconds>  smoothing time (0..0.2, default 0.04)
+ */
+static void gcode_M572() {
+    float k = motion_pressure_advance();
+    float w = motion_pa_smooth_time();
+    const bool seen_s = code_seen('S');
+    if (seen_s) {
+        const float v = code_value();
+        if (v >= 0.f && v <= 10.f) k = v;
+        else SERIAL_ECHOLNPGM("?Pressure advance (S) value out of range (0-10)");
+    }
+    const bool seen_w = code_seen('W');
+    if (seen_w) {
+        const float v = code_value();
+        if (v >= 0.f && v <= 0.2f) w = v;
+        else SERIAL_ECHOLNPGM("?Pressure advance smooth time (W) value out of range (0-0.2)");
+    }
+    if (!seen_s && !seen_w) {
+        motion_report_pressure_advance();
+        return;
+    }
+    motion_set_pressure_advance(k, w);
+}
+
+/**
+ * M593: Configure the input shaper (Prusa-Firmware-Buddy / MK3.5)
+ *  X Y Z     axes to change (none: X and Y)
+ *  T<type>   0 ZV, 1 ZVD, 2 MZV, 3 EI, 4 EI 2 hump, 5 EI 3 hump
+ *  F<Hz>     frequency, 0 disables the shaper of the axis
+ *  D<ratio>  damping ratio (0..1)
+ *  R<value>  vibration reduction (EI)
+ *  A<Hz>     weight adjust: frequency change at the mass limit (Y, negative)
+ *  M<g>      weight adjust: mass limit, 0 disables the weight adjust
+ *  W         store the settings in the EEPROM
+ * Without parameters: report the settings.
+ */
+//! code_seen() for the parameters only: M593 uses the parameter M (mass limit)
+static bool code_seen_param(char c) {
+    const char *params = strchr(CMDBUFFER_CURRENT_STRING, ' ');
+    return params && (strchr_pointer = strchr(params, c)) != NULL;
+}
+
+static void gcode_M593() {
+#define code_seen code_seen_param
+    const bool seen_x = code_seen('X'), seen_y = code_seen('Y'), seen_z = code_seen('Z'), seen_w = code_seen('W');
+    bool have_type = false, have_freq = false, have_damp = false, have_vr = false;
+    input_shaper::Type type = input_shaper::Type::mzv;
+    float freq = 0, damp = 0, vr = 0;
+    if (code_seen('T')) {
+        const long t = code_value_long();
+        if (t >= 0 && t < long(input_shaper::Type::null)) { type = input_shaper::Type(t); have_type = true; }
+        else SERIAL_ECHOLNPGM("?Invalid type of input shaper (T)");
+    }
+    if (code_seen('F')) {
+        freq = code_value();
+        if (freq >= 0) have_freq = true;
+        else SERIAL_ECHOLNPGM("?Frequency (F) must be greater or equal to 0");
+    }
+    if (code_seen('D')) {
+        damp = code_value();
+        if (damp >= 0 && damp < 1) have_damp = true;
+        else SERIAL_ECHOLNPGM("?Damping ratio (D) value out of range (0-1)");
+    }
+    if (code_seen('R')) {
+        vr = code_value();
+        if (vr > 0) have_vr = true;
+        else SERIAL_ECHOLNPGM("?Vibration reduction (R) must be greater than 0");
+    }
+    const bool axis_change = have_type || have_freq || have_damp || have_vr;
+    if (axis_change) {
+        const bool any_axis = seen_x || seen_y || seen_z;
+        for (uint8_t axis = X_AXIS; axis <= Z_AXIS; ++axis) {
+            const bool selected = (axis == X_AXIS && seen_x) || (axis == Y_AXIS && seen_y) || (axis == Z_AXIS && seen_z);
+            if (!(selected || (!any_axis && axis != Z_AXIS))) continue;
+            input_shaper::AxisConfig c = motion_shaper_config().axis[axis];
+            if (!c.enabled && c.frequency == 0) c = input_shaper::axis_defaults[X_AXIS];
+            c.enabled = true;
+            if (have_type) c.type = type;
+            if (have_freq) {
+                if (freq == 0) c.enabled = false;
+                else c.frequency = freq;
+            }
+            if (have_damp) c.damping_ratio = damp;
+            if (have_vr) c.vibration_reduction = vr;
+            motion_set_shaper(axis, c);
+        }
+    }
+    bool wa_change = false;
+    input_shaper::WeightAdjustConfig wa = motion_shaper_config().weight_adjust_y;
+    if (code_seen('A')) {
+        const float a = code_value();
+        if (a < 0) { wa.frequency_delta = a; wa.enabled = true; wa_change = true; }
+        else SERIAL_ECHOLNPGM("?Weight adjust frequency delta (A) must be lesser than 0");
+    }
+    if (code_seen('M')) {
+        const float m = code_value();
+        if (m >= 0) { wa.mass_limit = m; wa.enabled = m > 0; wa_change = true; }
+        else SERIAL_ECHOLNPGM("?Weight adjust mass limit (M) must be greater or equal to 0");
+    }
+    if (wa_change) motion_set_weight_adjust(wa);
+    if (seen_w) motion_store_shaper_config();
+    if (!axis_change && !wa_change && !seen_w) motion_report_shaper();
+#undef code_seen
+}
+
+/**
+ * M74: Weight on the bed (Prusa-Firmware-Buddy / MK3.5)
+ *  W<g>  mass of everything on the bed, lowers the Y input shaper frequency
+ */
+static void gcode_M74() {
+    if (code_seen('W')) {
+        const float m = code_value();
+        if (m >= 0) motion_set_bed_weight(m);
+        else SERIAL_ECHOLNPGM("?Mass (W) must be greater or equal 0");
+    }
+}
+#endif // MOTION_ENGINE
 
 bool check_commands() {
 	bool end_command_found = false;
@@ -7496,6 +7629,24 @@ void process_commands()
     case 900:
         gcode_M900();
     break;
+#endif
+
+#ifdef MOTION_ENGINE
+    /*!
+    ### M572 - Pressure advance (MK3.5)
+    ### M593 - Input shaper (MK3.5)
+    ### M74 - Weight on the bed (MK3.5)
+    See gcode_M572(), gcode_M593() and gcode_M74().
+    */
+    case 572:
+        gcode_M572();
+        break;
+    case 593:
+        gcode_M593();
+        break;
+    case 74:
+        gcode_M74();
+        break;
 #endif
 
     /*!

@@ -26,6 +26,11 @@
 #ifdef __AVR__
 #define ENABLE_STEPPER_DRIVER_INTERRUPT()  TIMSK1 |= (1<<OCIE1A)
 #define DISABLE_STEPPER_DRIVER_INTERRUPT() TIMSK1 &= ~(1<<OCIE1A)
+#elif defined(MOTION_ENGINE)
+// STM32 motion engine (stepper.cpp): pause / resume the step interrupt
+void motion_isr_pause(bool pause);
+#define ENABLE_STEPPER_DRIVER_INTERRUPT()  motion_isr_pause(false)
+#define DISABLE_STEPPER_DRIVER_INTERRUPT() motion_isr_pause(true)
 #else
 #define ENABLE_STEPPER_DRIVER_INTERRUPT()  hal_step_timer_isr_enable(true)
 #define DISABLE_STEPPER_DRIVER_INTERRUPT() hal_step_timer_isr_enable(false)

@@ -118,9 +118,12 @@ static void step_timer_cb() {
 	__enable_irq();
 }
 
+hal_isr_t hal_motion_tick;
+
 static void softpwm_timer_cb() {
 	softpwm_isr();
 	__enable_irq();
+	if (hal_motion_tick) hal_motion_tick();
 }
 
 static void tempmgr_timer_cb() {
@@ -142,6 +145,66 @@ void hal_step_timer_init(hal_isr_t isr) {
 }
 
 void hal_step_timer_isr_enable(bool enable) {
+	if (enable) STEP_TIMER->DIER |= TIM_DIER_UIE;
+	else STEP_TIMER->DIER &= ~TIM_DIER_UIE;
+}
+
+//------------------------------------------------------------------------------
+// vector table in RAM (for handlers that bypass the Arduino core dispatch)
+//------------------------------------------------------------------------------
+
+static constexpr uint32_t VECTOR_COUNT = 16 + 32; // STM32G0B1: 32 external interrupts
+static uint32_t ram_vectors[VECTOR_COUNT] __attribute__((aligned(256)));
+static bool ram_vectors_active;
+
+void hal_set_irq_handler(IRQn_Type irq, hal_isr_t handler) {
+	if (!ram_vectors_active) {
+		memcpy(ram_vectors, (const void *)SCB->VTOR, sizeof(ram_vectors));
+		__disable_irq();
+		SCB->VTOR = (uint32_t)ram_vectors;
+		__DSB();
+		__enable_irq();
+		ram_vectors_active = true;
+	}
+	ram_vectors[16 + irq] = (uint32_t)handler;
+}
+
+//------------------------------------------------------------------------------
+// motion engine step timer (TIM17, register level)
+//------------------------------------------------------------------------------
+
+void hal_motion_timer_init(hal_isr_t isr) {
+	__HAL_RCC_TIM17_CLK_ENABLE();
+	STEP_TIMER->CR1 = 0;                 // stopped, ARR not buffered (AVR CTC behaviour)
+	STEP_TIMER->CR1 |= TIM_CR1_URS;      // only overflows set the update flag
+	STEP_TIMER->PSC = F_CPU / STEP_TIMER_FREQ - 1;
+	STEP_TIMER->ARR = 0xFFFF;
+	STEP_TIMER->EGR = TIM_EGR_UG;        // load the prescaler
+	STEP_TIMER->SR = 0;
+	STEP_TIMER->DIER = 0;
+	hal_set_irq_handler(TIM17_FDCAN_IT1_IRQn, isr);
+	NVIC_SetPriority(TIM17_FDCAN_IT1_IRQn, HAL_PRIO_STEPPER);
+	NVIC_ClearPendingIRQ(TIM17_FDCAN_IT1_IRQn);
+	NVIC_EnableIRQ(TIM17_FDCAN_IT1_IRQn);
+}
+
+void hal_motion_timer_start(uint32_t period) {
+	STEP_TIMER->CR1 &= ~TIM_CR1_CEN;
+	STEP_TIMER->CNT = 0;
+	STEP_TIMER->ARR = period - 1;
+	STEP_TIMER->SR = 0;
+	STEP_TIMER->DIER = TIM_DIER_UIE;
+	STEP_TIMER->CR1 |= TIM_CR1_CEN;
+}
+
+void hal_motion_timer_stop(void) {
+	STEP_TIMER->CR1 &= ~TIM_CR1_CEN;
+	STEP_TIMER->DIER = 0;
+	STEP_TIMER->SR = 0;
+	NVIC_ClearPendingIRQ(TIM17_FDCAN_IT1_IRQn);
+}
+
+void hal_motion_timer_irq_enable(bool enable) {
 	if (enable) STEP_TIMER->DIER |= TIM_DIER_UIE;
 	else STEP_TIMER->DIER &= ~TIM_DIER_UIE;
 }

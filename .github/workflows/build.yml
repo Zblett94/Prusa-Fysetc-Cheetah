@@ -21,6 +21,9 @@ jobs:
           path: ~/.platformio
           key: pio-${{ hashFiles('platformio.ini') }}
 
+      - name: Motion engine unit test
+        run: sh test/motion/run.sh
+
       - name: Install PlatformIO
         run: pip install platformio
 

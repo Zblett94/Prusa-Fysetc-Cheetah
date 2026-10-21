@@ -38,6 +38,10 @@
 
 #include "Filament_sensor.h"
 #include "ConfigurationStore.h"
+#ifdef MOTION_ENGINE
+#include "motion/motion_core.h"
+#include "motion/motion.h"
+#endif
 #include "Prusa_farm.h"
 
 #ifdef DEBUG_STACK_MONITOR
@@ -266,6 +270,7 @@ void invert_z_endstop(bool endstop_invert)
 //  step_events_completed reaches block->decelerate_after after which it decelerates until the trapezoid generator is reset.
 //  The slope of acceleration is calculated using v = u + at where t is the accumulated timer values of the steps so far.
 
+#ifndef MOTION_ENGINE
 // "The Stepper Driver Interrupt" - This timer interrupt is the workhorse.
 // It pops blocks from the block_buffer and executes them by pulsing the stepper pins appropriately.
 #ifdef __AVR__
@@ -467,6 +472,15 @@ FORCE_INLINE void stepper_next_block()
   //WRITE_NC(LOGIC_ANALYZER_CH2, false);
 }
 
+#endif //!MOTION_ENGINE
+
+#ifdef MOTION_ENGINE
+static void motion_endstop_hit();
+#define STEPPER_ENDSTOP_STOP_BLOCK() motion_endstop_hit()
+#else
+#define STEPPER_ENDSTOP_STOP_BLOCK() (step_events_completed.wide = current_block->step_event_count.wide)
+#endif
+
 // Check limit switches.
 FORCE_INLINE void stepper_check_endstops()
 {
@@ -494,7 +508,7 @@ FORCE_INLINE void stepper_check_endstops()
           endstops_trigsteps[X_AXIS] = count_position[X_AXIS];
 #endif //VERBOSE_CHECK_HIT_ENDSTOPS
           _endstop_hit |= _BV(X_AXIS);
-          step_events_completed.wide = current_block->step_event_count.wide;
+          STEPPER_ENDSTOP_STOP_BLOCK();
         }
       #endif
     } else { // +direction
@@ -511,7 +525,7 @@ FORCE_INLINE void stepper_check_endstops()
           endstops_trigsteps[X_AXIS] = count_position[X_AXIS];
 #endif //VERBOSE_CHECK_HIT_ENDSTOPS
           _endstop_hit |= _BV(X_AXIS);
-          step_events_completed.wide = current_block->step_event_count.wide;
+          STEPPER_ENDSTOP_STOP_BLOCK();
         }
       #endif
     }
@@ -535,7 +549,7 @@ FORCE_INLINE void stepper_check_endstops()
           endstops_trigsteps[Y_AXIS] = count_position[Y_AXIS];
 #endif //VERBOSE_CHECK_HIT_ENDSTOPS
           _endstop_hit |= _BV(Y_AXIS);
-          step_events_completed.wide = current_block->step_event_count.wide;
+          STEPPER_ENDSTOP_STOP_BLOCK();
         }
       #endif
     } else { // +direction
@@ -552,7 +566,7 @@ FORCE_INLINE void stepper_check_endstops()
           endstops_trigsteps[Y_AXIS] = count_position[Y_AXIS];
 #endif //VERBOSE_CHECK_HIT_ENDSTOPS
           _endstop_hit |= _BV(Y_AXIS);
-          step_events_completed.wide = current_block->step_event_count.wide;
+          STEPPER_ENDSTOP_STOP_BLOCK();
         }
       #endif
     }
@@ -577,7 +591,7 @@ FORCE_INLINE void stepper_check_endstops()
           endstops_trigsteps[Z_AXIS] = count_position[Z_AXIS];
 #endif //VERBOSE_CHECK_HIT_ENDSTOPS
           _endstop_hit |= _BV(Z_AXIS);
-          step_events_completed.wide = current_block->step_event_count.wide;
+          STEPPER_ENDSTOP_STOP_BLOCK();
         }
       }
       #endif
@@ -599,7 +613,7 @@ FORCE_INLINE void stepper_check_endstops()
           endstops_trigsteps[Z_AXIS] = count_position[Z_AXIS];
 #endif //VERBOSE_CHECK_HIT_ENDSTOPS
           _endstop_hit |= _BV(Z_AXIS);
-          step_events_completed.wide = current_block->step_event_count.wide;
+          STEPPER_ENDSTOP_STOP_BLOCK();
         }
       #endif
     }
@@ -632,7 +646,7 @@ FORCE_INLINE void stepper_check_endstops()
         endstops_trigsteps[Z_AXIS] = count_position[Z_AXIS];
 #endif //VERBOSE_CHECK_HIT_ENDSTOPS
         _endstop_hit |= _BV(Z_AXIS);
-        step_events_completed.wide = current_block->step_event_count.wide;
+        STEPPER_ENDSTOP_STOP_BLOCK();
       }
       endstop = _endstop;
       old_endstop = _endstop; //apply current endstop state to the old endstop
@@ -642,6 +656,7 @@ FORCE_INLINE void stepper_check_endstops()
 }
 
 
+#ifndef MOTION_ENGINE
 FORCE_INLINE void stepper_tick_lowres()
 {
   for (uint8_t i=0; i < step_loops; ++ i) { // Take multiple steps per interrupt (For high speed moves)
@@ -1066,6 +1081,348 @@ FORCE_INLINE void advance_isr_scheduler() {
 }
 #endif // LIN_ADVANCE
 
+#endif //!MOTION_ENGINE
+
+#ifdef MOTION_ENGINE
+//===========================================================================
+//======== STM32 motion engine: producer and step interrupt =================
+//===========================================================================
+// The planner blocks are turned into time ordered step events by the motion engine
+// (motion/motion_core.cpp, input shaper and pressure advance), from the soft PWM timer
+// interrupt (motion_tick, ~1 kHz, priority 2). The step timer interrupt (priority 0)
+// executes the events: direction and step pins, count_position, endstops, and markers
+// that discard the planner blocks once the shaped motion has left them.
+
+// Events are generated this far ahead of the step interrupt
+static constexpr uint32_t MOTION_HORIZON = 12 * motion::SAMPLE_TICKS;
+// The step interrupt starts when this much is generated
+static constexpr uint32_t MOTION_START_AHEAD = 4 * motion::SAMPLE_TICKS;
+// Timer period while the event queue is empty
+static constexpr uint32_t MOTION_KEEPALIVE = motion::SAMPLE_TICKS / 2;
+// Events due within this many ticks are executed right away
+static constexpr uint32_t MOTION_MARGIN = 6;
+
+static volatile bool motion_running;     // step timer running
+static volatile bool motion_draining;    // no more events will come: stop when the queue is empty
+static volatile bool motion_paused;      // DISABLE_STEPPER_DRIVER_INTERRUPT()
+static volatile bool motion_abort;       // an endstop stopped the motion
+static volatile bool motion_config_dirty = true;
+static volatile uint32_t motion_now;     // time of the last timer update (ticks)
+static uint32_t motion_period;           // ticks from the last to the next timer update
+static uint32_t motion_ev;               // event to execute at the next timer update
+static bool motion_have_ev;
+static volatile uint32_t motion_underrun_count;
+static int32_t motion_eng_pos[NUM_AXIS]; // motor positions in engine coordinates
+static uint8_t motion_dir;               // direction pin states (bit set = negative)
+static volatile uint8_t motion_dir_valid; // direction pins known to match motion_dir
+
+// CPU load statistics: core clock cycles spent in the producer and in the step interrupt,
+// measured with SysTick (reloads every millisecond)
+static volatile uint32_t motion_cycles_tick, motion_cycles_isr;
+static uint32_t motion_load_since;
+FORCE_INLINE uint32_t motion_cycles_from(uint32_t start)
+{
+    const uint32_t now = SysTick->VAL;
+    return start >= now ? start - now : start + SysTick->LOAD + 1 - now;
+}
+
+static void motion_endstop_hit()
+{
+    // like the end of the block in the AVR stepper interrupt: stop now, the producer cleans up
+    hal_motion_timer_stop();
+    motion_running = false;
+    motion_have_ev = false;
+    motion_abort = true;
+}
+
+FORCE_INLINE void motion_exec(uint32_t e)
+{
+    const uint8_t type = motion::ev_type(e);
+    if (type == motion::EV_STEP) {
+        const uint8_t mask = motion::ev_mask(e);
+        if (!mask) return; // keep-alive
+        const uint8_t dirs = motion::ev_dirs(e) & mask;
+        const uint8_t change = ((motion_dir ^ dirs) | uint8_t(~motion_dir_valid)) & mask;
+        if (change) {
+            if (change & _BV(X_AXIS)) WRITE_NC(X_DIR_PIN, (dirs & _BV(X_AXIS)) ? INVERT_X_DIR : !INVERT_X_DIR);
+            if (change & _BV(Y_AXIS)) WRITE_NC(Y_DIR_PIN, (dirs & _BV(Y_AXIS)) ? INVERT_Y_DIR : !INVERT_Y_DIR);
+            if (change & _BV(Z_AXIS)) WRITE_NC(Z_DIR_PIN, (dirs & _BV(Z_AXIS)) ? INVERT_Z_DIR : !INVERT_Z_DIR);
+            if (change & _BV(E_AXIS)) WRITE_NC(E0_DIR_PIN, (dirs & _BV(E_AXIS)) ? INVERT_E0_DIR : !INVERT_E0_DIR);
+            motion_dir = (motion_dir & ~mask) | dirs;
+            motion_dir_valid |= mask;
+            // direction setup time before the step edge
+            __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP();
+        }
+        if (mask & _BV(X_AXIS)) {
+            STEP_NC_HI(X_AXIS);
+            const int8_t d = (dirs & _BV(X_AXIS)) ? -1 : 1;
+            count_position[X_AXIS] += d;
+            motion_eng_pos[X_AXIS] += d;
+            STEP_NC_LO(X_AXIS);
+        }
+        if (mask & _BV(Y_AXIS)) {
+            STEP_NC_HI(Y_AXIS);
+            const int8_t d = (dirs & _BV(Y_AXIS)) ? -1 : 1;
+            count_position[Y_AXIS] += d;
+            motion_eng_pos[Y_AXIS] += d;
+            STEP_NC_LO(Y_AXIS);
+        }
+        if (mask & _BV(Z_AXIS)) {
+            STEP_NC_HI(Z_AXIS);
+            const int8_t d = (dirs & _BV(Z_AXIS)) ? -1 : 1;
+            count_position[Z_AXIS] += d;
+            motion_eng_pos[Z_AXIS] += d;
+            STEP_NC_LO(Z_AXIS);
+        }
+        if (mask & _BV(E_AXIS)) {
+            STEP_NC_HI(E_AXIS);
+            const int8_t d = (dirs & _BV(E_AXIS)) ? -1 : 1;
+            count_position[E_AXIS] += d;
+            motion_eng_pos[E_AXIS] += d;
+            STEP_NC_LO(E_AXIS);
+#if defined(FILAMENT_SENSOR) && (FILAMENT_SENSOR_TYPE == FSENSOR_PAT9125)
+            fsensor.stStep(d < 0);
+#endif
+        }
+        if ((check_endstops || check_z_endstop) && current_block) {
+            out_bits = current_block->direction_bits;
+            stepper_check_endstops();
+        }
+    } else if (type == motion::EV_BLOCK_DONE) {
+        plan_discard_current_block();
+        current_block = (block_buffer_tail != block_buffer_motion) ? &block_buffer[block_buffer_tail] : NULL;
+    } else if (type == motion::EV_E_RESET) {
+        count_position[E_AXIS] -= motion::e_shift[motion::ev_arg(e)];
+    }
+}
+
+// Step timer update: execute the due event(s), program the time of the next one
+static void motion_step_isr_body();
+static void motion_step_isr()
+{
+    const uint32_t start = SysTick->VAL;
+    motion_step_isr_body();
+    motion_cycles_isr += motion_cycles_from(start);
+}
+
+static void motion_step_isr_body()
+{
+    STEP_TIMER->SR = ~TIM_SR_UIF;
+    motion_now += motion_period;
+    uint32_t since = 0; // scheduled time of the executed events since this update
+    for (;;) {
+        if (motion_have_ev) {
+            motion_have_ev = false;
+            motion_exec(motion_ev);
+            if (motion_abort) return;
+        }
+        uint32_t e;
+        if (!motion::event_pop(e)) {
+            if (motion_draining) {
+                hal_motion_timer_stop();
+                motion_running = false;
+                return;
+            }
+            // the producer is late: wait
+            ++motion_underrun_count;
+            motion_period = since + MOTION_KEEPALIVE;
+            STEP_TIMER->ARR = motion_period - 1;
+            return;
+        }
+        const uint32_t t = since + motion::ev_delta(e);
+        motion_ev = e;
+        motion_have_ev = true;
+        if (t <= STEP_TIMER->CNT + MOTION_MARGIN) {
+            since = t;
+            continue;
+        }
+        motion_period = t;
+        STEP_TIMER->ARR = t - 1;
+        return;
+    }
+}
+
+// Start the step timer with the first queued event (interrupts disabled)
+static void motion_start()
+{
+    uint32_t e;
+    if (motion_running || !motion::event_pop(e)) return;
+    motion_now = 0;
+    motion_ev = e;
+    motion_have_ev = true;
+    motion_period = motion::ev_delta(e) > 2 ? motion::ev_delta(e) : 2;
+    motion_running = true;
+    motion_draining = false;
+    hal_motion_timer_start(motion_period);
+    if (motion_paused) hal_motion_timer_irq_enable(false);
+}
+
+// Discard the generated motion, the motors stay where they are (interrupts disabled)
+static void motion_reset_engine()
+{
+    hal_motion_timer_stop();
+    motion_running = false;
+    motion_draining = false;
+    motion_have_ev = false;
+    motion_abort = false;
+    // blocks not executed yet are converted again, starting from the current position
+    for (uint8_t i = block_buffer_tail; i != block_buffer_head; i = (i + 1) & (BLOCK_BUFFER_SIZE - 1))
+        block_buffer[i].busy = false;
+    block_buffer_motion = block_buffer_tail;
+    current_block = NULL;
+    motion::reset(motion_eng_pos, motion_eng_pos[E_AXIS] - count_position[E_AXIS]);
+    motion_dir_valid = 0;
+}
+
+static void motion_apply_config()
+{
+    const input_shaper::Config &c = motion_shaper_config();
+    for (uint8_t axis = X_AXIS; axis <= Z_AXIS; ++axis) {
+        input_shaper::Pulses p;
+        input_shaper::make_pulses(p, c.axis[axis], motion::TICK_HZ);
+        motion::set_shaper(axis, p);
+    }
+    motion::set_pressure_advance(extruder_advance_K, motion_pa_smooth_time());
+    motion_config_dirty = false;
+}
+
+static void motion_take_blocks()
+{
+    while (motion::wants_block() && block_buffer_motion != block_buffer_head) {
+        const uint8_t idx = block_buffer_motion;
+        block_t *b = &block_buffer[idx];
+        // busy: the planner does not change this block anymore
+        b->busy = true;
+        motion::BlockIn in;
+        for (uint8_t axis = 0; axis < NUM_AXIS; ++axis)
+            in.steps[axis] = (b->direction_bits & _BV(axis)) ? -b->steps[axis].wide : b->steps[axis].wide;
+        in.millimeters = b->millimeters;
+        in.entry_speed = b->entry_speed;
+        in.nominal_speed = b->nominal_speed;
+        const uint8_t next = (idx + 1) & (BLOCK_BUFFER_SIZE - 1);
+        in.exit_speed = (next != block_buffer_head) ? block_buffer[next].entry_speed : b->exit_speed;
+        in.acceleration = b->acceleration;
+        in.id = idx;
+        in.e_reset = b->flag & BLOCK_FLAG_E_RESET;
+        motion::add_block(in);
+        b->motion_exit_speed = motion::last_exit_speed();
+        block_buffer_motion = next;
+        if (!current_block)
+            current_block = &block_buffer[block_buffer_tail];
+    }
+}
+
+// Producer, called from the soft PWM timer interrupt (~1 kHz)
+static void motion_tick_body();
+static void motion_tick()
+{
+    const uint32_t start = SysTick->VAL;
+    const uint32_t isr_before = motion_cycles_isr;
+    motion_tick_body();
+    // without the step interrupts that preempted the producer (a tick is shorter than the
+    // SysTick period of 1 ms, except right after a long interrupt lock)
+    const uint32_t c = motion_cycles_from(start) - (motion_cycles_isr - isr_before);
+    if (c < 0x80000000u) motion_cycles_tick += c;
+}
+
+static void motion_tick_body()
+{
+    if (motion_abort) {
+        CRITICAL_SECTION_START;
+        // the block that hit the endstop is finished, as in the AVR stepper interrupt
+        if (block_buffer_tail != block_buffer_head)
+            plan_discard_current_block();
+        motion_reset_engine();
+        CRITICAL_SECTION_END;
+    }
+#ifdef TMC2130
+    // crash detection (may abort the print and reset the engine)
+    tmc2130_st_isr();
+#endif
+    for (uint8_t n = 0; n < 4; ++n) {
+        bool running;
+        CRITICAL_SECTION_START;
+        running = motion_running;
+        if (running) motion_draining = false;
+        CRITICAL_SECTION_END;
+        if (!running && !motion::busy() && !motion::events_queued()) {
+            if (block_buffer_motion == block_buffer_head) return; // idle
+            if (motion_config_dirty) motion_apply_config();
+            motion::new_epoch();
+        }
+        motion_take_blocks();
+        if (running && int32_t(motion::generated_time() - motion_now) >= int32_t(MOTION_HORIZON)) break;
+        if (!motion::produce_sample()) break;
+        if (!running && motion::generated_time() >= MOTION_START_AHEAD) {
+            CRITICAL_SECTION_START;
+            motion_start();
+            CRITICAL_SECTION_END;
+        }
+    }
+    CRITICAL_SECTION_START;
+    if (!motion_running && motion::events_queued())
+        motion_start(); // short moves
+    if (motion_running && !motion::busy() && block_buffer_motion == block_buffer_head)
+        motion_draining = true;
+    CRITICAL_SECTION_END;
+}
+
+void motion_config_changed()
+{
+    motion_config_dirty = true;
+}
+
+void motion_wait_idle()
+{
+    st_synchronize();
+    while (motion_running || motion::busy() || motion::events_queued())
+        delay_keep_alive(0);
+}
+
+uint32_t motion_underruns()
+{
+    return motion_underrun_count;
+}
+
+void motion_load(uint16_t &producer_permille, uint16_t &isr_permille)
+{
+    CRITICAL_SECTION_START;
+    const uint32_t tick = motion_cycles_tick, isr = motion_cycles_isr;
+    motion_cycles_tick = motion_cycles_isr = 0;
+    CRITICAL_SECTION_END;
+    const uint32_t now = _millis();
+    const uint32_t ms = now - motion_load_since;
+    motion_load_since = now;
+    const uint64_t total = uint64_t(ms ? ms : 1) * (SystemCoreClock / 1000);
+    producer_permille = uint16_t(uint64_t(tick) * 1000 / total);
+    isr_permille = uint16_t(uint64_t(isr) * 1000 / total);
+}
+
+void motion_isr_pause(bool pause)
+{
+    motion_paused = pause;
+    if (pause) {
+        hal_motion_timer_irq_enable(false);
+    } else {
+        // the direction pins may have been changed directly (xyzcal)
+        motion_dir_valid = 0;
+        if (motion_running) hal_motion_timer_irq_enable(true);
+    }
+}
+
+static void motion_engine_init()
+{
+    motion_config_init();
+    motion::init();
+    motion_apply_config();
+    CRITICAL_SECTION_START;
+    motion_reset_engine();
+    CRITICAL_SECTION_END;
+    hal_motion_timer_init(motion_step_isr);
+    hal_motion_tick = motion_tick;
+}
+#endif //MOTION_ENGINE
+
 void st_init()
 {
 #ifdef TMC2130
@@ -1230,7 +1587,9 @@ void st_init()
     disable_e0();
   #endif
 
-#ifndef __AVR__
+#if defined(MOTION_ENGINE)
+  motion_engine_init();
+#elif !defined(__AVR__)
   // TIM17 at 2 MHz, update event when CNT reaches ARR (= AVR Timer1 CTC mode on OCR1A)
   hal_step_timer_init(stepper_timer_isr);
   hal_step_timer_isr_enable(false);
@@ -1253,11 +1612,13 @@ void st_init()
   TCCR1B = (TCCR1B & ~(0x07<<CS10)) | (2<<CS10);
 #endif //!__AVR__
 
+#ifndef MOTION_ENGINE
   // Plan the first interrupt after 8ms from now.
   OCR1A = 0x4000;
   TCNT1 = 0;
+#endif
 
-#ifdef LIN_ADVANCE
+#if defined(LIN_ADVANCE) && !defined(MOTION_ENGINE)
 #ifdef LA_DEBUG_LOGIC
   LOGIC_ANALYZER_CH0_ENABLE;
   LOGIC_ANALYZER_CH1_ENABLE;
@@ -1281,6 +1642,9 @@ void st_init()
 
 void st_reset_timer()
 {
+#ifdef MOTION_ENGINE
+  // the motion engine keeps its own time
+#else
   // Clear a possible pending interrupt on OCR1A overflow.
 #ifdef __AVR__
   TIFR1 |= 1 << OCF1A;
@@ -1297,6 +1661,7 @@ void st_reset_timer()
   if(nextAdvanceISR && nextAdvanceISR != ADV_NEVER)
       nextAdvanceISR = 0;
 #endif
+#endif //MOTION_ENGINE
 }
 
 
@@ -1368,7 +1733,12 @@ void quickStop()
   DISABLE_STEPPER_DRIVER_INTERRUPT();
   while (blocks_queued()) plan_discard_current_block();
   current_block = NULL;
-#ifdef LIN_ADVANCE
+#ifdef MOTION_ENGINE
+  CRITICAL_SECTION_START;
+  motion_reset_engine();
+  CRITICAL_SECTION_END;
+#endif
+#if defined(LIN_ADVANCE) && !defined(MOTION_ENGINE)
   nextAdvanceISR = ADV_NEVER;
   current_adv_steps = 0;
 #endif

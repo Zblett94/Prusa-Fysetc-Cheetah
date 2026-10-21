@@ -1,3 +1,4 @@
 .local.ini
 .pio/
 compile_commands.json
+test/motion/test_motion

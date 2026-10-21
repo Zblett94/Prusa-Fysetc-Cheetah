@@ -71,6 +71,20 @@ uint8_t hal_reset_cause(void);
 void hal_step_timer_init(hal_isr_t isr);
 void hal_step_timer_isr_enable(bool enable);
 
+//! Motion engine step timer: TIM17 at 2 MHz, update interrupt when CNT reaches ARR.
+//! The handler is installed directly in the (RAM) vector table: it runs at every step,
+//! the generic HardwareTimer dispatch would cost ~200 cycles each time.
+void hal_motion_timer_init(hal_isr_t isr);
+//! Start counting from 0, first interrupt after @p period ticks
+void hal_motion_timer_start(uint32_t period);
+void hal_motion_timer_stop(void);
+void hal_motion_timer_irq_enable(bool enable);
+//! Called at the end of every soft PWM tick (~976 Hz, priority 2): motion engine producer
+extern hal_isr_t hal_motion_tick;
+
+//! Install an interrupt handler in the RAM copy of the vector table
+void hal_set_irq_handler(IRQn_Type irq, hal_isr_t handler);
+
 void hal_softpwm_timer_init(hal_isr_t isr);
 void hal_softpwm_isr_enable(bool enable);
 

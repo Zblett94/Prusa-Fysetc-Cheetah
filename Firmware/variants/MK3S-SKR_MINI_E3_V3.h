@@ -25,6 +25,10 @@
 // Electronics
 // SKR: BigTreeTech SKR Mini E3 V3.0 instead of the EINSy RAMBo
 #define MOTHERBOARD BOARD_SKR_MINI_E3_V3
+
+// SKR: STM32 motion engine (motion/motion_core.h): input shaper and pressure advance of the
+// Prusa MK3.5 (Prusa-Firmware-Buddy) instead of the AVR stepper interrupt and Linear Advance 1.5
+#define MOTION_ENGINE
 #define STEEL_SHEET
 // SKR: there is no Raspberry Pi header (the free UART is used by the MMU)
 //#define HAS_SECOND_SERIAL_PORT
@@ -97,26 +101,37 @@
  */
 #define SHEET_PRINT_ZERO_REF_Y -2.f
 
+// SKR: speeds and accelerations of the Original Prusa MK3.5 (Prusa-Firmware-Buddy
+// Configuration_MK3.5.h), same mechanics as the MK3S, made usable by the input shaper.
+// Z and E keep the MK3S maximum feedrates (the MK3.5 hardware limits are the same).
 #define DEFAULT_MAX_FEEDRATE                {200, 200, 12, 120}      // (mm/sec)   max feedrate (M203)
-#define DEFAULT_MAX_FEEDRATE_SILENT         {100, 100, 12, 120}      // (mm/sec)   max feedrate (M203), silent mode
+#define DEFAULT_MAX_FEEDRATE_SILENT         {160, 160, 12, 100}      // (mm/sec)   max feedrate (M203), silent mode
 
-#define DEFAULT_MAX_ACCELERATION            {1000, 1000, 200, 5000}  // (mm/sec^2) max acceleration (M201)
-#define DEFAULT_MAX_ACCELERATION_SILENT     {960, 960, 200, 5000}    // (mm/sec^2) max acceleration (M201), silent mode
+#define DEFAULT_MAX_ACCELERATION            {1250, 1250, 400, 4000}  // (mm/sec^2) max acceleration (M201)
+#define DEFAULT_MAX_ACCELERATION_SILENT     {1250, 1250, 200, 2500}  // (mm/sec^2) max acceleration (M201), silent mode
 
 
 #define DEFAULT_ACCELERATION          1250   // X, Y, Z and E max acceleration in mm/s^2 for printing moves (M204P)
 #define DEFAULT_RETRACT_ACCELERATION  1250   // X, Y, Z and E max acceleration in mm/s^2 for retracts (M204R)
 #define DEFAULT_TRAVEL_ACCELERATION   1250   // X, Y, Z and E max acceleration in mm/s^2 for travels (M204T)
 
+// SKR: classic jerk of the MK3.5
+#define DEFAULT_XJERK                 8       // (mm/sec)
+#define DEFAULT_YJERK                 8       // (mm/sec)
+#define DEFAULT_ZJERK                 2       // (mm/sec)
+#define DEFAULT_EJERK                 5       // (mm/sec)
+
 #define MANUAL_FEEDRATE {2700, 2700, 1000, 100}   // set the speeds for manual moves (mm/min)
 
+// SKR: hardware limits of the MK3.5 (HWLIMIT_STEALTH_* / HWLIMIT_NORMAL_*): the upper
+// bounds of M201 / M203 for X and Y
 //Silent mode limits
-#define SILENT_MAX_ACCEL_XY      960ul  // max acceleration in silent mode in mm/s^2
-#define SILENT_MAX_FEEDRATE_XY   100  // max feedrate in mm/s
+#define SILENT_MAX_ACCEL_XY     2500ul  // max acceleration in silent mode in mm/s^2
+#define SILENT_MAX_FEEDRATE_XY   160  // max feedrate in mm/s
 
 //Normal mode limits
-#define NORMAL_MAX_ACCEL_XY     2500ul  // max acceleration in normal mode in mm/s^2
-#define NORMAL_MAX_FEEDRATE_XY   200  // max feedrate in mm/s
+#define NORMAL_MAX_ACCEL_XY     7000ul  // max acceleration in normal mode in mm/s^2
+#define NORMAL_MAX_FEEDRATE_XY   300  // max feedrate in mm/s
 
 //number of bytes from end of the file to start check
 #define END_FILE_SECTION 30720

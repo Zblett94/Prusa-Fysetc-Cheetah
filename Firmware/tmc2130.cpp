@@ -506,6 +506,13 @@ void tmc2130_st_isr()
 
 void crashdet_use_eeprom_setting() {
 	tmc2130_sg_stop_on_crash = eeprom_read_byte((uint8_t*)EEPROM_CRASH_DET);
+#if defined(TMC2209) && defined(MOTION_ENGINE)
+	// the X/Y chopper mode follows the crash detection setting (see tmc2209_gconf)
+	if (tmc2130_mode == TMC2130_MODE_NORMAL && !tmc2130_sg_homing_axes_mask) {
+		tmc2130_wr(X_AXIS, TMC2130_REG_GCONF, TMC2130_GCONF_SGSENS);
+		tmc2130_wr(Y_AXIS, TMC2130_REG_GCONF, TMC2130_GCONF_SGSENS);
+	}
+#endif
 }
 
 bool tmc2130_update_sg()
@@ -856,6 +863,12 @@ static uint32_t tmc2209_gconf(uint8_t axis, uint32_t gconf)
 	if (axis == E_AXIS) return TMC2209_GCONF_SPREAD; // the extruder stall output is not used
 #ifdef TMC2209_NORMAL_MODE_SPREADCYCLE
 	if ((axis != Z_AXIS) && !(tmc2130_sg_homing_axes_mask & (1 << axis))) return TMC2209_GCONF_SPREAD;
+#elif defined(MOTION_ENGINE)
+	// With the MK3.5 speeds and accelerations X/Y need the full torque of spreadCycle. They use
+	// stealthChop only for sensorless homing and when crash detection is on.
+	if ((axis == X_AXIS || axis == Y_AXIS) && !(tmc2130_sg_homing_axes_mask & (1 << axis))
+		&& !eeprom_read_byte((uint8_t*)EEPROM_CRASH_DET))
+		return TMC2209_GCONF_SPREAD;
 #endif
 	return TMC2209_GCONF_STEALTH; // StallGuard4 requires stealthChop
 }

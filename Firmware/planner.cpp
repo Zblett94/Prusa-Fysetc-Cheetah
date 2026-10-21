@@ -104,6 +104,9 @@ bool autotemp_enabled=false;
 block_t block_buffer[BLOCK_BUFFER_SIZE];    // A ring buffer for motion instfructions
 volatile uint8_t block_buffer_head;         // Index of the next block to be pushed
 volatile uint8_t block_buffer_tail;         // Index of the block to process now
+#ifdef MOTION_ENGINE
+volatile uint8_t block_buffer_motion;       // Index of the next block for the motion engine
+#endif
 
 #ifdef PLANNER_DIAGNOSTICS
 // Diagnostic function: Minimum number of planned moves since the last
@@ -218,7 +221,7 @@ void calculate_trapezoid_for_block(block_t *block, float entry_speed, float exit
   // Size of Plateau of Nominal Rate.
   uint32_t plateau_steps     = 0;
 
-#ifdef LIN_ADVANCE
+#if defined(LIN_ADVANCE) && !defined(MOTION_ENGINE)
   uint16_t final_adv_steps = 0;
   uint16_t max_adv_steps = 0;
   if (block->use_advance_lead) {
@@ -231,7 +234,7 @@ void calculate_trapezoid_for_block(block_t *block, float entry_speed, float exit
   // in order to reach the final_rate exactly at the end of this block.
   if (accel_decel_steps < block->step_event_count.wide) {
     plateau_steps = block->step_event_count.wide - accel_decel_steps;
-#ifdef LIN_ADVANCE
+#if defined(LIN_ADVANCE) && !defined(MOTION_ENGINE)
     if (block->use_advance_lead)
         max_adv_steps = block->nominal_rate * block->adv_comp;
 #endif
@@ -268,7 +271,7 @@ void calculate_trapezoid_for_block(block_t *block, float entry_speed, float exit
         accelerate_steps = block->step_event_count.wide - decelerate_steps;
     }
 
-#ifdef LIN_ADVANCE
+#if defined(LIN_ADVANCE) && !defined(MOTION_ENGINE)
     if (block->use_advance_lead) {
         if(!accelerate_steps || !decelerate_steps) {
             // accelerate_steps=0: deceleration-only ramp, max_rate is effectively unused
@@ -292,7 +295,10 @@ void calculate_trapezoid_for_block(block_t *block, float entry_speed, float exit
     block->decelerate_after = accelerate_steps+plateau_steps;
     block->initial_rate = initial_rate;
     block->final_rate = final_rate;
-#ifdef LIN_ADVANCE
+#ifdef MOTION_ENGINE
+    block->exit_speed = exit_speed;
+#endif
+#if defined(LIN_ADVANCE) && !defined(MOTION_ENGINE)
     block->final_adv_steps = final_adv_steps;
     block->max_adv_steps = max_adv_steps;
 #endif
@@ -350,7 +356,16 @@ void planner_recalculate(const float &safe_final_speed)
     // Reverse pass
     // Make a local copy of block_buffer_tail, because the interrupt can alter it
     // by consuming the blocks, therefore shortening the queue.
+#ifdef MOTION_ENGINE
+    // The blocks taken by the motion engine are final: start at the last of them.
+    uint8_t tail = block_buffer_motion;
+    if (tail != block_buffer_tail)
+        tail = prev_block_index(tail);
+    if (tail == block_buffer_head)
+        return; // all blocks taken already
+#else
     uint8_t tail = block_buffer_tail;
+#endif
     uint8_t block_index;
     block_t *prev, *current, *next;
 
@@ -422,6 +437,14 @@ void planner_recalculate(const float &safe_final_speed)
                     current->flag |= BLOCK_FLAG_RECALCULATE;
                 }
             }
+#ifdef MOTION_ENGINE
+            // The block after the last one taken by the motion engine starts at the speed the
+            // engine left it with.
+            if (prev->busy && !current->busy && current->entry_speed > prev->motion_exit_speed) {
+                current->entry_speed = prev->motion_exit_speed;
+                current->flag |= BLOCK_FLAG_RECALCULATE;
+            }
+#endif
             // Recalculate if current block entry or exit junction speed has changed.
             if ((prev->flag | current->flag) & BLOCK_FLAG_RECALCULATE) {
                 // NOTE: Entry and exit factors always > 0 by all previous logic operations.
@@ -447,6 +470,9 @@ void planner_recalculate(const float &safe_final_speed)
 void plan_init() {
   block_buffer_head = 0;
   block_buffer_tail = 0;
+#ifdef MOTION_ENGINE
+  block_buffer_motion = 0;
+#endif
   memset(position, 0, sizeof(position)); // clear position
   #ifdef LIN_ADVANCE
   memset(position_float, 0, sizeof(position_float)); // clear position
@@ -944,7 +970,7 @@ Having the real displacement of the head, we can calculate the total movement le
     block->nominal_rate *= speed_factor;
   }
 
-#ifdef LIN_ADVANCE
+#if defined(LIN_ADVANCE) && !defined(MOTION_ENGINE)
   float e_D_ratio = 0;
 #endif
   // Compute and limit the acceleration rate for the trapezoid generator.
@@ -963,7 +989,7 @@ Having the real displacement of the head, we can calculate the total movement le
   {
     accel = ceil((block->steps[E_AXIS].wide ? cs.acceleration : cs.travel_acceleration) * steps_per_mm); // convert to: acceleration steps/sec^2
 
-    #ifdef LIN_ADVANCE
+    #if defined(LIN_ADVANCE) && !defined(MOTION_ENGINE)
     /**
      * Use LIN_ADVANCE within this block if all these are true:
      *
@@ -1149,7 +1175,7 @@ Having the real displacement of the head, we can calculate the total movement le
   // Precalculate the division, so when all the trapezoids in the planner queue get recalculated, the division is not repeated.
   block->speed_factor = block->nominal_rate / block->nominal_speed;
 
-#ifdef LIN_ADVANCE
+#if defined(LIN_ADVANCE) && !defined(MOTION_ENGINE)
   if (block->use_advance_lead) {
       // calculate the compression ratio for the segment (the required advance steps are computed
       // during trapezoid planning)
