@@ -33,7 +33,7 @@ shows every change.
 | USART0 (to the 32u2 USB bridge) | native USB CDC | `MarlinSerial.cpp` |
 | USART2 (MMU) | USART2 on PA2/PA3 | `mmu2_serial.cpp` |
 | SPI (SD card on the LCD) | SPI1, on-board micro-SD | `Sd2Card.cpp` |
-| HD44780 20x4 LCD, 4 bit parallel | Creality Ender-3 display (ST7920 128x64, serial) emulating the HD44780, sent in the background by TIM7; or the MK3S LCD with `-DLCD_MK3S` | `lcd_st7920.cpp`, `lcd.cpp` |
+| HD44780 20x4 LCD, 4 bit parallel | 480x320 color TFT (ST7796S, SPI2 + DMA) emulating the HD44780 with its own layout; or the Creality Ender-3 display (`-DLCD_ENDER3`, ST7920, TIM7) or the MK3S LCD (`-DLCD_MK3S`) | `lcd_tft.cpp`, `lcd_st7920.cpp`, `lcd.cpp` |
 | INT4 (power panic), INT6/INT7 (fan tach) | EXTI lines, the INT7 edge toggling is emulated | `power_panic.cpp`, `fancheck.cpp` |
 | WDT | IWDG. "Disabling" it keeps it fed from SysTick (the IWDG can not be stopped) | `hal.cpp` |
 | avr-libc (`pgmspace`, `eeprom`, `wdt`, `atomic`, `delay`, `crc16`, `%S`) | compatibility headers in `hal_stm32/include`, `%S` replaced by `%s` | |
@@ -48,7 +48,7 @@ interrupt can preempt them. On the Cortex-M0+ this is done with NVIC priorities:
 | 0 | stepper (TIM17), SysTick |
 | 1 | USB, MMU UART |
 | 2 | soft PWM tick (with the motion engine producer), heatbed PWM, ADC, power panic, fan tach |
-| 3 | temperature manager, display transfer (TIM7) |
+| 3 | temperature manager, display transfer (TFT: DMA1 channel 1 + TIM7 as software interrupt; Ender-3: TIM7) |
 
 ### Timing constants
 
@@ -153,8 +153,35 @@ an exact (double precision) model of the shaped motion.
 
 ## Display
 
-The Prusa UI writes to a 20x4 HD44780 character LCD (`lcd.cpp`). With the default
-Creality Ender-3 display, `lcd_send()` hands the HD44780 commands to
+### Color TFT (default)
+
+The Prusa UI writes to a 20x4 HD44780 character LCD (`lcd.cpp`). `lcd_tft.cpp`
+emulates the HD44780 DDRAM and draws it on a 480x320 ST7796S display:
+
+- **Menus and messages**: 4 rows of 20 cells of 24x80 pixels, anti-aliased font
+  (JetBrains Mono, all characters of the 14 languages), the selected item (`>` in
+  column 0) as an orange bar, the Prusa symbols as icons. `lcd_print_custom()` sends
+  the Prusa character codes directly, so the 8 CGRAM slot limit of the HD44780 (and its
+  fallback characters) does not apply.
+- **Status screen**: `lcdui_print_status_screen()` marks its drawing with
+  `tft_status_begin/end()`; its fields (fixed columns) are shown as tiles: temperatures
+  in big digits, Z, speed, MMU slot, progress with a bar, time, and the status line.
+  Anything else written to the screen switches back to the text layout.
+- **Transfer**: no frame buffer (300 KB). A change marks the rectangle it affects in a
+  list of 10 pixel high bands. A priority 3 software interrupt (TIM7 pended) renders the
+  changed part of a band into one of two 9.6 KB buffers and sends it with SPI2 (16 MHz)
+  and DMA, rendering the next band while the DMA runs. A temperature change sends one
+  tile (~28k pixels, 3.5 ms), a new menu the whole screen (~150 ms).
+- **Fonts**: `tools/tft_fonts.py` generates `tft_fonts.h` (2 bit anti-aliased, run
+  length encoded, 27 KB).
+
+`test/tft/run.sh` runs the driver on the host against a model of the ST7796S (commands,
+address window, pixels): every sequence of changes, interleaved with the transfer, must
+give the same picture as a complete redraw; `test/tft/run.sh DIR` writes screenshots.
+
+### Creality Ender-3 display (`-DLCD_ENDER3`)
+
+With the Creality Ender-3 display, `lcd_send()` hands the HD44780 commands to
 `lcd_st7920.cpp`, which emulates the HD44780: DDRAM with its address layout and
 wrap-around, the 8 CGRAM custom characters (the Prusa slot management in `lcd.cpp`
 is unchanged) and the character ROM (font A00, `lcd_st7920_font.h`). Each character
@@ -170,7 +197,7 @@ the CPU during the transfer and 0% when nothing changes. Menus that clear the sc
 and draw the same text again cause no traffic. `lcd_refresh()` (called by the UI to
 revive a disturbed display) sets the controller up again and resends the screen.
 
-`test/lcd/run.sh` runs the driver on the host against a model of the ST7920 serial
+`test/lcd/run.sh` runs the ST7920 driver on the host against a model of the ST7920 serial
 interface and graphic RAM, and compares the picture with an independent rendering
 of the expected text (custom characters, address wrap, interleaved updates, refresh
 during a transfer). `test/lcd/run.sh screen.pgm` writes a picture of the test screen, and

@@ -24,8 +24,8 @@ jobs:
       - name: Motion engine unit test
         run: sh test/motion/run.sh
 
-      - name: Display driver unit test
-        run: sh test/lcd/run.sh
+      - name: Display driver unit tests
+        run: sh test/lcd/run.sh && sh test/tft/run.sh
 
       - name: Install PlatformIO
         run: pip install platformio
@@ -41,3 +41,6 @@ jobs:
 
       - name: Build with the original MK3S LCD (compile check)
         run: PLATFORMIO_BUILD_FLAGS=-DLCD_MK3S pio run -e MK3S_SKR_MINI_E3_V3
+
+      - name: Build with the Creality Ender-3 display (compile check)
+        run: PLATFORMIO_BUILD_FLAGS=-DLCD_ENDER3 pio run -e MK3S_SKR_MINI_E3_V3

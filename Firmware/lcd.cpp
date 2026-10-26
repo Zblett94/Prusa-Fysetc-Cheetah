@@ -16,6 +16,7 @@
 #include "sound.h"
 #include "backlight.h"
 #include "lcd_st7920.h"
+#include "lcd_tft.h"
 
 #define LCD_DEFAULT_DELAY 100
 
@@ -95,7 +96,7 @@ static void lcd_display(void);
 static void lcd_print_custom(uint8_t c);
 static void lcd_invalidate_custom_characters();
 
-#ifndef LCD_ST7920
+#if !defined(LCD_ST7920) && !defined(LCD_TFT)
 static void lcd_pulseEnable(void)
 {
 	WRITE(LCD_PINS_ENABLE,HIGH);
@@ -118,7 +119,7 @@ static void lcd_writebits(uint8_t value)
 
 	lcd_pulseEnable();
 }
-#endif //!LCD_ST7920
+#endif //!LCD_ST7920 && !LCD_TFT
 
 #ifdef EMULATION
 void emulation_lcd_send(uint8_t data, uint8_t flags);
@@ -133,6 +134,9 @@ static void lcd_send(uint8_t data, uint8_t flags, uint16_t duration = LCD_DEFAUL
 	// HD44780 emulation, no bus timing to wait for. The 8 bit mode init nibbles are not needed.
 	(void)duration;
 	if (!(flags & LCD_HALF_FLAG)) st7920_hd44780_send(data, flags & LCD_RS_FLAG);
+#elif defined(LCD_TFT)
+	(void)duration;
+	if (!(flags & LCD_HALF_FLAG)) tft_hd44780_send(data, flags & LCD_RS_FLAG);
 #else
 	WRITE(LCD_PINS_RS,flags&LCD_RS_FLAG);
 	_delay_us(5);
@@ -144,7 +148,7 @@ static void lcd_send(uint8_t data, uint8_t flags, uint16_t duration = LCD_DEFAUL
 	}
 #endif
 	delayMicroseconds(duration);
-#endif //!LCD_ST7920
+#endif
 }
 
 static void lcd_command(uint8_t value, uint16_t duration = LCD_DEFAULT_DELAY)
@@ -174,6 +178,8 @@ static void lcd_begin(uint8_t clear)
 
 #ifdef LCD_ST7920
 	st7920_init(); // also revives the display (lcd_refresh): sets it up again and resends the screen
+#elif defined(LCD_TFT)
+	tft_refresh(); // sets the display up (first call) or wakes it up again, and redraws it
 #endif
 	lcd_send(LCD_FUNCTIONSET | LCD_8BITMODE, LOW | LCD_HALF_FLAG, 4500); // wait min 4.1ms
 	// second try
@@ -206,7 +212,7 @@ static int lcd_putchar(char c, FILE *)
 
 void lcd_init(void)
 {
-#ifndef LCD_ST7920
+#if !defined(LCD_ST7920) && !defined(LCD_TFT)
 	WRITE(LCD_PINS_ENABLE,LOW);
 	SET_OUTPUT(LCD_PINS_RS);
 	SET_OUTPUT(LCD_PINS_ENABLE);
@@ -221,7 +227,7 @@ void lcd_init(void)
 	SET_OUTPUT(LCD_PINS_D5);
 	SET_OUTPUT(LCD_PINS_D6);
 	SET_OUTPUT(LCD_PINS_D7);
-#endif //!LCD_ST7920
+#endif
 
 #ifdef LCD_8BIT
 	lcd_displayfunction |= LCD_8BITMODE;
@@ -719,6 +725,12 @@ void lcd_buttons_update(void)
 // #define DEBUG_CUSTOM_CHARACTERS
 
 static void lcd_print_custom(uint8_t c) {
+#ifdef LCD_TFT
+	// the color display draws the Prusa characters itself, no CGRAM slots needed
+	lcd_send(c, HIGH);
+	lcd_ddram_address++;
+	return;
+#endif
 	uint8_t charToSend = pgm_read_byte(&Font[c - 0x80].alternate); // in case no empty slot is found, use the alternate character.
 	int8_t slotToUse = -1;
 

@@ -129,9 +129,9 @@ static inline uint32_t adc_channel_pin(uint8_t ch) {
 #define BTN_EN1              PD9    // "SPI1" header pin 3 (CS)
 #define BTN_EN2              PC13   // "PS-ON" header (PC13 is an input-only grade pin, fine for the encoder)
 #define BTN_ENC              PA15   // EXP1-2
-#else
+#elif defined(LCD_ENDER3)
 // Creality Ender-3 display (ST7920 128x64, serial mode + encoder + beeper) on EXP1 with
-// its stock 10 pin cable (default). Same pins as Marlin's CR10_STOCKDISPLAY on this board.
+// its stock 10 pin cable. Build with -DLCD_ENDER3. Same pins as Marlin's CR10_STOCKDISPLAY on this board.
 #define LCD_ST7920
 #define BEEPER               PB5    // EXP1-1
 #define BTN_ENC              PA15   // EXP1-2
@@ -143,6 +143,25 @@ static inline uint32_t adc_channel_pin(uint8_t ch) {
 // If the knob works backwards on your display, swap these two lines.
 #define BTN_EN1              PA10   // EXP1-5
 #define BTN_EN2              PA9    // EXP1-3
+#else
+// Color TFT (default): 480x320 SPI module with the ST7796S controller (for example the
+// Hosyond 4.0" ST7796S module) + KY-040 rotary encoder + passive buzzer, see docs/WIRING.md.
+// The display runs on SPI2 with DMA: SCK and MOSI have to be on these two pins.
+#define LCD_TFT
+#define TFT_SCK_PIN          PB8    // EXP1-7 (SPI2_SCK, AF1)
+#define TFT_MOSI_PIN         PA10   // EXP1-5 (SPI2_MOSI, AF0)
+#define TFT_CS_PIN           PD6    // EXP1-8
+#define TFT_DC_PIN           PB9    // EXP1-6
+#define TFT_RST_PIN          PC13   // "PS-ON" header
+#define TFT_BL_PIN           PD9    // "SPI1" header pin 3: backlight on
+#define TFT_SPI_BR           1      // SPI clock 64 MHz / 4 = 16 MHz (0 = 32 MHz)
+// KY-040: CLK leads DT when turned clockwise; the Prusa encoder table counts the first
+// falling input (EN1) as "up", so DT is EN1: clockwise moves down in the menus.
+// If the knob works backwards, swap the two pins here.
+#define BTN_EN1              PA9    // EXP1-3 (encoder DT)
+#define BTN_EN2              PB5    // EXP1-1 (encoder CLK)
+#define BTN_ENC              PA15   // EXP1-2 (encoder SW)
+#define BEEPER               PA8    // "NEOPIXEL" header
 #endif
 
 // Fan tachometers. The SWD header pins are used (no other free pins left),

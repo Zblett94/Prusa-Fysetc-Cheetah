@@ -93,8 +93,8 @@ right = [('X-STOP', 'unused', 'X-STOP', ['not used: X homes on the', 'DIAG jumpe
          ('TH0', 'sensor', 'Hotend thermistor', ['Semitec 104GT-2']),
          ('TB', 'sensor', 'Heatbed thermistor', []),
          ('PWR-DET', 'power', 'Power panic signal', ['from the PSU, active low', '(open = power good)']),
-         ('PS-ON', 'unused', 'PS-ON', ['free (the MK3S LCD option uses it)']),
-         ('NEOPIXEL', 'unused', 'NEOPIXEL', ['free (the MK3S LCD option uses it)'])]
+         ('PS-ON', 'lcd', 'Display RESET', ['signal pin (PC13) → RESET of the TFT']),
+         ('NEOPIXEL', 'lcd', 'Passive buzzer (KY-006)', ['S → signal (PA8), − → GND'])]
 n = len(right)
 for i, (name, group, title, lines) in enumerate(right):
     y = BY0 + 70 + i * ((BY1 - BY0 - 110) / (n - 1))
@@ -103,8 +103,8 @@ for i, (name, group, title, lines) in enumerate(right):
     callout(BX1 + 4, y, 1430, by, 440, title, lines, group)
 
 # ---------------- left edge ----------------
-left = [('EXP1', 'lcd', 'Creality Ender-3 display', ['stock 10-pin cable to its EXP3 plug:', 'screen, knob and beeper, see below']),
-        ('SPI1', 'unused', 'SPI1', ['free (the MK3S LCD option uses it)']),
+left = [('EXP1', 'lcd', '4.0" TFT (ST7796S) + encoder', ['jumper wires, one per pin:', 'display SPI + KY-040, see below']),
+        ('SPI1', 'lcd', 'Display backlight (LED)', ['SPI1 header pin 3 (PD9)']),
         ('TFT', 'comm', 'MMU2S / MMU3 (optional)', ['TX (PA2) → MMU RX,', 'RX (PA3) ← MMU TX, GND', 'no reset wire needed']),
         ('SWD', 'fan', 'Fan tachometers', ['SWDIO (PA13) ← print fan tach', 'SWCLK (PA14) ← hotend fan tach']),
         ('USB', 'comm', 'USB to PC / Raspberry Pi', ['PrusaSlicer, OctoPrint']),
@@ -117,24 +117,24 @@ for i, (name, group, title, lines) in enumerate(left):
 
 # ---------------- EXP1 table ----------------
 tx, ty = 40, 990
-rect(tx, ty, 425, 260, '#ffffff', C['lcd'], 6, 2)
-text(tx + 14, ty + 24, 'EXP1 → Ender-3 display (ST7920)', 15, weight='bold', fill=C['lcd'])
-rows = [('EXP1-1', 'PB5', 'beeper'), ('EXP1-2', 'PA15', 'knob push'), ('EXP1-3', 'PA9', 'knob B'),
-        ('EXP1-4', '—', 'RESET (n.c.)'), ('EXP1-5', 'PA10', 'knob A'), ('EXP1-6', 'PB9', 'ST7920 SCLK'),
-        ('EXP1-7', 'PB8', 'ST7920 CS'), ('EXP1-8', 'PD6', 'ST7920 SID'), ('EXP1-9', '', 'GND'), ('EXP1-10', '', '5 V')]
+rect(tx, ty, 440, 260, '#ffffff', C['lcd'], 6, 2)
+text(tx + 14, ty + 24, 'EXP1 → TFT display + KY-040', 15, weight='bold', fill=C['lcd'])
+rows = [('EXP1-1', 'PB5', 'KY-040 CLK'), ('EXP1-2', 'PA15', 'KY-040 SW'), ('EXP1-3', 'PA9', 'KY-040 DT'),
+        ('EXP1-4', '—', '(not used)'), ('EXP1-5', 'PA10', 'TFT SDI (MOSI)'), ('EXP1-6', 'PB9', 'TFT DC/RS'),
+        ('EXP1-7', 'PB8', 'TFT SCK'), ('EXP1-8', 'PD6', 'TFT CS'), ('EXP1-9', '', 'GND (TFT)'), ('EXP1-10', '', '5 V (TFT VCC)')]
 for i, (p, m, s) in enumerate(rows):
     y = ty + 48 + i * 20
     text(tx + 14, y, p, 12.5, weight='bold')
     text(tx + 90, y, m, 12.5, fill='#475569')
     text(tx + 150, y, s, 12.5)
-text(tx + 252, ty + 48, 'Pin 1 = PB5 (BTT/Marlin', 11.5, fill='#475569')
-text(tx + 252, ty + 64, 'numbering). Check the notch', 11.5, fill='#475569')
-text(tx + 252, ty + 80, 'against the silkscreen.', 11.5, fill='#475569')
-text(tx + 252, ty + 112, 'Plug and play with the', 11.5, fill='#475569')
-text(tx + 252, ty + 128, 'cable of the display.', 11.5, fill='#475569')
-text(tx + 252, ty + 160, 'Original MK3S LCD: build', 11.5, fill='#475569')
-text(tx + 252, ty + 176, 'with -DLCD_MK3S and wire', 11.5, fill='#475569')
-text(tx + 252, ty + 192, 'it as in docs/WIRING.md.', 11.5, fill='#475569')
+text(tx + 262, ty + 48, 'Pin 1 = PB5 (BTT/Marlin', 11.5, fill='#475569')
+text(tx + 262, ty + 64, 'numbering). Check the notch', 11.5, fill='#475569')
+text(tx + 262, ty + 80, 'against the silkscreen.', 11.5, fill='#475569')
+text(tx + 262, ty + 112, 'TFT SDO/MISO and the', 11.5, fill='#475569')
+text(tx + 262, ty + 128, 'touch pins: not used.', 11.5, fill='#475569')
+text(tx + 262, ty + 160, 'Ender-3 LCD: -DLCD_ENDER3,', 11.5, fill='#475569')
+text(tx + 262, ty + 176, 'MK3S LCD: -DLCD_MK3S,', 11.5, fill='#475569')
+text(tx + 262, ty + 192, 'see docs/WIRING.md.', 11.5, fill='#475569')
 
 # ---------------- legend + warnings ----------------
 lx, ly = 1430, 1010

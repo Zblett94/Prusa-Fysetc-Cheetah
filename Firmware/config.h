@@ -80,7 +80,7 @@
                                       // 16 Languages max. per group including stock
 #else
 // STM32 port: no external flash, all language tables are stored in the internal flash
-#define LANG_SIZE_RESERVED     0x30000
+#define LANG_SIZE_RESERVED     0x2C000 // 14 languages use about 172 KB
 #endif
 
 #if (LANG_SIZE_RESERVED % 256)

@@ -5,6 +5,7 @@
 
 #include "temperature.h"
 #include "ultralcd.h"
+#include "lcd_tft.h"
 #include "Marlin.h"
 #include "language.h"
 #include "cardreader.h"
@@ -649,6 +650,9 @@ void lcdui_print_status_line(void) {
 //! @endcode
 void lcdui_print_status_screen(void)
 {
+#ifdef LCD_TFT
+    tft_status_begin(); // the color display shows these fields as a dashboard
+#endif
     lcd_frame_start();
 	lcd_home(); //line 0
 
@@ -703,6 +707,9 @@ void lcdui_print_status_screen(void)
 #ifndef DEBUG_DISABLE_LCD_STATUS_LINE
 	lcdui_print_status_line();
 #endif //DEBUG_DISABLE_LCD_STATUS_LINE
+#ifdef LCD_TFT
+    tft_status_end();
+#endif
 }
 
 static void lcdui_refresh(uint8_t clear = true)

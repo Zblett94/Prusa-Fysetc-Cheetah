@@ -3,3 +3,4 @@
 compile_commands.json
 test/motion/test_motion
 test/lcd/test_st7920
+test/tft/test_tft
