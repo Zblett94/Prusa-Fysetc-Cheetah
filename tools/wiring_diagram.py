@@ -75,8 +75,8 @@ for i, (name, title, lines) in enumerate(motors):
 bottom = [('POWER', 'power', 'PSU 24 V', ['+ / − (DCIN)', 'mind the polarity']),
           ('HB', 'power', 'Heatbed MK52', ['24 V, ~9 A: external', 'MOSFET module', 'recommended']),
           ('HE', 'power', 'Hotend heater', ['40 W heater cartridge']),
-          ('FAN0', 'fan', 'Print fan', ['5 V blower', 'fan jumper on 5 V']),
-          ('FAN1', 'fan', 'Hotend fan', ['5 V Noctua', 'fan jumper on 5 V']),
+          ('FAN0', 'fan', 'Print fan (5 V)', ['+ → 5 V, − → FAN0 −', 'FAN0 + is 24 V!']),
+          ('FAN1', 'fan', 'Hotend fan (5 V)', ['+ → 5 V, − → FAN1 −', 'FAN1 + is 24 V!']),
           ('FAN2', 'unused', 'FAN2', ['not used'])]
 for i, (name, group, title, lines) in enumerate(bottom):
     x = BX0 + 60 + i * 115
@@ -87,12 +87,11 @@ for i, (name, group, title, lines) in enumerate(bottom):
 right = [('X-STOP', 'unused', 'X-STOP', ['not used: X homes on the', 'DIAG jumper (StallGuard)']),
          ('Y-STOP', 'unused', 'Y-STOP', ['not used (DIAG jumper)']),
          ('Z-STOP', 'unused', 'Z-STOP', ['not used (DIAG jumper)']),
-         ('E0-STOP', 'sensor', 'IR filament sensor', ['signal + 5 V + GND (PC15)']),
-         ('PROBE', 'sensor', 'P.I.N.D.A. / SuperPINDA', ['signal + 5 V + GND (PC14)', 'check the 5 V output level']),
-         ('SERVO', 'sensor', 'P.I.N.D.A. thermistor', ['signal pin + GND (PA1)', 'ADD 4.7 kΩ PA1 → 3.3 V']),
+         ('E0-STOP', 'sensor', 'IR filament sensor', ['+5 V, GND; signal (PC15) through a', 'Schottky diode, band toward the sensor']),
+         ('Z-PROBE', 'sensor', 'P.I.N.D.A. (+ its thermistor)', ['PROBE (PC14) via Schottky diode, PWR 5 V,', 'GND; thermistor: SERVOS (PA1) + GND,', 'ADD 4.7 kΩ PA1 → 3.3 V (SPI1 pin 7)']),
          ('TH0', 'sensor', 'Hotend thermistor', ['Semitec 104GT-2']),
          ('TB', 'sensor', 'Heatbed thermistor', []),
-         ('PWR-DET', 'power', 'Power panic signal', ['from the PSU, active low', '(open = power good)']),
+         ('PWR-DET', 'power', 'Power panic signal', ['from the PSU, active low (PC12),', 'Schottky diode, band toward the PSU']),
          ('PS-ON', 'lcd', 'Display RESET', ['signal pin (PC13) → RESET of the TFT']),
          ('NEOPIXEL', 'lcd', 'Passive buzzer (KY-006)', ['S → signal (PA8), − → GND'])]
 n = len(right)
@@ -105,7 +104,7 @@ for i, (name, group, title, lines) in enumerate(right):
 # ---------------- left edge ----------------
 left = [('EXP1', 'lcd', '4.0" TFT (ST7796S) + encoder', ['jumper wires, one per pin:', 'display SPI + KY-040, see below']),
         ('SPI1', 'lcd', 'Display backlight (LED)', ['SPI1 header pin 3 (PD9)']),
-        ('TFT', 'comm', 'MMU2S / MMU3 (optional)', ['TX (PA2) → MMU RX,', 'RX (PA3) ← MMU TX, GND', 'no reset wire needed']),
+        ('TFT', 'comm', 'MMU2S / MMU3 (optional)', ['TX (PA2) → MMU RX, GND,', 'RX (PA3) ← MMU TX via 1k/2k divider', 'no reset wire (RST = SKR reset!)']),
         ('SWD', 'fan', 'Fan tachometers', ['SWDIO (PA13) ← print fan tach', 'SWCLK (PA14) ← hotend fan tach']),
         ('USB', 'comm', 'USB to PC / Raspberry Pi', ['PrusaSlicer, OctoPrint']),
         ('microSD', 'comm', 'micro-SD card', ['firmware.bin to flash,', 'G-code files to print'])]
@@ -138,12 +137,13 @@ text(tx + 262, ty + 192, 'see docs/WIRING.md.', 11.5, fill='#475569')
 
 # ---------------- legend + warnings ----------------
 lx, ly = 1430, 1010
-rect(lx, ly, 440, 180, '#fff7ed', '#c2410c', 6, 2)
+rect(lx, ly, 440, 200, '#fff7ed', '#c2410c', 6, 2)
 text(lx + 14, ly + 24, 'Before powering up', 15, weight='bold', fill='#c2410c')
-warn = ['The STM32 is a 3.3 V part: check that 5 V signals (P.I.N.D.A.,',
-        'IR sensor, MMU, PSU power-panic) go to 5 V tolerant pins or',
-        'add a divider (10 kΩ series / 20 kΩ to GND).',
-        'Fan voltage jumper on 5 V (MK3S fans are 5 V fans).',
+warn = ['Fan outputs are 24 V, no fan voltage jumper on the V3.0:',
+        '5 V fans + → a 5 V pin, − → FAN0 − / FAN1 −.',
+        '5 V sensor signals (P.I.N.D.A., IR sensor, power panic):',
+        'Schottky diode, band toward the sensor. MMU TX: 1k/2k divider.',
+        'KY-040 encoder + → 3.3 V (SPI1 header pin 7).',
         'Flash firmware.bin from the SD card, run the Wizard.',
         'Full pin list: docs/WIRING.md']
 for i, wl in enumerate(warn):

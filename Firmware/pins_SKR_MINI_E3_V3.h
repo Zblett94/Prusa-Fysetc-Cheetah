@@ -16,7 +16,7 @@
 #define TMC2130              // the Prusa TMC2130 code paths are used, the driver layer talks to TMC2209s
 #define TMC2209              // ... over the single wire UART (USART4, PC10/PC11)
 #define UVLO_SUPPORT
-#define PINDA_THERMISTOR     // PINDA v2 thermistor on the SERVO header (PA1), see docs/WIRING.md
+#define PINDA_THERMISTOR     // PINDA v2 thermistor on the Z-PROBE header, SERVOS pin (PA1), see docs/WIRING.md
 #define AMBIENT_THERMISTOR   // the STM32 internal temperature sensor replaces the EINSy board thermistor
 //#define XFLASH             // no external SPI flash: no languages, no crash dumps
 //#define BOOTAPP            // the BTT SD card bootloader is used instead
@@ -59,7 +59,7 @@
 #define Z_STEP_PIN           PB0
 #define Z_DIR_PIN            PC5
 #define Z_ENABLE_PIN         PB1
-#define Z_MIN_PIN            PC14   // PROBE header: P.I.N.D.A.
+#define Z_MIN_PIN            PC14   // Z-PROBE header, PROBE pin: P.I.N.D.A.
 #define Z_MAX_PIN            -1
 #define Z_MS1_PIN            -1
 #define Z_MS2_PIN            -1
@@ -78,7 +78,7 @@
 // Analog inputs are given as ADC1 channel numbers, like the AVR ADC channels
 #define TEMP_0_PIN           0      // PA0  "TH0"  hotend thermistor
 #define TEMP_BED_PIN         17     // PC4  "TB"   bed thermistor
-#define TEMP_PINDA_PIN       1      // PA1  "SERVO" PINDA thermistor (needs a 4.7k pull-up to 3.3V)
+#define TEMP_PINDA_PIN       1      // PA1  Z-PROBE "SERVOS" pin: PINDA thermistor (needs a 4.7k pull-up to 3.3V)
 #define TEMP_1_PIN           -1
 #define TEMP_2_PIN           -1
 //#define VOLT_PWR_PIN       not available
@@ -108,7 +108,7 @@ static inline uint32_t adc_channel_pin(uint8_t ch) {
 #define SDCARDDETECT         PC3
 #define LED_PIN              PD8
 
-#define FAN_PIN              PC6    // "FAN0": print fan (5V, set the fan voltage jumper accordingly)
+#define FAN_PIN              PC6    // "FAN0" (low side): print fan, + to 5V (FAN0 + is 24V)
 #define FAN_1_PIN            -1
 #define PS_ON_PIN            -1
 #define KILL_PIN             -1
@@ -175,7 +175,7 @@ static inline uint32_t adc_channel_pin(uint8_t ch) {
 #define MMU_SERIAL_RX_PIN    PA3_ALT1 // "TFT" header (USART2)
 #define MMU_SERIAL_TX_PIN    PA2_ALT1
 
-#define EXTRUDER_0_AUTO_FAN_PIN PC7 // "FAN1": hotend fan (5V)
+#define EXTRUDER_0_AUTO_FAN_PIN PC7 // "FAN1" (low side): hotend fan, + to 5V (FAN1 + is 24V)
 
 // pins which M42/M226 must not touch (STM32 core digital pin numbers)
 #define _SKR_PIN(p) fastio::digital_index(p)

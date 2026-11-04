@@ -102,18 +102,18 @@
 <circle cx="987" cy="884" r="3.5" fill="#7c3aed"/>
 <rect x="954" y="990" width="150" height="58" rx="6" fill="#ffffff" stroke="#7c3aed" stroke-width="2"/>
 <rect x="954" y="990" width="6" height="58" rx="3" fill="#7c3aed" stroke="none" stroke-width="1.5"/>
-<text x="968" y="1008" font-size="14" text-anchor="start" font-weight="bold" fill="#7c3aed">Print fan</text>
-<text x="968" y="1026" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">5 V blower</text>
-<text x="968" y="1043" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">fan jumper on 5 V</text>
+<text x="968" y="1008" font-size="14" text-anchor="start" font-weight="bold" fill="#7c3aed">Print fan (5 V)</text>
+<text x="968" y="1026" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">+ → 5 V, − → FAN0 −</text>
+<text x="968" y="1043" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">FAN0 + is 24 V!</text>
 <rect x="1060" y="854" width="84" height="30" rx="3" fill="#f8fafc" stroke="#7c3aed" stroke-width="2"/>
 <text x="1102.0" y="873.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">FAN1</text>
 <path d="M1102,884 L1112,1019.0" stroke="#7c3aed" stroke-width="2" fill="none"/>
 <circle cx="1102" cy="884" r="3.5" fill="#7c3aed"/>
 <rect x="1112" y="990" width="150" height="58" rx="6" fill="#ffffff" stroke="#7c3aed" stroke-width="2"/>
 <rect x="1112" y="990" width="6" height="58" rx="3" fill="#7c3aed" stroke="none" stroke-width="1.5"/>
-<text x="1126" y="1008" font-size="14" text-anchor="start" font-weight="bold" fill="#7c3aed">Hotend fan</text>
-<text x="1126" y="1026" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">5 V Noctua</text>
-<text x="1126" y="1043" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">fan jumper on 5 V</text>
+<text x="1126" y="1008" font-size="14" text-anchor="start" font-weight="bold" fill="#7c3aed">Hotend fan (5 V)</text>
+<text x="1126" y="1026" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">+ → 5 V, − → FAN1 −</text>
+<text x="1126" y="1043" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">FAN1 + is 24 V!</text>
 <rect x="1175" y="854" width="84" height="30" rx="3" fill="#f8fafc" stroke="#9ca3af" stroke-width="2"/>
 <text x="1217.0" y="873.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">FAN2</text>
 <path d="M1217,884 L1270,1010.5" stroke="#9ca3af" stroke-width="2" fill="none"/>
@@ -131,88 +131,81 @@
 <text x="1444" y="118" font-size="14" text-anchor="start" font-weight="bold" fill="#9ca3af">X-STOP</text>
 <text x="1444" y="136" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">not used: X homes on the</text>
 <text x="1444" y="153" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">DIAG jumper (StallGuard)</text>
-<rect x="1188" y="404.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#9ca3af" stroke-width="2"/>
-<text x="1236.0" y="421.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">Y-STOP</text>
-<path d="M1284,417.0 L1430,200.5" stroke="#9ca3af" stroke-width="2" fill="none"/>
-<circle cx="1284" cy="417.0" r="3.5" fill="#9ca3af"/>
+<rect x="1188" y="409.22222222222223" width="96" height="26" rx="3" fill="#f8fafc" stroke="#9ca3af" stroke-width="2"/>
+<text x="1236.0" y="426.72222222222223" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">Y-STOP</text>
+<path d="M1284,422.22222222222223 L1430,200.5" stroke="#9ca3af" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="422.22222222222223" r="3.5" fill="#9ca3af"/>
 <rect x="1430" y="180" width="440" height="41" rx="6" fill="#ffffff" stroke="#9ca3af" stroke-width="2"/>
 <rect x="1430" y="180" width="6" height="41" rx="3" fill="#9ca3af" stroke="none" stroke-width="1.5"/>
 <text x="1444" y="198" font-size="14" text-anchor="start" font-weight="bold" fill="#9ca3af">Y-STOP</text>
 <text x="1444" y="216" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">not used (DIAG jumper)</text>
-<rect x="1188" y="451.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#9ca3af" stroke-width="2"/>
-<text x="1236.0" y="468.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">Z-STOP</text>
-<path d="M1284,464.0 L1430,280.5" stroke="#9ca3af" stroke-width="2" fill="none"/>
-<circle cx="1284" cy="464.0" r="3.5" fill="#9ca3af"/>
+<rect x="1188" y="461.44444444444446" width="96" height="26" rx="3" fill="#f8fafc" stroke="#9ca3af" stroke-width="2"/>
+<text x="1236.0" y="478.94444444444446" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">Z-STOP</text>
+<path d="M1284,474.44444444444446 L1430,280.5" stroke="#9ca3af" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="474.44444444444446" r="3.5" fill="#9ca3af"/>
 <rect x="1430" y="260" width="440" height="41" rx="6" fill="#ffffff" stroke="#9ca3af" stroke-width="2"/>
 <rect x="1430" y="260" width="6" height="41" rx="3" fill="#9ca3af" stroke="none" stroke-width="1.5"/>
 <text x="1444" y="278" font-size="14" text-anchor="start" font-weight="bold" fill="#9ca3af">Z-STOP</text>
 <text x="1444" y="296" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">not used (DIAG jumper)</text>
-<rect x="1188" y="498.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#059669" stroke-width="2"/>
-<text x="1236.0" y="515.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">E0-STOP</text>
-<path d="M1284,511.0 L1430,360.5" stroke="#059669" stroke-width="2" fill="none"/>
-<circle cx="1284" cy="511.0" r="3.5" fill="#059669"/>
-<rect x="1430" y="340" width="440" height="41" rx="6" fill="#ffffff" stroke="#059669" stroke-width="2"/>
-<rect x="1430" y="340" width="6" height="41" rx="3" fill="#059669" stroke="none" stroke-width="1.5"/>
+<rect x="1188" y="513.6666666666666" width="96" height="26" rx="3" fill="#f8fafc" stroke="#059669" stroke-width="2"/>
+<text x="1236.0" y="531.1666666666666" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">E0-STOP</text>
+<path d="M1284,526.6666666666666 L1430,369.0" stroke="#059669" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="526.6666666666666" r="3.5" fill="#059669"/>
+<rect x="1430" y="340" width="440" height="58" rx="6" fill="#ffffff" stroke="#059669" stroke-width="2"/>
+<rect x="1430" y="340" width="6" height="58" rx="3" fill="#059669" stroke="none" stroke-width="1.5"/>
 <text x="1444" y="358" font-size="14" text-anchor="start" font-weight="bold" fill="#059669">IR filament sensor</text>
-<text x="1444" y="376" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">signal + 5 V + GND (PC15)</text>
-<rect x="1188" y="545.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#059669" stroke-width="2"/>
-<text x="1236.0" y="562.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">PROBE</text>
-<path d="M1284,558.0 L1430,449.0" stroke="#059669" stroke-width="2" fill="none"/>
-<circle cx="1284" cy="558.0" r="3.5" fill="#059669"/>
-<rect x="1430" y="420" width="440" height="58" rx="6" fill="#ffffff" stroke="#059669" stroke-width="2"/>
-<rect x="1430" y="420" width="6" height="58" rx="3" fill="#059669" stroke="none" stroke-width="1.5"/>
-<text x="1444" y="438" font-size="14" text-anchor="start" font-weight="bold" fill="#059669">P.I.N.D.A. / SuperPINDA</text>
-<text x="1444" y="456" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">signal + 5 V + GND (PC14)</text>
-<text x="1444" y="473" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">check the 5 V output level</text>
-<rect x="1188" y="592.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#059669" stroke-width="2"/>
-<text x="1236.0" y="609.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">SERVO</text>
-<path d="M1284,605.0 L1430,529.0" stroke="#059669" stroke-width="2" fill="none"/>
-<circle cx="1284" cy="605.0" r="3.5" fill="#059669"/>
-<rect x="1430" y="500" width="440" height="58" rx="6" fill="#ffffff" stroke="#059669" stroke-width="2"/>
-<rect x="1430" y="500" width="6" height="58" rx="3" fill="#059669" stroke="none" stroke-width="1.5"/>
-<text x="1444" y="518" font-size="14" text-anchor="start" font-weight="bold" fill="#059669">P.I.N.D.A. thermistor</text>
-<text x="1444" y="536" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">signal pin + GND (PA1)</text>
-<text x="1444" y="553" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">ADD 4.7 kΩ PA1 → 3.3 V</text>
-<rect x="1188" y="639.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#059669" stroke-width="2"/>
-<text x="1236.0" y="656.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">TH0</text>
-<path d="M1284,652.0 L1430,600.5" stroke="#059669" stroke-width="2" fill="none"/>
-<circle cx="1284" cy="652.0" r="3.5" fill="#059669"/>
-<rect x="1430" y="580" width="440" height="41" rx="6" fill="#ffffff" stroke="#059669" stroke-width="2"/>
-<rect x="1430" y="580" width="6" height="41" rx="3" fill="#059669" stroke="none" stroke-width="1.5"/>
-<text x="1444" y="598" font-size="14" text-anchor="start" font-weight="bold" fill="#059669">Hotend thermistor</text>
-<text x="1444" y="616" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">Semitec 104GT-2</text>
-<rect x="1188" y="686.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#059669" stroke-width="2"/>
-<text x="1236.0" y="703.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">TB</text>
-<path d="M1284,699.0 L1430,672.0" stroke="#059669" stroke-width="2" fill="none"/>
-<circle cx="1284" cy="699.0" r="3.5" fill="#059669"/>
-<rect x="1430" y="660" width="440" height="24" rx="6" fill="#ffffff" stroke="#059669" stroke-width="2"/>
-<rect x="1430" y="660" width="6" height="24" rx="3" fill="#059669" stroke="none" stroke-width="1.5"/>
-<text x="1444" y="678" font-size="14" text-anchor="start" font-weight="bold" fill="#059669">Heatbed thermistor</text>
-<rect x="1188" y="733.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#dc2626" stroke-width="2"/>
-<text x="1236.0" y="750.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">PWR-DET</text>
-<path d="M1284,746.0 L1430,769.0" stroke="#dc2626" stroke-width="2" fill="none"/>
-<circle cx="1284" cy="746.0" r="3.5" fill="#dc2626"/>
-<rect x="1430" y="740" width="440" height="58" rx="6" fill="#ffffff" stroke="#dc2626" stroke-width="2"/>
-<rect x="1430" y="740" width="6" height="58" rx="3" fill="#dc2626" stroke="none" stroke-width="1.5"/>
-<text x="1444" y="758" font-size="14" text-anchor="start" font-weight="bold" fill="#dc2626">Power panic signal</text>
-<text x="1444" y="776" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">from the PSU, active low</text>
-<text x="1444" y="793" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">(open = power good)</text>
-<rect x="1188" y="780.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#d97706" stroke-width="2"/>
-<text x="1236.0" y="797.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">PS-ON</text>
-<path d="M1284,793.0 L1430,840.5" stroke="#d97706" stroke-width="2" fill="none"/>
-<circle cx="1284" cy="793.0" r="3.5" fill="#d97706"/>
-<rect x="1430" y="820" width="440" height="41" rx="6" fill="#ffffff" stroke="#d97706" stroke-width="2"/>
-<rect x="1430" y="820" width="6" height="41" rx="3" fill="#d97706" stroke="none" stroke-width="1.5"/>
-<text x="1444" y="838" font-size="14" text-anchor="start" font-weight="bold" fill="#d97706">Display RESET</text>
-<text x="1444" y="856" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">signal pin (PC13) → RESET of the TFT</text>
+<text x="1444" y="376" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">+5 V, GND; signal (PC15) through a</text>
+<text x="1444" y="393" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">Schottky diode, band toward the sensor</text>
+<rect x="1188" y="565.8888888888889" width="96" height="26" rx="3" fill="#f8fafc" stroke="#059669" stroke-width="2"/>
+<text x="1236.0" y="583.3888888888889" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">Z-PROBE</text>
+<path d="M1284,578.8888888888889 L1430,457.5" stroke="#059669" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="578.8888888888889" r="3.5" fill="#059669"/>
+<rect x="1430" y="420" width="440" height="75" rx="6" fill="#ffffff" stroke="#059669" stroke-width="2"/>
+<rect x="1430" y="420" width="6" height="75" rx="3" fill="#059669" stroke="none" stroke-width="1.5"/>
+<text x="1444" y="438" font-size="14" text-anchor="start" font-weight="bold" fill="#059669">P.I.N.D.A. (+ its thermistor)</text>
+<text x="1444" y="456" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">PROBE (PC14) via Schottky diode, PWR 5 V,</text>
+<text x="1444" y="473" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">GND; thermistor: SERVOS (PA1) + GND,</text>
+<text x="1444" y="490" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">ADD 4.7 kΩ PA1 → 3.3 V (SPI1 pin 7)</text>
+<rect x="1188" y="618.1111111111111" width="96" height="26" rx="3" fill="#f8fafc" stroke="#059669" stroke-width="2"/>
+<text x="1236.0" y="635.6111111111111" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">TH0</text>
+<path d="M1284,631.1111111111111 L1430,520.5" stroke="#059669" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="631.1111111111111" r="3.5" fill="#059669"/>
+<rect x="1430" y="500" width="440" height="41" rx="6" fill="#ffffff" stroke="#059669" stroke-width="2"/>
+<rect x="1430" y="500" width="6" height="41" rx="3" fill="#059669" stroke="none" stroke-width="1.5"/>
+<text x="1444" y="518" font-size="14" text-anchor="start" font-weight="bold" fill="#059669">Hotend thermistor</text>
+<text x="1444" y="536" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">Semitec 104GT-2</text>
+<rect x="1188" y="670.3333333333333" width="96" height="26" rx="3" fill="#f8fafc" stroke="#059669" stroke-width="2"/>
+<text x="1236.0" y="687.8333333333333" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">TB</text>
+<path d="M1284,683.3333333333333 L1430,592.0" stroke="#059669" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="683.3333333333333" r="3.5" fill="#059669"/>
+<rect x="1430" y="580" width="440" height="24" rx="6" fill="#ffffff" stroke="#059669" stroke-width="2"/>
+<rect x="1430" y="580" width="6" height="24" rx="3" fill="#059669" stroke="none" stroke-width="1.5"/>
+<text x="1444" y="598" font-size="14" text-anchor="start" font-weight="bold" fill="#059669">Heatbed thermistor</text>
+<rect x="1188" y="722.5555555555555" width="96" height="26" rx="3" fill="#f8fafc" stroke="#dc2626" stroke-width="2"/>
+<text x="1236.0" y="740.0555555555555" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">PWR-DET</text>
+<path d="M1284,735.5555555555555 L1430,689.0" stroke="#dc2626" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="735.5555555555555" r="3.5" fill="#dc2626"/>
+<rect x="1430" y="660" width="440" height="58" rx="6" fill="#ffffff" stroke="#dc2626" stroke-width="2"/>
+<rect x="1430" y="660" width="6" height="58" rx="3" fill="#dc2626" stroke="none" stroke-width="1.5"/>
+<text x="1444" y="678" font-size="14" text-anchor="start" font-weight="bold" fill="#dc2626">Power panic signal</text>
+<text x="1444" y="696" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">from the PSU, active low (PC12),</text>
+<text x="1444" y="713" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">Schottky diode, band toward the PSU</text>
+<rect x="1188" y="774.7777777777778" width="96" height="26" rx="3" fill="#f8fafc" stroke="#d97706" stroke-width="2"/>
+<text x="1236.0" y="792.2777777777778" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">PS-ON</text>
+<path d="M1284,787.7777777777778 L1430,760.5" stroke="#d97706" stroke-width="2" fill="none"/>
+<circle cx="1284" cy="787.7777777777778" r="3.5" fill="#d97706"/>
+<rect x="1430" y="740" width="440" height="41" rx="6" fill="#ffffff" stroke="#d97706" stroke-width="2"/>
+<rect x="1430" y="740" width="6" height="41" rx="3" fill="#d97706" stroke="none" stroke-width="1.5"/>
+<text x="1444" y="758" font-size="14" text-anchor="start" font-weight="bold" fill="#d97706">Display RESET</text>
+<text x="1444" y="776" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">signal pin (PC13) → RESET of the TFT</text>
 <rect x="1188" y="827.0" width="96" height="26" rx="3" fill="#f8fafc" stroke="#d97706" stroke-width="2"/>
 <text x="1236.0" y="844.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">NEOPIXEL</text>
-<path d="M1284,840.0 L1430,920.5" stroke="#d97706" stroke-width="2" fill="none"/>
+<path d="M1284,840.0 L1430,840.5" stroke="#d97706" stroke-width="2" fill="none"/>
 <circle cx="1284" cy="840.0" r="3.5" fill="#d97706"/>
-<rect x="1430" y="900" width="440" height="41" rx="6" fill="#ffffff" stroke="#d97706" stroke-width="2"/>
-<rect x="1430" y="900" width="6" height="41" rx="3" fill="#d97706" stroke="none" stroke-width="1.5"/>
-<text x="1444" y="918" font-size="14" text-anchor="start" font-weight="bold" fill="#d97706">Passive buzzer (KY-006)</text>
-<text x="1444" y="936" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">S → signal (PA8), − → GND</text>
+<rect x="1430" y="820" width="440" height="41" rx="6" fill="#ffffff" stroke="#d97706" stroke-width="2"/>
+<rect x="1430" y="820" width="6" height="41" rx="3" fill="#d97706" stroke="none" stroke-width="1.5"/>
+<text x="1444" y="838" font-size="14" text-anchor="start" font-weight="bold" fill="#d97706">Passive buzzer (KY-006)</text>
+<text x="1444" y="856" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">S → signal (PA8), − → GND</text>
 <rect x="536" y="336.0" width="92" height="28" rx="3" fill="#f8fafc" stroke="#d97706" stroke-width="2"/>
 <text x="582.0" y="354.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">EXP1</text>
 <path d="M536,350.0 L420,319.0" stroke="#d97706" stroke-width="2" fill="none"/>
@@ -237,9 +230,9 @@
 <rect x="40" y="490" width="380" height="75" rx="6" fill="#ffffff" stroke="#475569" stroke-width="2"/>
 <rect x="40" y="490" width="6" height="75" rx="3" fill="#475569" stroke="none" stroke-width="1.5"/>
 <text x="54" y="508" font-size="14" text-anchor="start" font-weight="bold" fill="#475569">MMU2S / MMU3 (optional)</text>
-<text x="54" y="526" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">TX (PA2) → MMU RX,</text>
-<text x="54" y="543" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">RX (PA3) ← MMU TX, GND</text>
-<text x="54" y="560" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">no reset wire needed</text>
+<text x="54" y="526" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">TX (PA2) → MMU RX, GND,</text>
+<text x="54" y="543" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">RX (PA3) ← MMU TX via 1k/2k divider</text>
+<text x="54" y="560" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">no reset wire (RST = SKR reset!)</text>
 <rect x="536" y="618.0" width="92" height="28" rx="3" fill="#f8fafc" stroke="#7c3aed" stroke-width="2"/>
 <text x="582.0" y="636.5" font-size="12" text-anchor="middle" font-weight="bold" fill="#0f172a">SWD</text>
 <path d="M536,632.0 L420,619.0" stroke="#7c3aed" stroke-width="2" fill="none"/>
@@ -306,14 +299,15 @@
 <text x="302" y="1150" font-size="11.5" text-anchor="start" font-weight="normal" fill="#475569">Ender-3 LCD: -DLCD_ENDER3,</text>
 <text x="302" y="1166" font-size="11.5" text-anchor="start" font-weight="normal" fill="#475569">MK3S LCD: -DLCD_MK3S,</text>
 <text x="302" y="1182" font-size="11.5" text-anchor="start" font-weight="normal" fill="#475569">see docs/WIRING.md.</text>
-<rect x="1430" y="1010" width="440" height="180" rx="6" fill="#fff7ed" stroke="#c2410c" stroke-width="2"/>
+<rect x="1430" y="1010" width="440" height="200" rx="6" fill="#fff7ed" stroke="#c2410c" stroke-width="2"/>
 <text x="1444" y="1034" font-size="15" text-anchor="start" font-weight="bold" fill="#c2410c">Before powering up</text>
-<text x="1444" y="1058" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">The STM32 is a 3.3 V part: check that 5 V signals (P.I.N.D.A.,</text>
-<text x="1444" y="1078" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">IR sensor, MMU, PSU power-panic) go to 5 V tolerant pins or</text>
-<text x="1444" y="1098" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">add a divider (10 kΩ series / 20 kΩ to GND).</text>
-<text x="1444" y="1118" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">Fan voltage jumper on 5 V (MK3S fans are 5 V fans).</text>
-<text x="1444" y="1138" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">Flash firmware.bin from the SD card, run the Wizard.</text>
-<text x="1444" y="1158" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">Full pin list: docs/WIRING.md</text>
+<text x="1444" y="1058" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">Fan outputs are 24 V, no fan voltage jumper on the V3.0:</text>
+<text x="1444" y="1078" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">5 V fans + → a 5 V pin, − → FAN0 − / FAN1 −.</text>
+<text x="1444" y="1098" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">5 V sensor signals (P.I.N.D.A., IR sensor, power panic):</text>
+<text x="1444" y="1118" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">Schottky diode, band toward the sensor. MMU TX: 1k/2k divider.</text>
+<text x="1444" y="1138" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">KY-040 encoder + → 3.3 V (SPI1 header pin 7).</text>
+<text x="1444" y="1158" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">Flash firmware.bin from the SD card, run the Wizard.</text>
+<text x="1444" y="1178" font-size="12.5" text-anchor="start" font-weight="normal" fill="#1f2933">Full pin list: docs/WIRING.md</text>
 <rect x="480" y="1290" width="22" height="14" rx="2" fill="#2563eb" stroke="none" stroke-width="1.5"/>
 <text x="510" y="1302" font-size="13" text-anchor="start" font-weight="normal" fill="#1f2933">motors</text>
 <rect x="595.0" y="1290" width="22" height="14" rx="2" fill="#dc2626" stroke="none" stroke-width="1.5"/>

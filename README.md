@@ -56,9 +56,10 @@ settings of another firmware, the printer then starts like a new MK3S: run the
 ## Wiring
 
 See [docs/WIRING.md](docs/WIRING.md) and the [wiring picture](docs/wiring.png). In short: motors, heaters and thermistors go to
-the usual headers, the P.I.N.D.A. to the PROBE header (its thermistor to SERVO with a
-4.7 kΩ pull-up), the IR filament sensor to E0-STOP, the TMC2209 DIAG jumpers X/Y/Z
-must be installed, and the display is a **480x320 color TFT** (ST7796S, SPI) with a
+the usual headers, the P.I.N.D.A. to the Z-PROBE header (its thermistor to the SERVOS
+pin with a 4.7 kΩ pull-up), the IR filament sensor to E0-STOP (5 V sensor signals through
+a Schottky diode), the 5 V fans with + to 5 V and − to FAN0/FAN1 − (the SKR fan outputs
+are 24 V), the TMC2209 DIAG jumpers X/Y/Z must be installed, and the display is a **480x320 color TFT** (ST7796S, SPI) with a
 KY-040 encoder and a buzzer, wired to EXP1 and three spare headers. The Creality
 Ender-3 LCD (`-DLCD_ENDER3`, plug and play) and the original MK3S LCD (`-DLCD_MK3S`,
 custom harness) are build options.
