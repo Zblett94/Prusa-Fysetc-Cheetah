@@ -24,13 +24,20 @@
 //------------------------------------------------------------------------------
 #if !defined(SOFTWARE_SPI) && !defined(__AVR__)
 //------------------------------------------------------------------------------
-// STM32 port: SPI1 (PA5 SCK, PA6 MISO, PA7 MOSI) drives the on-board micro SD slot.
-// Same rates as the AVR: spiRate 0 = 8 MHz ... 5 = 250 kHz (6 is limited to 250 kHz).
+// STM32 port: SPI1 (PA5 SCK, PA6 MISO, PA7 MOSI) drives the micro SD slot.
+// About the AVR rates: spiRate 0 = 8 MHz (F4: 5.6 MHz) ... 5 = 250 kHz (F4: 176 kHz).
 //------------------------------------------------------------------------------
+#if defined(STM32G0xx)
+#define SPI1_AF  0UL
+#define SPI1_BR_OFFSET 2 // 64 MHz / 2^(br + 1)
+#else
+#define SPI1_AF  5UL
+#define SPI1_BR_OFFSET 3 // APB2 90 MHz / 2^(br + 1)
+#endif
 static inline void spiPinAF0(uint32_t pin) {
   GPIO_TypeDef *port = _FIO_PORT(pin);
   const uint32_t b = fastio::pin_bit(pin);
-  port->AFR[b >> 3] &= ~(0xFUL << ((b & 7) * 4)); // AF0 = SPI1
+  port->AFR[b >> 3] = (port->AFR[b >> 3] & ~(0xFUL << ((b & 7) * 4))) | (SPI1_AF << ((b & 7) * 4));
   port->OSPEEDR |= (3UL << (b * 2));
   port->MODER = (port->MODER & ~(3UL << (b * 2))) | (2UL << (b * 2));
 }
@@ -48,12 +55,16 @@ static void spiInit(uint8_t spiRate) {
     port->PUPDR = (port->PUPDR & ~(3UL << (b * 2))) | (1UL << (b * 2));
     initialized = true;
   }
-  uint32_t br = spiRate + 2; // 64 MHz / 2^(br + 1)
+  uint32_t br = spiRate + SPI1_BR_OFFSET;
   if (br > 7) br = 7;
   const uint32_t cr1 = SPI_CR1_MSTR | SPI_CR1_SSM | SPI_CR1_SSI | (br << SPI_CR1_BR_Pos);
   if ((SPI1->CR1 & ~SPI_CR1_SPE) != cr1 || !(SPI1->CR1 & SPI_CR1_SPE)) {
     SPI1->CR1 = 0;
+#if defined(STM32G0xx)
     SPI1->CR2 = (7UL << SPI_CR2_DS_Pos) | SPI_CR2_FRXTH; // 8 bit frames, RXNE at 8 bits
+#else
+    SPI1->CR2 = 0; // 8 bit frames (CR1.DFF = 0)
+#endif
     SPI1->CR1 = cr1;
     SPI1->CR1 = cr1 | SPI_CR1_SPE;
   }

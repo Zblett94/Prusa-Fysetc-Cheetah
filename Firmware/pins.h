@@ -23,6 +23,10 @@
 #include "pins_SKR_MINI_E3_V3.h"
 #endif //MOTHERBOARD == BOARD_SKR_MINI_E3_V3
 
+#if MOTHERBOARD == BOARD_FYSETC_CHEETAH_V3 //3200 - STM32F446RC
+#include "pins_FYSETC_CHEETAH_V3.h"
+#endif //MOTHERBOARD == BOARD_FYSETC_CHEETAH_V3
+
 #ifndef KNOWN_BOARD
 #error Unknown MOTHERBOARD value in configuration.h
 #endif

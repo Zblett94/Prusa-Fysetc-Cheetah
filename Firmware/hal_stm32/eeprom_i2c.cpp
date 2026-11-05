@@ -10,6 +10,7 @@
 //!
 //! The bus is bit-banged on PB6 (SCL) / PB7 (SDA) as on the original BTT design.
 
+#if defined(STM32G0xx)
 #include <Arduino.h>
 #include <string.h>
 #include "hal.h"
@@ -215,3 +216,5 @@ void eeprom_update_word(uint16_t *p, uint16_t v) { write_bytes(&v, p, sizeof(v),
 void eeprom_update_dword(uint32_t *p, uint32_t v) { write_bytes(&v, p, sizeof(v), true); }
 void eeprom_update_float(float *p, float v) { write_bytes(&v, p, sizeof(v), true); }
 void eeprom_update_block(const void *src, void *dst, size_t n) { write_bytes(src, dst, n, true); }
+
+#endif // STM32G0xx

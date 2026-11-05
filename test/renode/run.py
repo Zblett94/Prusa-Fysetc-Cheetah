@@ -43,10 +43,21 @@ def write_screen(path, data, scale=4, border=8):
     with open(path, 'wb') as f:
         f.write(b'P5 %d %d 255\n' % (w, h) + bytes(img))
 
+# per board: build, platform, load address, CPU speed, factory calibration words
+# (TS_CAL1, TS_CAL2, VREFINT_CAL addresses and typical values)
+BOARDS = {
+    'skr': dict(env='renode_test', repl='stm32g0b1.repl', base=0x08002000, mips=64,
+                cal=[(0x1FFF75A8, 1034), (0x1FFF75CA, 1386), (0x1FFF75AA, 1652)]),
+    'cheetah': dict(env='renode_cheetah', repl='stm32f446.repl', base=0x08000000, mips=180,
+                    cal=[(0x1FFF7A2C, 942), (0x1FFF7A2E, 1210), (0x1FFF7A2A, 1520)]),
+}
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--renode', default=os.environ.get('RENODE', 'renode'))
-    ap.add_argument('--elf', default=os.path.join(ROOT, '.pio/build/renode_test/firmware.elf'))
+    ap.add_argument('--board', choices=list(BOARDS), default=os.environ.get('RENODE_BOARD', 'skr'),
+                    help='skr: SKR Mini E3 V3 (renode_test), cheetah: Cheetah V3 (renode_cheetah)')
+    ap.add_argument('--elf')
     ap.add_argument('--boot', type=float, default=6.0, help='emulated seconds before the first command')
     ap.add_argument('--wait', type=float, default=2.0, help='emulated seconds after each command')
     ap.add_argument('--profile', help='write a collapsed stack profile of the commands to this file')
@@ -57,6 +68,9 @@ def main():
     ap.add_argument('--screen', help='write the picture shown on the Ender-3 display (PGM) to this file')
     ap.add_argument('gcode', nargs='*')
     a = ap.parse_args()
+    board = BOARDS[a.board]
+    if not a.elf:
+        a.elf = os.path.join(ROOT, '.pio/build/%s/firmware.elf' % board['env'])
 
     tmp = tempfile.mkdtemp()
     uart = os.path.join(tmp, 'uart.txt')
@@ -66,19 +80,17 @@ def main():
     lines = [
         'using sysbus',
         'mach create "skr"',
-        f'machine LoadPlatformDescription @{HERE}/stm32g0b1.repl',
+        f'machine LoadPlatformDescription @{HERE}/{board["repl"]}',
         f'sysbus LoadELF @{a.elf}',
-        f'sysbus LoadBinary @{fw_bin} 0x08002000',
+        f'sysbus LoadBinary @{fw_bin} {board["base"]:#x}',
         f'sysbus WriteByte {lang:#x} {a.lang}',
-        'cpu VectorTableOffset 0x08002000',
-        # one instruction per clock at 64 MHz (the real Cortex-M0+ needs a bit more)
-        'cpu PerformanceInMips 64',
+        f'cpu VectorTableOffset {board["base"]:#x}',
+        # one instruction per clock (the real Cortex-M needs a bit more)
+        f'cpu PerformanceInMips {board["mips"]}',
         # fine time synchronization between the CPU and the timers (step timing)
         'emulation SetGlobalQuantum "0.00001"',
-        # typical STM32G0B1 factory calibration: TS_CAL1 (30 C), TS_CAL2 (130 C), VREFINT_CAL
-        'sysbus WriteWord 0x1FFF75A8 1034',
-        'sysbus WriteWord 0x1FFF75CA 1386',
-        'sysbus WriteWord 0x1FFF75AA 1652',
+        # typical factory calibration: TS_CAL1, TS_CAL2, VREFINT_CAL
+    ] + [f'sysbus WriteWord {addr:#x} {val}' for addr, val in board['cal']] + [
         f'usart2 CreateFileBackend @{uart} true',
         'logLevel 3',
         f'emulation RunFor "{a.boot}"',

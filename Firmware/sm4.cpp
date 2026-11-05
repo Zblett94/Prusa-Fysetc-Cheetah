@@ -9,7 +9,7 @@
 #define false 0
 #define true 1
 #include "Configuration_var.h"
-#if (MOTHERBOARD == BOARD_SKR_MINI_E3_V3)
+#if (MOTHERBOARD == BOARD_SKR_MINI_E3_V3 || MOTHERBOARD == BOARD_FYSETC_CHEETAH_V3)
 #include "pins.h"
 #include "fastio.h"
 #endif
@@ -66,7 +66,7 @@ void sm4_set_dir(uint8_t axis, uint8_t dir)
 	case 1: if (dir == INVERT_Y_DIR) PORTL |= 2; else PORTL &= ~2; break;
 	case 2: if (dir == INVERT_Z_DIR) PORTL |= 4; else PORTL &= ~4; break;
 	case 3: if (dir == INVERT_E0_DIR) PORTL |= 64; else PORTL &= ~64; break;
-#elif (MOTHERBOARD == BOARD_SKR_MINI_E3_V3)
+#elif (MOTHERBOARD == BOARD_SKR_MINI_E3_V3 || MOTHERBOARD == BOARD_FYSETC_CHEETAH_V3)
 	// same pin levels as the EINSy PORTL bits
 	case 0: WRITE(X_DIR_PIN, dir == INVERT_X_DIR); break;
 	case 1: WRITE(Y_DIR_PIN, dir == INVERT_Y_DIR); break;
@@ -79,7 +79,7 @@ void sm4_set_dir(uint8_t axis, uint8_t dir)
 
 void sm4_set_dir_bits(uint8_t dir_bits)
 {
-#if (MOTHERBOARD == BOARD_SKR_MINI_E3_V3)
+#if (MOTHERBOARD == BOARD_SKR_MINI_E3_V3 || MOTHERBOARD == BOARD_FYSETC_CHEETAH_V3)
 	dir_bits ^= dir_mask;
 	WRITE(X_DIR_PIN, dir_bits & 1);
 	WRITE(Y_DIR_PIN, dir_bits & 2);
@@ -109,7 +109,7 @@ void sm4_set_dir_bits(uint8_t dir_bits)
 
 void sm4_do_step(uint8_t axes_mask)
 {
-#if (MOTHERBOARD == BOARD_SKR_MINI_E3_V3)
+#if (MOTHERBOARD == BOARD_SKR_MINI_E3_V3 || MOTHERBOARD == BOARD_FYSETC_CHEETAH_V3)
 #ifdef TMC2130_DEDGE_STEPPING
 	// toggle step signals by mask
 	if (axes_mask & 1) TOGGLE(X_STEP_PIN);

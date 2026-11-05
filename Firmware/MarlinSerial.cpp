@@ -102,7 +102,11 @@ ISR(USART1_RX_vect)
 
 #ifdef EMULATION
 // Test build for the Renode emulator (no USB model): the host port is USART2 (PA2/PA3)
+#if defined(STM32G0xx)
 static HardwareSerial emuSerial(PA3_ALT1, PA2_ALT1);
+#else
+static HardwareSerial emuSerial(PA3, PA2);
+#endif
 #define SerialUSB emuSerial
 #endif
 

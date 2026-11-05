@@ -44,14 +44,12 @@ static void adc_setmux(uint8_t ch)
 
 #else //__AVR__
 
-// STM32G0 ADC1, one regular conversion per interrupt, exactly like the AVR ADC ISR.
+// STM32 ADC1, one regular conversion per interrupt, exactly like the AVR ADC ISR.
 // The 12 bit result is scaled to 10 bits: the thermistor dividers are ratiometric
 // (pulled up to the ADC reference) so all the AVR raw value tables stay valid.
 
-void adc_init()
+static void adc_analog_pins()
 {
-	puts_P(PSTR("adc_init"));
-	// analog mode on the used pins
 	for (uint8_t i = 0; i < 32; i++) {
 		if (ADC_CHAN_MSK & (1UL << i)) {
 			const uint32_t pin = adc_channel_pin(i);
@@ -62,7 +60,14 @@ void adc_init()
 			port->MODER |= (3UL << (b * 2));
 		}
 	}
+}
 
+#if defined(STM32G0xx)
+
+void adc_init()
+{
+	puts_P(PSTR("adc_init"));
+	adc_analog_pins();
 	__HAL_RCC_ADC_CLK_ENABLE();
 	ADC1->CR = 0;
 	ADC1->CFGR2 = (2UL << ADC_CFGR2_CKMODE_Pos); // PCLK/4 = 16 MHz, synchronous
@@ -96,12 +101,51 @@ static void adc_setmux(uint8_t ch)
 #define ADC_START_CONVERSION() (ADC1->CR |= ADC_CR_ADSTART)
 #define ADC_STOP_CONVERSION()  do { if (ADC1->CR & ADC_CR_ADSTART) { ADC1->CR |= ADC_CR_ADSTP; for (uint16_t _i = 0; _i < 1000 && (ADC1->CR & ADC_CR_ADSTP); _i++) {} } } while (0)
 #define ADC_RESULT()           (ADC1->DR >> 2)
+#define ADC_EOC()              (ADC1->ISR & ADC_ISR_EOC)
+#define ADC_IRQ_HANDLER        ADC1_COMP_IRQHandler
+
+#elif defined(STM32F4xx)
+
+void adc_init()
+{
+	puts_P(PSTR("adc_init"));
+	adc_analog_pins();
+	__HAL_RCC_ADC1_CLK_ENABLE();
+	// ADC clock PCLK2 / 4 = 22.5 MHz (max. 36 MHz), temperature sensor and VREFINT on
+	ADC123_COMMON->CCR = (ADC123_COMMON->CCR & ~ADC_CCR_ADCPRE) | ADC_CCR_ADCPRE_0 | ADC_CCR_TSVREFE;
+	ADC1->CR1 = ADC_CR1_EOCIE; // 12 bit, one channel
+	ADC1->CR2 = 0;             // single conversion, software trigger, right aligned
+	// 480 cycles (21 us) on every channel: high impedance thermistor dividers, and the
+	// temperature sensor needs >= 10 us
+	ADC1->SMPR1 = 0x07FFFFFF;
+	ADC1->SMPR2 = 0x3FFFFFFF;
+	ADC1->SQR1 = 0;            // one conversion
+	ADC1->CR2 |= ADC_CR2_ADON;
+	delayMicroseconds(10);     // tSTAB (and the temperature sensor start-up)
+	ADC1->SR = 0;
+	NVIC_SetPriority(ADC_IRQn, HAL_PRIO_SOFTPWM);
+	NVIC_EnableIRQ(ADC_IRQn);
+}
+
+static void adc_setmux(uint8_t ch)
+{
+	ADC1->SQR3 = ch; // first (only) conversion of the sequence
+}
+
+#define ADC_START_CONVERSION() (ADC1->CR2 |= ADC_CR2_SWSTART)
+// a single conversion can not be aborted: let it end and drop its result
+#define ADC_STOP_CONVERSION()  do { for (uint16_t _i = 0; _i < 2000 && (ADC1->SR & ADC_SR_STRT) && !(ADC1->SR & ADC_SR_EOC); _i++) {} (void)ADC1->DR; ADC1->SR = 0; } while (0)
+#define ADC_RESULT()           (ADC1->DR >> 2)
+#define ADC_EOC()              (ADC1->SR & ADC_SR_EOC)
+#define ADC_IRQ_HANDLER        ADC_IRQHandler
+
+#endif // STM32 family
 
 #endif //__AVR__
 
 static void adc_reset()
 {
-    static const uint8_t first_channel_idx = 0;
+    static const uint8_t first_channel_idx = __builtin_ctz(ADC_CHAN_MSK);
     static_assert((1 << first_channel_idx) & ADC_CHAN_MSK);
 
     ADC_STOP_CONVERSION(); //stop conversion just in case
@@ -142,11 +186,11 @@ extern void ADC_CALLBACK();
 #ifdef __AVR__
 ISR(ADC_vect)
 #else
-extern "C" void ADC1_COMP_IRQHandler(void)
+extern "C" void ADC_IRQ_HANDLER(void)
 #endif
 {
 #ifndef __AVR__
-    if (!(ADC1->ISR & ADC_ISR_EOC)) return;
+    if (!ADC_EOC()) return;
 #endif
     adc_values[adc_channel] += ADC_RESULT();
     if (++adc_count == ADC_OVRSAMPL)

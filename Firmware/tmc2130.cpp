@@ -46,7 +46,43 @@
 #define TMC2209_REG_SG_RESULT 0x41
 #define TMC2209_DRV_STATUS_OTPW 0x00000001
 
+#ifdef TMC2209_ADDR_DETECT
+static uint8_t tmc2209_slave[NUM_AXIS] = { X_TMC2209_ADDR, Y_TMC2209_ADDR, Z_TMC2209_ADDR, E0_TMC2209_ADDR };
+
+//! The address straps of the board are not documented unambiguously: find the driver of
+//! each axis by setting its DIR input and reading the IOIN register (DIR = bit 9) of the
+//! four addresses. Keeps the default mapping when the drivers do not answer.
+static void tmc2209_detect_addresses()
+{
+	static const uint8_t dir_bit = 9;
+	uint8_t found[NUM_AXIS] = {0xFF, 0xFF, 0xFF, 0xFF};
+	SET_OUTPUT(X_DIR_PIN); SET_OUTPUT(Y_DIR_PIN); SET_OUTPUT(Z_DIR_PIN); SET_OUTPUT(E0_DIR_PIN);
+	for (uint8_t axis = 0; axis < NUM_AXIS; axis++) {
+		WRITE(X_DIR_PIN, axis == X_AXIS);
+		WRITE(Y_DIR_PIN, axis == Y_AXIS);
+		WRITE(Z_DIR_PIN, axis == Z_AXIS);
+		WRITE(E0_DIR_PIN, axis == E_AXIS);
+		delayMicroseconds(10);
+		for (uint8_t addr = 0; addr < 4; addr++) {
+			uint32_t ioin;
+			if (tmc2209_uart_read(addr, 0x06, &ioin) && (ioin >> 24) == 0x21 && (ioin & (1UL << dir_bit)))
+				found[axis] = (found[axis] == 0xFF) ? addr : 0xFE; // 0xFE: more than one
+		}
+	}
+	WRITE(X_DIR_PIN, 0); WRITE(Y_DIR_PIN, 0); WRITE(Z_DIR_PIN, 0); WRITE(E0_DIR_PIN, 0);
+	bool ok = true;
+	for (uint8_t a = 0; a < NUM_AXIS; a++) {
+		if (found[a] > 3) ok = false;
+		for (uint8_t b = 0; b < a; b++) if (found[a] == found[b]) ok = false;
+	}
+	if (ok)
+		for (uint8_t a = 0; a < NUM_AXIS; a++) tmc2209_slave[a] = found[a];
+	printf_P(PSTR("TMC2209 UART addresses X%d Y%d Z%d E%d%s\n"), tmc2209_slave[X_AXIS], tmc2209_slave[Y_AXIS],
+		tmc2209_slave[Z_AXIS], tmc2209_slave[E_AXIS], ok ? PSTR("") : PSTR(" (default, detection failed)"));
+}
+#else
 static const uint8_t tmc2209_slave[NUM_AXIS] = { X_TMC2209_ADDR, Y_TMC2209_ADDR, Z_TMC2209_ADDR, E0_TMC2209_ADDR };
+#endif
 
 #else //TMC2209
 #include "spi.h"
@@ -407,6 +443,13 @@ void tmc2130_init(TMCInitParams params)
 //	DBG(_n("tmc2130_init(), mode=%s\n"), tmc2130_mode?_n("STEALTH"):_n("NORMAL"));
 #ifdef TMC2209
 	tmc2209_uart_init();
+#ifdef TMC2209_ADDR_DETECT
+	static bool addresses_known;
+	if (!addresses_known) {
+		tmc2209_detect_addresses();
+		addresses_known = true;
+	}
+#endif
 	// DIAG outputs are push-pull, active high: no pull-ups
 	SET_INPUT(X_TMC2130_DIAG);
 	SET_INPUT(Y_TMC2130_DIAG);
@@ -1145,9 +1188,9 @@ void tmc2130_set_wave(uint8_t axis, uint8_t amp, uint8_t fac1000)
 			reg = 0;
 		// calculate value
 		if (fac == 0) // default TMC wave
-			vA = (uint8_t)((amp+1) * sin((2*PI*i + PI)/1024) + 0.5) - 1;
+			vA = (uint8_t)((amp+1) * sinf((2*PI*i + PI)/1024) + 0.5f) - 1;
 		else // corrected wave
-			vA = (uint8_t)(amp * pow(sin(2*PI*i/1024), fac) + 0.5);
+			vA = (uint8_t)(amp * powf(sinf(2*PI*i/1024), fac) + 0.5f);
 		dA = vA - va; // calculate delta
 		va = vA;
 		b = -1;

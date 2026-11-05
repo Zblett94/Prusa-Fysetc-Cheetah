@@ -276,7 +276,7 @@ void invert_z_endstop(bool endstop_invert)
 #ifdef __AVR__
 ISR(TIMER1_COMPA_vect) {
 #else
-// STM32 port: TIM17 update interrupt, OCR1A/TCNT1 map to TIM17 ARR/CNT (hal_stm32/hal.h)
+// STM32 port: STEP_TIMER update interrupt, OCR1A/TCNT1 map to its ARR/CNT (hal_stm32/hal.h)
 static void stepper_timer_isr() {
 #endif
 #ifdef DEBUG_STACK_MONITOR
@@ -1595,7 +1595,7 @@ void st_init()
 #if defined(MOTION_ENGINE)
   motion_engine_init();
 #elif !defined(__AVR__)
-  // TIM17 at 2 MHz, update event when CNT reaches ARR (= AVR Timer1 CTC mode on OCR1A)
+  // STEP_TIMER at 2 MHz, update event when CNT reaches ARR (= AVR Timer1 CTC mode on OCR1A)
   hal_step_timer_init(stepper_timer_isr);
   hal_step_timer_isr_enable(false);
 #else //!__AVR__

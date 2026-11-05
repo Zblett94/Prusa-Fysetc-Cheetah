@@ -47,8 +47,10 @@
 #include "Timer.h"
 #include "Configuration_var.h"
 #include "Prusa_farm.h"
-#ifndef __AVR__
+#if defined(STM32G0xx)
 #include <stm32g0xx_ll_adc.h>
+#elif defined(STM32F4xx)
+#include <stm32f4xx_ll_adc.h>
 #endif
 
 #if (ADC_OVRSAMPL != OVERSAMPLENR)
@@ -56,7 +58,7 @@
 #endif
 
 #ifndef __AVR__
-// STM32 port: TIM16 (~976 Hz) replaces timer2 COMPB, TIM15 (3.7 Hz) replaces timer5 COMPA
+// STM32 port: SOFTPWM_TIMER (~976 Hz) replaces timer2 COMPB, TEMPMGR_TIMER (3.7 Hz) replaces timer5 COMPA
 #define ENABLE_SOFT_PWM_INTERRUPT()  hal_softpwm_isr_enable(true)
 #define DISABLE_SOFT_PWM_INTERRUPT() hal_softpwm_isr_enable(false)
 #elif defined(SYSTEM_TIMER_2)
@@ -95,9 +97,9 @@
 #define OCFxA TEMP_TIM_REGNAME(OCF, TEMP_TIM, A)
 
 #ifndef __AVR__
-#define TEMP_MGR_INT_FLAG_STATE()    (TIM15->SR & TIM_SR_UIF)
-#define TEMP_MGR_INT_FLAG_CLEAR()    (TIM15->SR = ~TIM_SR_UIF)
-#define TEMP_MGR_INTERRUPT_STATE()   (TIM15->DIER & TIM_DIER_UIE)
+#define TEMP_MGR_INT_FLAG_STATE()    (TEMPMGR_TIMER->SR & TIM_SR_UIF)
+#define TEMP_MGR_INT_FLAG_CLEAR()    (TEMPMGR_TIMER->SR = ~TIM_SR_UIF)
+#define TEMP_MGR_INTERRUPT_STATE()   (TEMPMGR_TIMER->DIER & TIM_DIER_UIE)
 #define ENABLE_TEMP_MGR_INTERRUPT()  hal_tempmgr_isr_enable(true)
 #define DISABLE_TEMP_MGR_INTERRUPT() hal_tempmgr_isr_enable(false)
 #else //!__AVR__
@@ -1342,7 +1344,7 @@ FORCE_INLINE static void soft_pwm_isr()
 }
 
 #ifndef __AVR__
-// STM32 port: TIM16 update interrupt. The interrupt priorities replace the
+// STM32 port: SOFTPWM_TIMER update interrupt. The interrupt priorities replace the
 // AVR NONATOMIC_BLOCK: the stepper and the serial interrupts preempt this one.
 static void soft_pwm_timer_isr()
 {
@@ -2089,7 +2091,7 @@ static void temp_mgr_isr()
 }
 
 #ifndef __AVR__
-// STM32 port: TIM15 update interrupt, lowest priority, so everything else preempts it
+// STM32 port: TEMPMGR_TIMER update interrupt, lowest priority, so everything else preempts it
 static void temp_mgr_timer_isr()
 {
     // immediately schedule a new conversion

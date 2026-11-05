@@ -18,6 +18,17 @@
 #define ADC_CHAN_CNT      4         //number of used channels)
 #endif
 #define ADC_DIDR_MSK      ADC_CHAN_MSK
+#elif MOTHERBOARD == BOARD_FYSETC_CHEETAH_V3
+// ADC1 channels: 8 = bed (PB0, "T1"), 9 = PINDA (PB1, "T2"), 15 = hotend (PC5, "T0"),
+// 17 = internal reference, 18 = MCU temperature ("ambient")
+#ifdef PINDA_THERMISTOR
+#define ADC_CHAN_MSK      ((1UL << 8) | (1UL << 9) | (1UL << 15) | (1UL << 17) | (1UL << 18))
+#define ADC_CHAN_CNT      5         //number of used channels)
+#else
+#define ADC_CHAN_MSK      ((1UL << 8) | (1UL << 15) | (1UL << 17) | (1UL << 18))
+#define ADC_CHAN_CNT      4         //number of used channels)
+#endif
+#define ADC_DIDR_MSK      ADC_CHAN_MSK
 #elif defined(FILAMENT_SENSOR) && (FILAMENT_SENSOR_TYPE == FSENSOR_IR_ANALOG)
 #define ADC_CHAN_MSK      0b0000001101011111 //used AD channels bit mask (0,1,2,3,4,6,8,9)
 #define ADC_DIDR_MSK      0b0000001001011111 //AD channels DIDR mask (1 ~ disabled digital input)

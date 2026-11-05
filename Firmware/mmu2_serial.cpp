@@ -2,11 +2,21 @@
 #ifdef __AVR__
 #include "uart2.h"
 #else
-// STM32 port: the MMU is connected to USART2 on the "TFT" header of the SKR Mini E3 V3
+// STM32 port: the MMU is connected to USART2 on the "TFT" header of the SKR Mini E3 V3,
+// to USART1 on the Raspberry Pi header of the Cheetah V3
 #include <Arduino.h>
 #include "Configuration_var.h"
 #include "pins.h"
+#ifdef MMU_SERIAL_RX_PIN
 static HardwareSerial uart2(MMU_SERIAL_RX_PIN, MMU_SERIAL_TX_PIN);
+#else
+// no MMU port on this build (the pins have another use): the MMU never answers
+static struct {
+    void begin(uint32_t) {}
+    int read() { return -1; }
+    size_t write(const uint8_t *, size_t n) { return n; }
+} uart2;
+#endif
 #endif
 
 namespace MMU2 {

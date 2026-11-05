@@ -112,22 +112,46 @@ static const uint8_t slowInc = 1;
 
 ISR(TIMER0_OVF_vect)          // timer compare interrupt service routine
 #else //__AVR__
-// STM32 port: TIM1 channel 2 on PC9 ("HB") replaces the AVR Timer0/OC0B.
-// TIM1 counts 0..255 like the 8 bit Timer0, the prescaler gives the same 62.5 kHz
-// and 7.8 kHz PWM frequencies and the update interrupt replaces TIMER0_OVF.
-// AVR fast PWM keeps the output active for OCR0B+1 ticks: CCR2 = OCR0B + 1.
-// The prescaler and CCR2 are preloaded (applied at the next overflow) like on the AVR.
+// STM32 port: a timer channel replaces the AVR Timer0/OC0B: TIM1 CH2 on PC9 ("HB") on the
+// SKR Mini E3 V3, TIM3 CH3 on PC8 ("Heated-Bed") on the Cheetah V3.
+// The timer counts 0..255 like the 8 bit Timer0, the prescaler gives the same 62.5 kHz
+// and 7.8 kHz PWM frequencies (F4: 58.6 kHz and 7.8 kHz from the 90 MHz timer clock)
+// and the update interrupt replaces TIMER0_OVF.
+// AVR fast PWM keeps the output active for OCR0B+1 ticks: CCR = OCR0B + 1.
+// The prescaler and CCR are preloaded (applied at the next overflow) like on the AVR.
+#if defined(STM32G0xx)
 #define HB_TIM              TIM1
-#define HB_PSC_FAST         (F_CPU / 16000000UL - 1) // 64 MHz / 4 / 256 = 62.5 kHz
-#define HB_PSC_SLOW         (F_CPU / 2000000UL - 1)  // 64 MHz / 32 / 256 = 7.8 kHz
-#define HB_OC2M_PWM1        (TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1)                    // active while CNT < CCR
-#define HB_OC2M_PWM2        (TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1 | TIM_CCMR1_OC2M_0) // inactive while CNT < CCR
+#define HB_TIM_CLK          F_CPU
+#define HB_CCR              CCR2
+#define HB_CCMR             CCMR1
+#define HB_OCM_MASK         TIM_CCMR1_OC2M
+#define HB_OCM_PWM1         (TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1)                    // active while CNT < CCR
+#define HB_OCM_PWM2         (TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1 | TIM_CCMR1_OC2M_0) // inactive while CNT < CCR
+#define HB_OCPE             TIM_CCMR1_OC2PE
+#define HB_CCER_MASK        (TIM_CCER_CC2P | TIM_CCER_CC2NE)
+#define HB_CCER_EN          TIM_CCER_CC2E
+#define HB_AF               2  // PC9 -> TIM1_CH2
+#elif defined(STM32F4xx)
+#define HB_TIM              TIM3
+#define HB_TIM_CLK          (F_CPU / 2)
+#define HB_CCR              CCR3
+#define HB_CCMR             CCMR2
+#define HB_OCM_MASK         TIM_CCMR2_OC3M
+#define HB_OCM_PWM1         (TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC3M_1)
+#define HB_OCM_PWM2         (TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC3M_1 | TIM_CCMR2_OC3M_0)
+#define HB_OCPE             TIM_CCMR2_OC3PE
+#define HB_CCER_MASK        (TIM_CCER_CC3P | TIM_CCER_CC3NE)
+#define HB_CCER_EN          TIM_CCER_CC3E
+#define HB_AF               2  // PC8 -> TIM3_CH3
+#endif
+#define HB_PSC_FAST         ((HB_TIM_CLK + 8000000UL) / 16000000UL - 1) // 16 MHz / 256 = 62.5 kHz
+#define HB_PSC_SLOW         (HB_TIM_CLK / 2000000UL - 1)              // 2 MHz / 256 = 7.8 kHz
 #define HB_TCNT(v)          HB_TIM->CNT = (v)
-#define HB_OCR(v)           HB_TIM->CCR2 = (uint32_t)(v) + 1
+#define HB_OCR(v)           HB_TIM->HB_CCR = (uint32_t)(v) + 1
 #define HB_PRESC_FAST()     HB_TIM->PSC = HB_PSC_FAST
 #define HB_PRESC_SLOW()     HB_TIM->PSC = HB_PSC_SLOW
-#define HB_NONINVERTING()   HB_TIM->CCMR1 = (HB_TIM->CCMR1 & ~TIM_CCMR1_OC2M) | HB_OC2M_PWM1 | TIM_CCMR1_OC2PE
-#define HB_INVERTING()      HB_TIM->CCMR1 = (HB_TIM->CCMR1 & ~TIM_CCMR1_OC2M) | HB_OC2M_PWM2 | TIM_CCMR1_OC2PE
+#define HB_NONINVERTING()   HB_TIM->HB_CCMR = (HB_TIM->HB_CCMR & ~HB_OCM_MASK) | HB_OCM_PWM1 | HB_OCPE
+#define HB_INVERTING()      HB_TIM->HB_CCMR = (HB_TIM->HB_CCMR & ~HB_OCM_MASK) | HB_OCM_PWM2 | HB_OCPE
 
 static void heatbed_pwm_isr();
 
@@ -145,17 +169,19 @@ void heatbed_pwm_init()
 	HB_PRESC_SLOW();
 	HB_OCR(255);
 	HB_INVERTING();
-	HB_TIM->CCER = (HB_TIM->CCER & ~(TIM_CCER_CC2P | TIM_CCER_CC2NE)) | TIM_CCER_CC2E;
-	HB_TIM->BDTR |= TIM_BDTR_MOE;
+	HB_TIM->CCER = (HB_TIM->CCER & ~HB_CCER_MASK) | HB_CCER_EN;
+#ifdef TIM_BDTR_MOE
+	if (IS_TIM_BREAK_INSTANCE(HB_TIM)) HB_TIM->BDTR |= TIM_BDTR_MOE; // advanced timers only
+#endif
 	HB_TIM->CNT = 0;
-	HB_TIM->EGR = TIM_EGR_UG; // load PSC and CCR2
+	HB_TIM->EGR = TIM_EGR_UG; // load PSC and CCR
 	HB_TIM->SR = 0;
 
-	// PC9 -> TIM1_CH2 (AF2)
+	// heatbed pin -> timer channel
 	GPIO_TypeDef *port = _FIO_PORT(HEATER_BED_PIN);
 	const uint32_t b = fastio::pin_bit(HEATER_BED_PIN);
-	port->BRR = 1UL << b;
-	port->AFR[b >> 3] = (port->AFR[b >> 3] & ~(0xFUL << ((b & 7) * 4))) | (2UL << ((b & 7) * 4));
+	port->BSRR = 1UL << (b + 16);
+	port->AFR[b >> 3] = (port->AFR[b >> 3] & ~(0xFUL << ((b & 7) * 4))) | ((uint32_t)HB_AF << ((b & 7) * 4));
 	port->MODER = (port->MODER & ~(3UL << (b * 2))) | (2UL << (b * 2));
 
 	HB_TIM->DIER |= TIM_DIER_UIE;

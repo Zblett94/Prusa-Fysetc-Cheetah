@@ -20,7 +20,7 @@
 //! @return filament length in mm which needs to be extruded to form line
 static constexpr float __attribute__((noinline)) count_e(float layer_height, float extrusion_width, float extrusion_length, float filament_diameter=1.75f)
 {
-    return (extrusion_length * ((M_PI * pow(layer_height, 2)) / 4 + layer_height * (extrusion_width - layer_height))) / ((M_PI * pow(filament_diameter, 2)) / 4);
+    return (extrusion_length * ((float(M_PI) * layer_height * layer_height) / 4 + layer_height * (extrusion_width - layer_height))) / ((float(M_PI) * filament_diameter * filament_diameter) / 4);
 }
 
 //! @brief Extrusion spacing
