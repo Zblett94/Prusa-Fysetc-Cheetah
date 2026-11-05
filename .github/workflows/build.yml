@@ -27,6 +27,9 @@ jobs:
       - name: Display driver unit tests
         run: sh test/lcd/run.sh && sh test/tft/run.sh
 
+      - name: Flash EEPROM emulation test (Cheetah V3, with power cuts)
+        run: sh test/eeprom/run.sh
+
       - name: Install PlatformIO
         run: pip install platformio
 
@@ -44,3 +47,18 @@ jobs:
 
       - name: Build with the Creality Ender-3 display (compile check)
         run: PLATFORMIO_BUILD_FLAGS=-DLCD_ENDER3 pio run -e MK3S_SKR_MINI_E3_V3
+
+      - name: Build for the FYSETC Cheetah V3
+        run: pio run -e MK3S_CHEETAH_V3
+
+      - name: Upload Cheetah V3 firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-MK3S_CHEETAH_V3
+          path: |
+            .pio/build/MK3S_CHEETAH_V3/firmware.hex
+            .pio/build/MK3S_CHEETAH_V3/firmware_0x08000000.bin
+            .pio/build/MK3S_CHEETAH_V3/firmware_0x0800C000.bin
+
+      - name: Build for the Cheetah V3 without MMU (compile check)
+        run: PLATFORMIO_BUILD_FLAGS=-DCHEETAH_NO_MMU pio run -e MK3S_CHEETAH_V3

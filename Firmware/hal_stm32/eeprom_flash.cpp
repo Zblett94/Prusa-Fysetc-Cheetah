@@ -19,24 +19,34 @@
 //! start-up. If the log ever fills up during a print, further changes stay in RAM
 //! until the next compaction.
 //!
-//! Power loss: a record is either complete or fails its check bits; a compaction is
-//! valid only after its header is written, and the old sector is erased afterwards.
-#if defined(STM32F4xx)
+//! Power loss: a record is either complete or fails its check bits (a Berger code, which
+//! detects every partly programmed word); a compaction is valid only after its header is
+//! written, and the old sector is erased afterwards.
+#if defined(STM32F4xx) || defined(EEPROM_FLASH_HOST_TEST)
 
+#ifdef EEPROM_FLASH_HOST_TEST
+// test/eeprom: the flash and the interrupt control are simulated by the test
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+#include "../../test/eeprom/host_flash.h"
+#else
 #include <Arduino.h>
 #include <string.h>
 #include "hal.h"
 #include "include/avr/eeprom.h"
+#define EEPROM_FLASH_BASE 0x08004000UL // sectors 1 and 2
+#endif
 
 #define EEPROM_SIZE   4096
 #define SECTOR_SIZE   0x4000UL
-#define SECTOR_ADDR(i) (0x08004000UL + (i) * SECTOR_SIZE) // sectors 1 and 2
+#define SECTOR_ADDR(i) (EEPROM_FLASH_BASE + (i) * SECTOR_SIZE)
 #define SECTOR_NUM(i)  (1 + (i))
 #define MAGIC         0x45455052UL // "REPE"
 #define SNAPSHOT_OFS  8
 #define LOG_OFS       (SNAPSHOT_OFS + EEPROM_SIZE)
 #define LOG_RECORDS   ((SECTOR_SIZE - LOG_OFS) / 4)
-#define LOG_RESERVE   600 // compact at the next idle moment below this many free records
+#define LOG_RESERVE   1500 // compact at the next idle moment below this many free records
 
 static uint8_t mirror[EEPROM_SIZE];
 static int8_t active = -1;  // sector in use, -1: none yet
@@ -49,7 +59,9 @@ static bool ready;
 // flash access
 //------------------------------------------------------------------------------
 
-static inline const volatile uint32_t *word_at(uint32_t addr) { return (const volatile uint32_t *)addr; }
+static inline const volatile uint32_t *word_at(uintptr_t addr) { return (const volatile uint32_t *)addr; }
+
+#ifndef EEPROM_FLASH_HOST_TEST
 
 static void flash_wait() {
 	while (FLASH->SR & FLASH_SR_BSY) {}
@@ -78,7 +90,7 @@ static void flash_cache_reset() {
 }
 
 //! program one 32 bit word (interrupts disabled: an interrupt handler may write too)
-static bool flash_program(uint32_t addr, uint32_t value) {
+static bool flash_program(uintptr_t addr, uint32_t value) {
 	const uint32_t primask = __get_PRIMASK();
 	__disable_irq();
 	flash_unlock();
@@ -106,21 +118,32 @@ static void flash_erase(uint8_t sector) {
 	flash_cache_reset();
 	hal_uvlo_unlock();
 }
+#endif // !EEPROM_FLASH_HOST_TEST
 
 //------------------------------------------------------------------------------
 // records
 //------------------------------------------------------------------------------
 
-static uint32_t check_bits(uint32_t addr, uint32_t value) {
-	return (addr ^ (value << 4) ^ (value >> 4) ^ 0xA5AUL) & 0xFFFUL;
+// A record: bits 0-11 address, 12-19 value, 20-26 hash, 27-31 number of zero bits in
+// bits 0-26 (Berger code). An interrupted program leaves some bits at 1 that should be 0:
+// the count of zeros then drops while the stored count can only rise, so every partly
+// programmed record is detected.
+static uint32_t hash7(uint32_t addr, uint32_t value) {
+	return (addr ^ (value << 3) ^ (value >> 5) ^ 0x5AUL) & 0x7FUL;
+}
+
+static uint32_t zeros27(uint32_t w) {
+	return 27 - __builtin_popcount(w & 0x7FFFFFFUL);
 }
 
 static uint32_t record(uint16_t addr, uint8_t value) {
-	return (uint32_t)addr | ((uint32_t)value << 12) | (check_bits(addr, value) << 20);
+	const uint32_t w = (uint32_t)addr | ((uint32_t)value << 12) | (hash7(addr, value) << 20);
+	return w | (zeros27(w) << 27);
 }
 
 static bool record_valid(uint32_t r) {
-	return r != 0xFFFFFFFFUL && (r >> 20) == check_bits(r & 0xFFF, (r >> 12) & 0xFF);
+	return r != 0xFFFFFFFFUL && (r >> 27) == zeros27(r)
+		&& ((r >> 20) & 0x7F) == hash7(r & 0xFFF, (r >> 12) & 0xFF);
 }
 
 static bool sector_valid(uint8_t s, uint32_t *seq) {
@@ -168,7 +191,7 @@ static void append(uint16_t addr) {
 		return;
 	}
 	while (log_used < LOG_RECORDS) {
-		const uint32_t a = SECTOR_ADDR(active) + LOG_OFS + log_used * 4;
+		const uintptr_t a = SECTOR_ADDR(active) + LOG_OFS + log_used * 4;
 		log_used++;
 		if (flash_program(a, record(addr, mirror[addr]))) return;
 		// a word that does not program (worn or disturbed) is skipped
@@ -187,13 +210,17 @@ extern "C" bool hal_eeprom_init(void) {
 	memset(mirror, 0xFF, sizeof(mirror));
 	return false; // the test build keeps the settings in RAM (preset by emulation.cpp)
 #else
+	pending = false;
 	uint32_t seq0 = 0, seq1 = 0;
 	const bool v0 = sector_valid(0, &seq0), v1 = sector_valid(1, &seq1);
 	active = (v0 && v1) ? ((int32_t)(seq1 - seq0) > 0 ? 1 : 0) : v0 ? 0 : v1 ? 1 : -1;
 	if (active < 0) {
+		// blank (first start): create a sector now, so that the first writes are persistent
 		memset(mirror, 0xFF, sizeof(mirror));
 		sequence = 0;
 		log_used = 0;
+		ready = true;
+		compact();
 	} else {
 		sequence = active ? seq1 : seq0;
 		memcpy(mirror, (const void *)(SECTOR_ADDR(active) + SNAPSHOT_OFS), EEPROM_SIZE);
@@ -273,4 +300,4 @@ void eeprom_update_dword(uint32_t *p, uint32_t v) { write_bytes(&v, p, sizeof(v)
 void eeprom_update_float(float *p, float v) { write_bytes(&v, p, sizeof(v), true); }
 void eeprom_update_block(const void *src, void *dst, size_t n) { write_bytes(src, dst, n, true); }
 
-#endif // STM32F4xx
+#endif // STM32F4xx || EEPROM_FLASH_HOST_TEST

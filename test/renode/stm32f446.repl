@@ -109,6 +109,12 @@ rom2: Memory.MappedMemory @ sysbus 0x1FFFC400
 
 spi1: SPI.STM32SPI @ sysbus 0x40013000
 
+// micro SD card on SPI1 (blank, no file system): the firmware tries to mount a card at
+// start-up; without a device on the bus every byte logs a warning (gigabytes of memory)
+sdCard: SD.SDCard @ spi1
+    capacity: 0x2000000
+    spiMode: true
+
 spi2: SPI.STM32SPI @ sysbus 0x40003800
     IRQ->nvic@35
     DMARecieve->dma1@3
@@ -229,3 +235,28 @@ sysbus:
         Tag <0x40021004, 0x40021007> "GPIOE_OTYPER" 0x00000008
         // FLASH and USB tags are required for CubeMX-based projects to pass the initialization phase
         Tag <0x50000010, 0x5000003f> "USB:RESET" 0x80000000
+
+// DWT cycle counter (CYCCNT), used by delayMicroseconds() and the bit-banged TMC UART.
+// Not modelled by Renode: a counter advancing by 64 cycles per read keeps the delay
+// loops finite (they end sooner than on the real chip).
+dwt: Python.PythonPeripheral @ sysbus 0xE0001000
+    size: 0x1000
+    initable: true
+    script: '''
+if request.isInit:
+    cnt = 0
+    ctrl = 0
+elif request.isRead:
+    if request.offset == 4:
+        cnt = (cnt + 64) & 0xFFFFFFFF
+        request.value = cnt
+    elif request.offset == 0:
+        request.value = ctrl
+    else:
+        request.value = 0
+else:
+    if request.offset == 4:
+        cnt = request.value
+    elif request.offset == 0:
+        ctrl = request.value
+'''

@@ -204,6 +204,30 @@ during a transfer). `test/lcd/run.sh screen.pgm` writes a picture of the test sc
 `test/renode/run.py --screen screen.pgm ...` the picture the emulated firmware sent to
 the display.
 
+## FYSETC Cheetah V3.0 (STM32F446RC)
+
+The same HAL supports the STM32F446 of the Cheetah V3.0 (`env:MK3S_CHEETAH_V3`,
+`pins_FYSETC_CHEETAH_V3.h`, `variants/MK3S-CHEETAH_V3.h`, Arduino variant
+`buildroot/variants/MARLIN_F446VE` from Marlin). Differences to the SKR Mini E3 V3:
+
+| | SKR Mini E3 V3 (STM32G0B1) | Cheetah V3 (STM32F446RC) |
+|---|---|---|
+| CPU | Cortex-M0+ 64 MHz, no FPU | Cortex-M4F 180 MHz, FPU |
+| step / soft PWM / temp. timers | TIM17 / TIM16 / TIM15 | TIM7 / TIM13 / TIM14 (APB1 timers at 90 MHz) |
+| heatbed PWM | TIM1 CH2 (PC9) | TIM3 CH3 (PC8), 58.6 kHz instead of 62.5 kHz |
+| ADC | G0 ADC (CHSELR), temp. sensor IN12, VREFINT IN13 | F4 ADC (SQR3), temp. sensor IN18, VREFINT IN17 |
+| EEPROM | AT24C32 I2C | flash sectors 1+2: RAM copy, snapshot + byte log (`eeprom_flash.cpp`); compaction (a sector erase stalls the CPU up to 0.5 s) only when the printer is idle |
+| TMC2209 UART | USART4 (PC10/PC11) | PB3 bit-banged at 230400 Bd with the DWT cycle counter; driver addresses detected at start-up from the IOIN DIR bit |
+| flash | 512 KiB, 14 languages | 256 KiB: English only (`LANG_MODE=0`), LTO, compact single precision printf/strtod (`compact_stdio.cpp`) instead of newlib's (-12 KiB), image split around the EEPROM sectors (`buildroot/ld/cheetah_v3.ld`) |
+| display | color TFT / Ender-3 / MK3S LCD | MK3S LCD on EXP1/EXP2 (HD44780 driver of the Prusa code, unchanged) |
+| free pins | MMU, power panic, fan tachs | only USART1 (PA9/PA10): MMU, or power panic + hotend fan tach (`-DCHEETAH_NO_MMU`) |
+
+Flash use: 15.1 of 16 KiB in sector 0, 199 of 208 KiB in sectors 3..5; RAM 52 of 128 KiB.
+
+The emulator test build `env:renode_cheetah` runs on `test/renode/stm32f446.repl`
+(Renode's STM32F4 platform with the timer clocks of the firmware and a model of the
+DWT cycle counter): `run.py --board cheetah ...`.
+
 ## TMC2209 instead of TMC2130
 
 The register map of the TMC2209 is close to the TMC2130 one. `tmc2130.cpp` keeps its

@@ -1,8 +1,13 @@
-# Prusa Firmware for the BigTreeTech SKR Mini E3 V3.0
+# Prusa Firmware for 32-bit boards: SKR Mini E3 V3.0 and FYSETC Cheetah V3.0
 
 This is [Prusa-Firmware 3.14.1](https://github.com/prusa3d/Prusa-Firmware/releases/tag/v3.14.1)
 for the **Original Prusa i3 MK3S**, ported from the 8-bit EINSy RAMBo (ATmega2560)
-to the 32-bit **BigTreeTech SKR Mini E3 V3.0** (STM32G0B1RET6, TMC2209 drivers).
+to 32-bit boards with TMC2209 drivers:
+
+| Board | MCU | Build | Display | Notes |
+|---|---|---|---|---|
+| **BigTreeTech SKR Mini E3 V3.0** | STM32G0B1 (512 KiB) | `pio run -e MK3S_SKR_MINI_E3_V3` | color TFT (default), Ender-3 LCD or MK3S LCD | all features, 14 languages. [Wiring](docs/WIRING.md) |
+| **FYSETC Cheetah V3.0** | STM32F446RC (256 KiB) | `pio run -e MK3S_CHEETAH_V3` | original MK3S LCD on EXP1/EXP2, no custom cable | English only; MMU **or** power panic + hotend fan check. [Wiring and flashing](docs/WIRING_CHEETAH.md) |
 
 The printer logic is Prusa's own code, not a reimplementation: the same G-code
 handling and planner, mesh bed leveling (G80) with the
@@ -20,9 +25,9 @@ board. It uses the MK3.5 default input shaper profile and allows the MK3.5 speed
 accelerations, see [Input shaping and MK3.5 speeds](#input-shaping-and-mk35-speeds).
 
 > **Status: compiles and runs in an emulator, not yet tested on a printer.** The
-> firmware builds for the SKR Mini E3 V3 and passes the emulator tests (start-up,
-> moves, input shaping, pressure advance, endstops, heating, languages), but it has not
-> been run on real hardware yet. Expect to tune the StallGuard thresholds and to verify
+> firmware builds for both boards and passes the emulator tests (SKR: start-up,
+> moves, input shaping, pressure advance, endstops, heating, languages; Cheetah:
+> start-up, G-codes, moves), but it has not been run on real hardware yet. Expect to tune the StallGuard thresholds and to verify
 > the wiring. Keep a hand on the power switch for the first homing and the first heat-up,
 > and raise the speeds step by step.
 
@@ -31,10 +36,11 @@ accelerations, see [Input shaping and MK3.5 speeds](#input-shaping-and-mk35-spee
 With [PlatformIO](https://platformio.org/) (command line or the VS Code extension):
 
 ```
-pio run
+pio run -e MK3S_SKR_MINI_E3_V3     # SKR Mini E3 V3
+pio run -e MK3S_CHEETAH_V3         # FYSETC Cheetah V3 (see docs/WIRING_CHEETAH.md to flash it)
 ```
 
-The result is `.pio/build/MK3S_SKR_MINI_E3_V3/firmware.bin`. Every push to GitHub
+The SKR result is `.pio/build/MK3S_SKR_MINI_E3_V3/firmware.bin`. Every push to GitHub
 also builds it (Actions tab, artifact `firmware-MK3S_SKR_MINI_E3_V3`).
 
 The translations (`lang/po`) are added to `firmware.bin` after linking by
@@ -42,7 +48,7 @@ The translations (`lang/po`) are added to `firmware.bin` after linking by
 (installed automatically if missing). Flash `firmware.bin`, not `firmware.elf`: only
 the `.bin` contains the language tables.
 
-## Install
+## Install (SKR Mini E3 V3; Cheetah V3: see [docs/WIRING_CHEETAH.md](docs/WIRING_CHEETAH.md#flashing))
 
 1. Copy `firmware.bin` to the root of a FAT32 micro-SD card.
 2. Put the card into the SKR Mini E3 V3 and power the board. The BigTreeTech
