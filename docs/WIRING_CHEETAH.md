@@ -5,23 +5,22 @@ Build: `pio run -e MK3S_CHEETAH_V3` (English only). The pin map is
 ([Cheetah_V3.0 hardware files](https://github.com/FYSETC/Cheetah_V3.0/tree/main/Hardware)).
 The board marks every pin name on its back side: go by those names.
 
-## What works, and what does not fit this board
+## What works, and what does not
 
 The Cheetah V3 uses all 51 I/O pins of its STM32F446RC for its own connectors. Only the
-two pins of the UART on the Raspberry Pi header (TX1 = PA9, RX1 = PA10) are left, so:
-
-| Build | MMU2S/MMU3 | Power panic | Fan check (hotend fan RPM) |
-|---|---|---|---|
-| default (`pio run -e MK3S_CHEETAH_V3`) | yes, on the Pi header UART | no | no |
-| `PLATFORMIO_BUILD_FLAGS=-DCHEETAH_NO_MMU pio run -e MK3S_CHEETAH_V3` | no | yes (PA9) | hotend fan (PA10); the print fan is not checked |
+two pins of the UART on the Raspberry Pi header (TX1 = PA9, RX1 = PA10) are left: they
+carry the MMU2S/MMU3. Power panic and the fan check (fan RPM, Noctua/alt-fan detection)
+are not used.
 
 Everything else of the MK3S firmware works as on the SKR Mini port: original LCD menus
 (English), its SD card slot, P.I.N.D.A. with temperature compensation, XYZ / Z / first
 layer calibration, crash detection and sensorless homing, IR filament sensor, input
 shaper and pressure advance (MK3.5 motion), thermal model.
 
-Not available: other languages (the 256 KiB flash holds only English), LCD backlight
-dimming, the fan check of the print fan.
+Not available: other languages (the 256 KiB flash holds only English), power panic
+(a power loss ends the print), the fan check (the fans run, their RPM is not checked;
+the self test asks on the LCD whether each fan spins),
+LCD backlight dimming.
 
 ## Board jumpers
 
@@ -48,11 +47,11 @@ dimming, the fan check of the print fan.
 | P.I.N.D.A. thermistor (PINDA v2) | T2 | PB1 | pull-up on the board, no extra resistor. SuperPINDA (no thermistor): remove `PINDA_THERMISTOR` from the pin file |
 | P.I.N.D.A. signal / 5 V / GND | Probe (signal pin, power pin, GND) | PA0 | the board has a BAT85 diode in the signal line: 5 V sensors are safe |
 | IR filament sensor | FIL-DET (signal, GND); 5 V from the Neopixel header | PA1 | FIL-DET's own power pin is 3.3 V. Put a Schottky diode (BAT85/BAT43) in the signal wire, band toward the sensor (3.3 V pull-up on the board) |
-| Print fan (5 V) | FAN0 | PA14 | JP2 on 5V. The yellow tachometer wire stays unconnected |
-| Hotend fan (5 V) | FAN1 | PA13 | JP1 on 5V. Tachometer: unconnected, or Pi header RX1 with `-DCHEETAH_NO_MMU` |
+| Print fan (5 V) | FAN0 | PA14 | JP2 on 5V. The tachometer wire stays unconnected |
+| Hotend fan (5 V) | FAN1 | PA13 | JP1 on 5V. The tachometer wire stays unconnected |
 | MK3S LCD | EXP1 + EXP2, the two LCD cables | see the pin file | RepRapDiscount layout like the EINSy. Check the orientation: EXP1 pins 1/2 are 5 V/GND |
+| PSU power panic cable | not connected | | not used |
 | MMU2S / MMU3 | Pi header: TX1 (PA9) → MMU RX, RX1 (PA10) ← MMU TX, GND | PA9/PA10 | 115200 Bd. MMU TX → RX1 through a divider (1 kΩ in series, 2 kΩ to GND): the MMU board is 5 V. No reset wire (reset over the protocol) |
-| PSU power panic (`-DCHEETAH_NO_MMU` only) | Pi header TX1 | PA9 | Schottky diode, band toward the PSU; internal pull-up |
 
 micro SD: the on-board TF slot and the SD slot of the MK3S LCD share the same SPI bus,
 chip select and card detect. Use one of them, not both at once.

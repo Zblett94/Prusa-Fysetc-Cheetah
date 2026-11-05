@@ -59,6 +59,3 @@ jobs:
             .pio/build/MK3S_CHEETAH_V3/firmware.hex
             .pio/build/MK3S_CHEETAH_V3/firmware_0x08000000.bin
             .pio/build/MK3S_CHEETAH_V3/firmware_0x0800C000.bin
-
-      - name: Build for the Cheetah V3 without MMU (compile check)
-        run: PLATFORMIO_BUILD_FLAGS=-DCHEETAH_NO_MMU pio run -e MK3S_CHEETAH_V3

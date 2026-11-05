@@ -5,8 +5,7 @@
 * From the FYSETC schematic (github.com/FYSETC/Cheetah_V3.0, Hardware/CHEETAH V3.0_SCH.pdf).
 * All 51 GPIOs of the STM32F446RC are used by the board; the only pins left for the
 * printer are the two of USART1 on the Raspberry Pi header: they carry the MMU serial
-* port, or (build option CHEETAH_NO_MMU) the power panic signal and the hotend fan
-* tachometer.
+* port. No power panic, no fan tachometers.
 ******************************************************************/
 
 #define ELECTRONICS "FYSETC_CHEETAH_V3"
@@ -21,9 +20,6 @@
 
 #define TMC2130              // the Prusa TMC2130 code paths are used, the driver layer talks to TMC2209s
 #define TMC2209              // ... over the single wire UART (PB3, bit-banged)
-#ifdef CHEETAH_NO_MMU
-#define UVLO_SUPPORT
-#endif
 #define PINDA_THERMISTOR     // PINDA v2 thermistor on "T2" (PB1), see docs/WIRING_CHEETAH.md
 #define AMBIENT_THERMISTOR   // the STM32 internal temperature sensor replaces the EINSy board thermistor
 #define EEPROM_FLASH_EMULATION // no EEPROM chip: the settings are stored in flash sectors 1 and 2
@@ -144,17 +140,9 @@ static inline uint32_t adc_channel_pin(uint8_t ch) {
 
 #define IR_SENSOR_PIN        PA1    // "FIL-DET": MK3S IR filament sensor
 
-#ifdef CHEETAH_NO_MMU
-// the two USART1 pins of the Raspberry Pi header carry the power panic signal and the
-// hotend fan tachometer instead of the MMU
-#define UVLO_PIN             PA9    // Pi header TXD: power panic signal from the PSU
-#define TACH_0               PA10   // Pi header RXD: hotend fan tachometer
-#else
-// MMU2S/MMU3 on USART1 of the Raspberry Pi header (TXD = PA9, RXD = PA10). No pins are
-// left for the power panic signal and the fan tachometers.
+// MMU2S/MMU3 on USART1 of the Raspberry Pi header (TXD = PA9, RXD = PA10)
 #define MMU_SERIAL_RX_PIN    PA10
 #define MMU_SERIAL_TX_PIN    PA9
-#endif
 //#define MMU_RST_PIN        the MMU is reset over its serial protocol
 
 #define EXTRUDER_0_AUTO_FAN_PIN PA13 // "FAN1": hotend fan (fan voltage jumper JP1 on 5V). PA13 = SWDIO

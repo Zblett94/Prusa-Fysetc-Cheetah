@@ -5,10 +5,8 @@
 // Only the hardware related settings differ from variants/MK3S.h, they are marked "SKR:"
 // (shared with the SKR Mini E3 V3 port) or "CHEETAH:".
 //
-// CHEETAH: the board has no free pin for both the MMU serial port and the power panic /
-// fan tachometer inputs. Default: MMU on the Raspberry Pi header UART, no power panic,
-// no fan check. Build with -DCHEETAH_NO_MMU for power panic and the hotend fan check
-// instead of the MMU (see docs/WIRING_CHEETAH.md).
+// CHEETAH: MMU on the Raspberry Pi header UART; no power panic and no fan check (see
+// docs/WIRING_CHEETAH.md).
 
 #include <limits.h>
 #include "printers.h"
@@ -36,7 +34,7 @@
 // Prusa MK3.5 (Prusa-Firmware-Buddy) instead of the AVR stepper interrupt and Linear Advance 1.5
 #define MOTION_ENGINE
 #define STEEL_SHEET
-// CHEETAH: the UART of the Raspberry Pi header is used by the MMU (or power panic / fan tach)
+// CHEETAH: the UART of the Raspberry Pi header is used by the MMU
 //#define HAS_SECOND_SERIAL_PORT
 
 // PSU
@@ -156,11 +154,9 @@
 
 // Power panic
 // Fan check
-// CHEETAH: only with -DCHEETAH_NO_MMU (no free pins otherwise)
-#ifdef CHEETAH_NO_MMU
-#define UVLO_SUPPORT
-#define FANCHECK
-#endif
+// CHEETAH: not used (no power-fail signal, fan tachometers not connected)
+//#define UVLO_SUPPORT
+//#define FANCHECK
 
 // Safety timer
 #define SAFETYTIMER
@@ -395,9 +391,7 @@
 // CHEETAH: EXTRUDER_0_AUTO_FAN_PIN is defined in pins_FYSETC_CHEETAH_V3.h ("FAN1")
 #define EXTRUDER_AUTO_FAN_TEMPERATURE 50
 #define EXTRUDER_AUTO_FAN_SPEED   255  // == full speed
-#ifdef CHEETAH_NO_MMU // CHEETAH: needs the hotend fan tachometer
-#define EXTRUDER_ALTFAN_DETECT
-#endif
+//#define EXTRUDER_ALTFAN_DETECT // CHEETAH: needs the hotend fan tachometer
 #define EXTRUDER_ALTFAN_SPEED_SILENT 128
 
 #define FANCHECK_AUTO_PRINT_FAN_THRS 70 //[RPS] - Used during selftest to identify swapped fans automatically

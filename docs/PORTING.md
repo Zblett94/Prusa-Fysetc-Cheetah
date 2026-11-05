@@ -220,7 +220,7 @@ The same HAL supports the STM32F446 of the Cheetah V3.0 (`env:MK3S_CHEETAH_V3`,
 | TMC2209 UART | USART4 (PC10/PC11) | PB3 bit-banged at 230400 Bd with the DWT cycle counter; driver addresses detected at start-up from the IOIN DIR bit |
 | flash | 512 KiB, 14 languages | 256 KiB: English only (`LANG_MODE=0`), LTO, compact single precision printf/strtod (`compact_stdio.cpp`) instead of newlib's (-12 KiB), image split around the EEPROM sectors (`buildroot/ld/cheetah_v3.ld`) |
 | display | color TFT / Ender-3 / MK3S LCD | MK3S LCD on EXP1/EXP2 (HD44780 driver of the Prusa code, unchanged) |
-| free pins | MMU, power panic, fan tachs | only USART1 (PA9/PA10): MMU, or power panic + hotend fan tach (`-DCHEETAH_NO_MMU`) |
+| free pins | MMU, power panic, fan tachs | only USART1 (PA9/PA10): MMU. No power panic, no fan check |
 
 Flash use: 15.1 of 16 KiB in sector 0, 199 of 208 KiB in sectors 3..5; RAM 52 of 128 KiB.
 
