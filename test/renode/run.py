@@ -68,6 +68,9 @@ def main():
     ap.add_argument('--profile', help='write a collapsed stack profile of the commands to this file')
     ap.add_argument('--lang', type=int, default=0, help='language preset: 0 English, 1.. language tables, 255 ask')
     ap.add_argument('--monitor', action='store_true', help='print the output of the emulator monitor (e.g. of !cpu PC)')
+    ap.add_argument('--quantum', default='0.00001',
+                    help='CPU/timer synchronization step (s); 0.0001 for long runs: the emulator '
+                         'needs about 10x less memory per emulated second (it grows by ~0.1 GB/s at 0.00001)')
     ap.add_argument('--timeout', type=float, default=1800, help='wall clock limit of the emulator run (s)')
     ap.add_argument('--expect', action='append', default=[], help='regex that must appear in the serial output')
     ap.add_argument('--forbid', action='append', default=[], help='regex that must not appear in the serial output')
@@ -97,7 +100,7 @@ def main():
         # one instruction per clock (the real Cortex-M needs a bit more)
         f'cpu PerformanceInMips {board["mips"]}',
         # fine time synchronization between the CPU and the timers (step timing)
-        'emulation SetGlobalQuantum "0.00001"',
+        f'emulation SetGlobalQuantum "{a.quantum}"',
         # typical factory calibration: TS_CAL1, TS_CAL2, VREFINT_CAL
     ] + [f'sysbus WriteWord {addr:#x} {val}' for addr, val in board['cal']] + [
         f'usart2 CreateFileBackend @{uart} true',
