@@ -240,6 +240,8 @@
 // SKR: no belt test (Calibration > Belt test, Support > Belt status): its StallGuard
 // readings are not meaningful with the TMC2209
 #define NO_BELT_TEST
+// SKR: E-steps from the LCD: Settings > HW Setup > E-steps, Calibration > E-steps cal.
+#define E_STEPS_MENU
 //#define LINEARITY_CORRECTION // SKR: the TMC2209 has no MSLUT: no linearity correction (menu hidden)
 // SKR: the TMC2209 has no programmable microstep table (MSLUT)
 //#define TMC2130_LINEARITY_CORRECTION

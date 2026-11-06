@@ -4382,6 +4382,127 @@ static void nozzle_change()
     lcd_return_to_status();
 }
 
+#ifdef E_STEPS_MENU
+//------------------------------------------------------------------------------
+// STM32 port: E-steps (extruder steps/mm) from the LCD
+//  - Settings > HW Setup > E-steps: edit the value
+//  - Calibration > E-steps cal.: extrude 100 mm, measure, compute and save
+//------------------------------------------------------------------------------
+
+static void lcd_e_steps_save(float v)
+{
+    cs.axis_steps_per_mm[E_AXIS] = v;
+    reset_acceleration_rates();
+    Config_StoreSettings(); // like M92 E<v> + M500
+    printf_P(PSTR("E-steps: %.2f steps/mm (saved)\n"), v);
+}
+
+//! Blocking number entry: the knob changes v by step (fast turns by 10 steps),
+//! a click confirms. Two title lines, the value on the third line.
+static float lcd_e_steps_enter(const char *title1, const char *title2, float v, float vmin, float vmax,
+                               float step, const char *unit)
+{
+    LcdUpdateDisabler lcdUpdateDisabler;
+    const int16_t encoder_saved = lcd_encoder; // the menu position
+    lcd_clear();
+    lcd_puts_at_P(0, 0, title1);
+    if (title2) lcd_puts_at_P(0, 1, title2);
+    lcd_puts_at_P(0, 3, PSTR("Click to confirm"));
+    lcd_putc_at(19, 3, LCD_STR_CONFIRM[0]);
+    lcd_encoder = 0;
+    lcd_consume_click();
+    KEEPALIVE_STATE(PAUSED_FOR_USER);
+    bool redraw = true;
+    for (;;) {
+        if (lcd_encoder) {
+            int16_t d = lcd_encoder;
+            lcd_encoder = 0;
+            if (abs(d) >= 3) d *= 10; // turned fast
+            v += d * step;
+            if (v < vmin) v = vmin;
+            if (v > vmax) v = vmax;
+            redraw = true;
+        }
+        if (redraw) {
+            redraw = false;
+            lcd_set_cursor(0, 2);
+            lcd_printf_P(PSTR("%c %6.1f %-11s"), LCD_STR_ARROW_RIGHT[0], v, unit);
+        }
+        delay_keep_alive(50);
+        if (lcd_clicked()) break;
+    }
+    KEEPALIVE_STATE(IN_HANDLER);
+    lcd_encoder = encoder_saved;
+    lcd_draw_update = 2;
+    return v;
+}
+
+//! Settings > HW Setup > E-steps
+static void lcd_e_steps_edit()
+{
+    const float v = lcd_e_steps_enter(PSTR("E-steps (steps/mm)"), PSTR("Turn to change"),
+        cs.axis_steps_per_mm[E_AXIS], 20, 2000, 0.1f, PSTR("steps/mm"));
+    if (v != cs.axis_steps_per_mm[E_AXIS]) lcd_e_steps_save(v);
+}
+
+//! Calibration > E-steps cal.
+static void lcd_e_steps_calibration()
+{
+    static const float mark_mm = 120, extrude_mm = 100;
+    const float old_steps = cs.axis_steps_per_mm[E_AXIS];
+    const int16_t old_target = degTargetHotend(0);
+
+    if (lcd_show_multiscreen_message_yes_no_and_wait_P(
+            PSTR("E-steps calibration: extrudes 100mm of filament. Filament loaded?"),
+            false, LCD_LEFT_BUTTON_CHOICE) != LCD_LEFT_BUTTON_CHOICE) {
+        lcd_return_to_status();
+        return;
+    }
+
+    // nozzle temperature: the current target, or 215 (PLA/PETG) when the heater is off
+    const int16_t temp = (int16_t)lcd_e_steps_enter(PSTR("Nozzle temperature"), PSTR("for the filament:"),
+        old_target >= EXTRUDE_MINTEMP ? old_target : 215, 190, HEATER_0_MAXTEMP - 15, 5, PSTR("C"));
+
+    LcdUpdateDisabler lcdUpdateDisabler;
+    raise_z_above(MIN_Z_FOR_LOAD); // like Load filament: room below the nozzle
+    setTargetHotend(temp);
+    while (degHotend(0) < temp - TEMP_HYSTERESIS) {
+        lcd_wait_for_heater();
+        delay_keep_alive(1000);
+    }
+
+    lcd_show_fullscreen_message_and_wait_P(
+        PSTR("Mark the filament 120mm above the top of the extruder, then click."));
+
+    lcd_display_message_fullscreen_P(PSTR("Extruding 100mm, please wait (1 min)..."));
+    printf_P(PSTR("E-steps calibration: extruding %.0f mm at %.2f steps/mm, %d C\n"), extrude_mm, old_steps, temp);
+    current_position[E_AXIS] += extrude_mm;
+    plan_buffer_line_curposXYZE(100.f / 60); // 100 mm/min: slow, the filament does not slip
+    st_synchronize();
+
+    const float left = lcd_e_steps_enter(PSTR("Distance from mark"), PSTR("to extruder top:"),
+        mark_mm - extrude_mm, 0, mark_mm, 0.5f, PSTR("mm"));
+    const float extruded = mark_mm - left;
+    printf_P(PSTR("E-steps calibration: %.1f mm left, %.1f mm extruded\n"), left, extruded);
+
+    if (extruded < extrude_mm * 0.5f || extruded > extrude_mm * 1.5f) {
+        lcd_show_fullscreen_message_and_wait_P(
+            PSTR("Result out of range (50-150mm extruded). Check the mark and the extruder. Not saved."));
+    } else {
+        const float new_steps = old_steps * extrude_mm / extruded;
+        lcd_clear();
+        lcd_printf_P(PSTR("Extruded: %6.1f mm\nOld E-steps: %6.1f\nNew E-steps: %6.1f"), extruded, old_steps, new_steps);
+        if (lcd_show_multiscreen_message_yes_no_and_wait_P(nullptr, false, LCD_LEFT_BUTTON_CHOICE) == LCD_LEFT_BUTTON_CHOICE) {
+            lcd_e_steps_save(new_steps);
+            lcd_show_fullscreen_message_and_wait_P(
+                PSTR("E-steps saved. Run the calibration again to check the result."));
+        }
+    }
+    setTargetHotend(old_target);
+    lcd_return_to_status();
+}
+#endif //E_STEPS_MENU
+
 void lcd_hw_setup_menu(void)                      // can not be "static"
 {
     typedef struct
@@ -4405,6 +4526,13 @@ void lcd_hw_setup_menu(void)                      // can not be "static"
     MENU_ITEM_SUBMENU_P(_T(MSG_STEEL_SHEETS), sheets_menu);
     SETTINGS_NOZZLE;
     MENU_ITEM_FUNCTION_P(_T(MSG_NOZZLE_CNG_MENU),nozzle_change);
+#ifdef E_STEPS_MENU
+    {
+        static char e_steps_text[8];
+        snprintf(e_steps_text, sizeof(e_steps_text), "%.1f", cs.axis_steps_per_mm[E_AXIS]);
+        MENU_ITEM_TOGGLE_P(PSTR("E-steps"), e_steps_text, lcd_e_steps_edit);
+    }
+#endif //E_STEPS_MENU
     MENU_ITEM_SUBMENU_P(_T(MSG_CHECKS), lcd_checking_menu);
 
 #if defined(FILAMENT_SENSOR) && (FILAMENT_SENSOR_TYPE == FSENSOR_IR_ANALOG)
@@ -4552,6 +4680,9 @@ static void lcd_calibration_menu()
     MENU_ITEM_FUNCTION_P(_T(MSG_BELTTEST), lcd_belttest_v);
 #endif //TMC2130 && !NO_BELT_TEST
     MENU_ITEM_FUNCTION_P(_T(MSG_SELFTEST), lcd_selftest_v);
+#ifdef E_STEPS_MENU
+    MENU_ITEM_FUNCTION_P(PSTR("E-steps cal."), lcd_e_steps_calibration);
+#endif //E_STEPS_MENU
     // MK2
     MENU_ITEM_FUNCTION_P(_T(MSG_CALIBRATE_BED), lcd_mesh_calibration);
     // "Calibrate Z" with storing the reference values to EEPROM.
