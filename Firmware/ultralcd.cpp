@@ -4452,7 +4452,9 @@ static void lcd_e_steps_calibration()
     const float old_steps = cs.axis_steps_per_mm[E_AXIS];
     const int16_t old_target = degTargetHotend(0);
 
-    // at most 3 lines: the 4th is the Yes/No line (longer texts become multi-page messages)
+    // at most 3 lines: the 4th is the Yes/No line (longer texts become multi-page messages).
+    // lcd_encoder still holds the menu position: the prompt would take it as a turn to "No"
+    lcd_encoder = 0;
     if (lcd_show_multiscreen_message_yes_no_and_wait_P(
             PSTR("Extrudes 100mm to calibrate E-steps. Filament loaded?"),
             false, LCD_LEFT_BUTTON_CHOICE) != LCD_LEFT_BUTTON_CHOICE) {
@@ -4493,6 +4495,7 @@ static void lcd_e_steps_calibration()
         const float new_steps = old_steps * extrude_mm / extruded;
         lcd_clear();
         lcd_printf_P(PSTR("Extruded: %6.1f mm\nOld E-steps: %6.1f\nNew E-steps: %6.1f"), extruded, old_steps, new_steps);
+        lcd_encoder = 0; // see above
         if (lcd_show_multiscreen_message_yes_no_and_wait_P(nullptr, false, LCD_LEFT_BUTTON_CHOICE) == LCD_LEFT_BUTTON_CHOICE) {
             lcd_e_steps_save(new_steps);
             lcd_show_fullscreen_message_and_wait_P(
