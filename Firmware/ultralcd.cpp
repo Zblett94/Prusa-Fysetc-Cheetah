@@ -186,6 +186,12 @@ enum class TestError : uint_least8_t
     FsensorLevel
 };
 
+#ifdef TMC2130
+//! STM32 port: detailed axis length errors of the self test
+enum class AxisError : uint_least8_t { TooShort, TooLong, Inconsistent };
+static void lcd_selftest_axis_error(uint8_t axis, AxisError error, float a, float b);
+#endif //TMC2130
+
 static uint8_t  lcd_selftest_screen(TestScreen screen, uint8_t _progress, uint8_t _progress_scale, bool _clear, uint16_t _delay);
 static void lcd_selftest_screen_step(const uint8_t _row, const uint8_t _col, const uint8_t _state, const char *_name, const char _indicator);
 static bool lcd_selftest_manual_fan_check(const uint8_t _fan, const bool check_opposite,
@@ -6363,13 +6369,9 @@ static bool lcd_selfcheck_axis_sg(uint8_t axis) {
 		if (fabs(measured_axis_length[i] - axis_length) > max_error_mm) {
 			enable_endstops(false);
 
-			const char *_error_1;
-
-			if (axis == X_AXIS) _error_1 = "X";
-			if (axis == Y_AXIS) _error_1 = "Y";
-			if (axis == Z_AXIS) _error_1 = "Z";
-
-			lcd_selftest_error(TestError::Axis, _error_1, "");
+			// STM32 port: say whether the axis came out too short or too long, with the numbers
+			lcd_selftest_axis_error(axis, (measured_axis_length[i] < axis_length) ? AxisError::TooShort : AxisError::TooLong,
+				measured_axis_length[i], axis_length);
 			current_position[axis] = 0;
 			plan_set_position_curposXYZE();
 			reset_crash_det(axis);
@@ -6383,13 +6385,7 @@ static bool lcd_selfcheck_axis_sg(uint8_t axis) {
 
 		if (fabs(measured_axis_length[0] - measured_axis_length[1]) > 1) { //check if difference between first and second measurement is low
 			//loose pulleys
-			const char *_error_1;
-
-			if (axis == X_AXIS) _error_1 = "X";
-			if (axis == Y_AXIS) _error_1 = "Y";
-			if (axis == Z_AXIS) _error_1 = "Z";
-
-			lcd_selftest_error(TestError::Pulley, _error_1, "");
+			lcd_selftest_axis_error(axis, AxisError::Inconsistent, measured_axis_length[0], measured_axis_length[1]);
 			current_position[axis] = 0;
 			plan_set_position_curposXYZE();
 			reset_crash_det(axis);
@@ -6675,7 +6671,8 @@ static bool lcd_selfcheck_check_heater(bool _isbed)
 	return _stepresult;
 
 }
-static void lcd_selftest_error(TestError testError, const char *_error_1, const char *_error_2)
+//! start of a self test error screen: beep, heaters off, clear the display
+static void lcd_selftest_error_begin()
 {
 	lcd_beeper_quick_feedback();
 
@@ -6687,6 +6684,112 @@ static void lcd_selftest_error(TestError testError, const char *_error_1, const 
 	manage_inactivity();
 
 	lcd_clear();
+}
+
+//! wait for the knob, keeping the printer alive
+static void lcd_selftest_error_wait_click()
+{
+	_delay(1000);
+	lcd_beeper_quick_feedback();
+
+	do {
+		_delay(100);
+		manage_heater();
+		manage_inactivity();
+	} while (!lcd_clicked());
+}
+
+static void lcd_selftest_error_end()
+{
+	lcd_selftest_error_wait_click();
+	LCD_ALERTMESSAGERPGM(_T(MSG_SELFTEST_FAILED));
+	lcd_return_to_status();
+}
+
+#ifdef TMC2130
+//! print a length in mm with one decimal
+static void lcd_print_mm(float v)
+{
+	const long t = lround(fabs(v) * 10);
+	lcd_printf_P(PSTR("%5ld.%ld mm"), t / 10, t % 10);
+}
+
+//! The axis length check of the self test failed. The axis is measured by driving the
+//! carriage from one end to the other until the motor stalls (StallGuard), twice.
+//! Page 1: what is wrong, with the numbers; page 2 (after a click): what to check.
+//! @param error TooShort / TooLong: a = measured, b = expected length;
+//!              Inconsistent: a, b = the two measurements
+//!
+//! @code{.unparsed}
+//! |01234567890123456789|    |01234567890123456789|
+//! |Selftest error!     |    |Check the X axis:   |
+//! |X axis too short    |    | Something in way   |
+//! |Measured:  187.3 mm |    | Binding/tight spot |
+//! |Expected:  255.0 mm>|    | Stall too sensitive|
+//! ----------------------    ----------------------
+//! @endcode
+static void lcd_selftest_axis_error(uint8_t axis, AxisError error, float a, float b)
+{
+	const char name = "XYZ"[axis];
+	const char *what = error == AxisError::TooShort ? PSTR("too short")
+		: error == AxisError::TooLong ? PSTR("too long") : PSTR("inconsistent");
+	// causes, most likely first
+	static const char short1[] PROGMEM = " Something in way";
+	static const char short2[] PROGMEM = " Binding/tight spot";
+	static const char short3[] PROGMEM = " Stall too sensitive";
+	static const char long1[] PROGMEM = " Loose belt";
+	static const char long2[] PROGMEM = " Pulley grub screws";
+	static const char long3[] PROGMEM = " Stall not detected";
+	static const char inc1[] PROGMEM = " Pulley grub screws";
+	static const char inc2[] PROGMEM = " Belt slipping/loose";
+	static const char inc3[] PROGMEM = " Binding/tight spot";
+	const char *cause[3];
+	switch (error) {
+	case AxisError::TooShort: cause[0] = short1; cause[1] = short2; cause[2] = short3; break;
+	case AxisError::TooLong: cause[0] = long1; cause[1] = long2; cause[2] = long3; break;
+	default: cause[0] = inc1; cause[1] = inc2; cause[2] = inc3; break;
+	}
+
+	// the same explanation on the serial line (log of the host / OctoPrint)
+	if (error == AxisError::Inconsistent)
+		printf_P(PSTR("Selftest error: %c axis length inconsistent: %.1f mm and %.1f mm in two runs (max. 1 mm apart)\n"), name, a, b);
+	else
+		printf_P(PSTR("Selftest error: %c axis %S: measured %.1f mm, expected %.1f mm (+-5 mm)\n"), name, what, a, b);
+	printf_P(PSTR("Check:"));
+	for (uint8_t i = 0; i < 3; i++) printf_P(PSTR("%S%c"), cause[i], i < 2 ? ',' : '\n');
+	if (error == AxisError::TooShort)
+		printf_P(PSTR("The carriage stopped before the end: look for cables, zip ties or parts in its path, dirty or bent rods, worn bearings, a belt that is too tight.\n"));
+	else if (error == AxisError::TooLong)
+		printf_P(PSTR("The motor kept turning at the end of the axis: the belt or pulley slips, or the motor stall at the end was not detected.\n"));
+	else
+		printf_P(PSTR("The two runs disagree: the pulley or the belt slips, or the carriage binds in some spots.\n"));
+
+	// page 1: what is wrong
+	lcd_selftest_error_begin();
+	lcd_puts_at_P(0, 0, _T(MSG_SELFTEST_ERROR));
+	lcd_set_cursor(0, 1);
+	lcd_printf_P(PSTR("%c axis %S"), name, what);
+	lcd_set_cursor(0, 2);
+	lcd_puts_P(error == AxisError::Inconsistent ? PSTR("Run 1:   ") : PSTR("Measured:"));
+	lcd_print_mm(a);
+	lcd_set_cursor(0, 3);
+	lcd_puts_P(error == AxisError::Inconsistent ? PSTR("Run 2:   ") : PSTR("Expected:"));
+	lcd_print_mm(b);
+	lcd_putc_at(19, 3, LCD_STR_ARROW_RIGHT[0]);
+	lcd_selftest_error_wait_click();
+
+	// page 2: what to check
+	lcd_clear();
+	lcd_set_cursor(0, 0);
+	lcd_printf_P(PSTR("Check the %c axis:"), name);
+	for (uint8_t i = 0; i < 3; i++) lcd_puts_at_P(0, i + 1, cause[i]);
+	lcd_selftest_error_end();
+}
+#endif //TMC2130
+
+static void lcd_selftest_error(TestError testError, const char *_error_1, const char *_error_2)
+{
+	lcd_selftest_error_begin();
 
 	lcd_puts_at_P(0, 0, _T(MSG_SELFTEST_ERROR));
 	lcd_puts_at_P(0, 1, _T(MSG_SELFTEST_PLEASECHECK));
@@ -6766,18 +6869,7 @@ static void lcd_selftest_error(TestError testError, const char *_error_1, const 
           break;
 	}
 
-	_delay(1000);
-	lcd_beeper_quick_feedback();
-
-	do {
-		_delay(100);
-		manage_heater();
-		manage_inactivity();
-	} while (!lcd_clicked());
-
-	LCD_ALERTMESSAGERPGM(_T(MSG_SELFTEST_FAILED));
-	lcd_return_to_status();
-
+	lcd_selftest_error_end();
 }
 
 #ifdef FILAMENT_SENSOR

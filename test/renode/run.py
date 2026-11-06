@@ -51,6 +51,9 @@ BOARDS = {
     'cheetah': dict(env='renode_cheetah', repl='stm32f446.repl', base=0x08000000, mips=180,
                     # MK3S LCD knob on EXP1/EXP2: (GPIO port, pin) of BTN_ENC, BTN_EN1, BTN_EN2
                     knob=(('gpioPortC', 6), ('gpioPortC', 10), ('gpioPortC', 11)),
+                    # P.I.N.D.A. (PA0) low: no metal below the probe (the emulator applies the pull-up;
+                    # only a change of the level overrides it)
+                    init=['gpioPortA OnGPIO 0 true', 'gpioPortA OnGPIO 0 false'],
                     cal=[(0x1FFF7A2C, 942), (0x1FFF7A2E, 1210), (0x1FFF7A2A, 1520)]),
 }
 
@@ -107,6 +110,9 @@ def main():
     if knob:  # released: the inputs have pull-ups on the printer
         i = lines.index(f'emulation RunFor "{a.boot}"')
         lines[i:i] = [pin(p, True) for p in knob]
+    # after the boot: the firmware configures the pins (pull-ups) during it
+    i = lines.index(f'emulation RunFor "{a.boot}"')
+    lines[i + 1:i + 1] = board.get('init', [])
     for g in a.gcode:
         if g == '%lcd':
             lines += ['echo "SNAP:"', f'sysbus ReadBytes {lcd:#x} 128']
