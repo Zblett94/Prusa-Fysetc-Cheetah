@@ -27,6 +27,29 @@ Menus: the same as on the MK3S (checked in the emulator), including Settings > M
 Brightness, Fans check, Lin. correction (the TMC2209 has no microstep table), Belt test,
 Belt status and the memory dump items.
 
+## Extruder (BMG gears 3:1, FYSETC NEMA 14 pancake motor)
+
+The defaults are set for a custom extruder with BMG gears and the FYSETC NEMA 14 pancake
+motor, not for the original MK3S extruder:
+
+| Setting | Value | Original MK3S |
+|---|---|---|
+| E steps/mm (M92 E) | 415 | 280 |
+| E microsteps (M350 E) | 16 | 32 |
+| E motor current, running | 0.33 A RMS (Prusa units 17) | 0.56 A (30) |
+| E motor current, holding | 0.20 A RMS (10) | 0.56 A (30) |
+
+FYSETC specifies 0.30-0.35 A for this motor; it overheats above that. Do not raise the E
+current with M911/M912 above 18 (0.34 A), and leave the "E-cool mode" of the
+Experimental menu off (it drives the extruder with a fixed voltage instead of the
+current setting).
+
+Calibrate the steps after the first start: heat the nozzle, mark the filament 120 mm
+above the extruder, extrude 100 mm (`G91`, `G1 E100 F100`), measure what is left and set
+`M92 E<415 * 100 / extruded length>`, then `M500`. If the filament moves backwards,
+reverse the motor: turn its plug around or swap the two wires of one coil (or set
+`INVERT_E0_DIR` to 1 in `Firmware/variants/MK3S-CHEETAH_V3.h`).
+
 ## Board jumpers
 
 | Jumper | Setting | Why |

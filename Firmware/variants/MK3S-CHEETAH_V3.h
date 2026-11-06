@@ -53,7 +53,10 @@
  *------------------------------------*/
 
 // Steps per unit {X,Y,Z,E}
-#define DEFAULT_AXIS_STEPS_PER_UNIT   {100,100,3200/8,280}
+// CHEETAH: custom extruder with BMG gears (3:1) and a NEMA 14 pancake motor (1.8 deg):
+// 415 steps/mm at 16 microsteps (Bondtech's BMG value; the MK3S extruder: 280 at 32).
+// Calibrate with M92 E<steps> + M500 if 100 mm requested do not extrude 100 mm.
+#define DEFAULT_AXIS_STEPS_PER_UNIT   {100,100,3200/8,415}
 
 // Endstop inverting
 #define X_MIN_ENDSTOP_INVERTING 0 // set to 1 to invert the logic of the endstop.
@@ -253,7 +256,7 @@
 
 #define TMC2130_USTEPS_XY   16        // microstep resolution for XY axes
 #define TMC2130_USTEPS_Z    16        // microstep resolution for Z axis
-#define TMC2130_USTEPS_E    32        // microstep resolution for E axis
+#define TMC2130_USTEPS_E    16        // microstep resolution for E axis (CHEETAH: 16 with the 3:1 BMG gears, see DEFAULT_AXIS_STEPS_PER_UNIT)
 #define TMC2130_INTPOL_XY   1         // extrapolate 256 for XY axes
 #define TMC2130_INTPOL_Z    1         // extrapolate 256 for Z axis
 #define TMC2130_INTPOL_E    1         // extrapolate 256 for E axis
@@ -325,10 +328,15 @@
 #define TMC2130_SG_THRS_HOME {3, 3, TMC2130_SG_THRS_Z, TMC2130_SG_THRS_E}
 
 //new settings is possible for vsense = 1, running current value > 31 set vsense to zero and shift both currents by 1 bit right (Z axis only)
-#define TMC2130_CURRENTS_H {16, 20, 35, 30}  // default holding currents for all axes
-#define TMC2130_CURRENTS_FARM 36             // E 805 mA peak for ECool/farm mode
-#define TMC2130_CURRENTS_R {16, 20, 35, 30}  // default running currents for all axes
-#define TMC2130_CURRENTS_R_HOME {8, 10, 20, 18}  // homing running currents for all axes
+// CHEETAH: E = FYSETC NEMA 14 pancake motor, whose maker specifies 0.30..0.35 A (it
+// overheats above): 17 = 0.33 A RMS running, 10 = 0.20 A RMS holding. The 3:1 gears
+// give the torque. Prusa current units: values < 32: (value + 1) * 18.1 mA RMS,
+// values >= 32: (value / 2 + 1) * 32.1 mA RMS. M911/M912 change them at run time
+// (M913 prints them): never more than 18 (0.34 A) for this motor.
+#define TMC2130_CURRENTS_H {16, 20, 35, 10}  // default holding currents for all axes
+#define TMC2130_CURRENTS_FARM 17             // CHEETAH: E current of the ECool/farm mode, limited to the 0.33 A of the pancake motor (MK3S: 36)
+#define TMC2130_CURRENTS_R {16, 20, 35, 17}  // default running currents for all axes
+#define TMC2130_CURRENTS_R_HOME {8, 10, 20, 17}  // homing running currents for all axes (CHEETAH: E 0.33 A max)
 
 #define TMC2130_STEALTH_Z
 #define TMC2130_DEDGE_STEPPING
