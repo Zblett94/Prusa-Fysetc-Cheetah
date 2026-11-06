@@ -38,6 +38,13 @@ SECTIONS
     *libgcc.a:*(.text .text*)
     *libm.a:libm_a-kf_rem_pio2.o(.text .text*)
     *libm.a:libm_a-ef_rem_pio2.o(.text .text*)
+    /* more of libm in the free room of sector 0 (frees sectors 3..5) */
+    *libm.a:libm_a-ef_pow.o(.text .text*)
+    *libm.a:libm_a-wf_pow.o(.text .text*)
+    *libm.a:libm_a-ef_exp.o(.text .text*)
+    *libm.a:libm_a-wf_exp.o(.text .text*)
+    *libm.a:libm_a-sf_sin.o(.text .text*)
+    *libm.a:libm_a-sf_cos.o(.text .text*)
     . = ALIGN(4);
   } >FLASH0
 

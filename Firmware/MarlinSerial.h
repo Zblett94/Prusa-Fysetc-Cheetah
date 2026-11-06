@@ -195,7 +195,7 @@ class MarlinSerial //: public Stream
 #endif //!__AVR__
     private:
     static void printNumber(unsigned long, uint8_t);
-    static void printFloat(double, uint8_t);
+    static void printFloat(float, uint8_t); // STM32 port: single precision (FPU), no double library
 
 
   public:

@@ -102,8 +102,19 @@ void emit_float(Sink &s, float x, uint8_t flags, int width, int prec) {
 	if (v != v) { emit_number(s, "nan", 3, false, flags & ~F_ZERO, width); return; }
 	if (v > 3.4e38f) { emit_number(s, "inf", 3, neg, flags & ~F_ZERO, width); return; }
 	static const uint32_t p10[10] = {1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
-	uint64_t ip = (uint64_t)v;               // integer part
-	const float frac = v - (float)ip;        // exact for |v| < 2^23, 0 above
+	// integer part: below 2^32 by the FPU; above from the float bits (an exact integer
+	// there; (uint64_t)v would pull in libgcc's double based __aeabi_f2ulz)
+	uint64_t ip;
+	float frac = 0.f;
+	if (v < 4294967296.f) {
+		ip = (uint32_t)v;
+		frac = v - (float)(uint32_t)ip;      // exact
+	} else {
+		uint32_t b;
+		memcpy(&b, &v, sizeof(b));
+		const int e = (int)((b >> 23) & 0xFF) - 150; // v = mantissa * 2^e, e >= 9 here
+		ip = (e > 40) ? ~(uint64_t)0 : ((uint64_t)((b & 0x7FFFFFUL) | 0x800000UL) << e);
+	}
 	uint32_t fp = (uint32_t)(frac * (float)p10[prec] + 0.5f);
 	if (fp >= p10[prec]) { fp -= p10[prec]; ip++; }
 	char rev[24], txt[48];

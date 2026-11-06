@@ -97,16 +97,18 @@ void make_pulses(Pulses &out, const AxisConfig &config, const uint32_t tick_hz) 
         : get(0.f, 0.f, 0.f, Type::null);
     // Normalize the amplitudes (the shaped move reaches the original target) and center the
     // pulses around their weighted average time, so that shaped and unshaped axes stay in sync.
-    double sum_a = 0.;
+    // single precision: the F4 FPU has no double (the double library would cost 3 KiB of
+    // flash); the pulse times are rounded to timer ticks anyway
+    float sum_a = 0.f;
     for (uint8_t i = 0; i < s.num_pulses; ++i)
         sum_a += s.a[i];
-    double avg_t = 0.;
+    float avg_t = 0.f;
     for (uint8_t i = 0; i < s.num_pulses; ++i)
         avg_t += s.a[i] / sum_a * s.t[i];
     out.num_pulses = s.num_pulses;
     for (uint8_t i = 0; i < s.num_pulses; ++i) {
         out.a[i] = float(s.a[i] / sum_a);
-        out.t[i] = int32_t(lround((double(s.t[i]) - avg_t) * tick_hz));
+        out.t[i] = int32_t(lroundf((float(s.t[i]) - avg_t) * tick_hz));
     }
 }
 
