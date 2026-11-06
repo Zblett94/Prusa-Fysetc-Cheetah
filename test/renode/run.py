@@ -67,6 +67,7 @@ def main():
     ap.add_argument('--wait', type=float, default=2.0, help='emulated seconds after each command')
     ap.add_argument('--profile', help='write a collapsed stack profile of the commands to this file')
     ap.add_argument('--lang', type=int, default=0, help='language preset: 0 English, 1.. language tables, 255 ask')
+    ap.add_argument('--monitor', action='store_true', help='print the output of the emulator monitor (e.g. of !cpu PC)')
     ap.add_argument('--timeout', type=float, default=1800, help='wall clock limit of the emulator run (s)')
     ap.add_argument('--expect', action='append', default=[], help='regex that must appear in the serial output')
     ap.add_argument('--forbid', action='append', default=[], help='regex that must not appear in the serial output')
@@ -152,6 +153,9 @@ def main():
                        capture_output=True, text=True, timeout=a.timeout)
     out = r.stdout + r.stderr
     serial = open(uart, errors='replace').read() if os.path.exists(uart) else ''
+    if a.monitor:
+        print('=== monitor ===')
+        print('\n'.join(l for l in out.splitlines() if 'SNAP' not in l and not l.startswith('[') and l.strip()))
     print('=== serial ===')
     print(serial)
     # LCD: DDRAM rows start at 0x00, 0x40, 0x14, 0x54
