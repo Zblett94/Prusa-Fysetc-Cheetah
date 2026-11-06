@@ -6754,9 +6754,9 @@ static void lcd_selftest_axis_error(uint8_t axis, AxisError error, float a, floa
 	if (error == AxisError::Inconsistent)
 		printf_P(PSTR("Selftest error: %c axis length inconsistent: %.1f mm and %.1f mm in two runs (max. 1 mm apart)\n"), name, a, b);
 	else
-		printf_P(PSTR("Selftest error: %c axis %S: measured %.1f mm, expected %.1f mm (+-5 mm)\n"), name, what, a, b);
+		printf_P(PSTR("Selftest error: %c axis %s: measured %.1f mm, expected %.1f mm (+-5 mm)\n"), name, what, a, b);
 	printf_P(PSTR("Check:"));
-	for (uint8_t i = 0; i < 3; i++) printf_P(PSTR("%S%c"), cause[i], i < 2 ? ',' : '\n');
+	for (uint8_t i = 0; i < 3; i++) printf_P(PSTR("%s%c"), cause[i], i < 2 ? ',' : '\n');
 	if (error == AxisError::TooShort)
 		printf_P(PSTR("The carriage stopped before the end: look for cables, zip ties or parts in its path, dirty or bent rods, worn bearings, a belt that is too tight.\n"));
 	else if (error == AxisError::TooLong)
@@ -6768,7 +6768,7 @@ static void lcd_selftest_axis_error(uint8_t axis, AxisError error, float a, floa
 	lcd_selftest_error_begin();
 	lcd_puts_at_P(0, 0, _T(MSG_SELFTEST_ERROR));
 	lcd_set_cursor(0, 1);
-	lcd_printf_P(PSTR("%c axis %S"), name, what);
+	lcd_printf_P(PSTR("%c axis %s"), name, what);
 	lcd_set_cursor(0, 2);
 	lcd_puts_P(error == AxisError::Inconsistent ? PSTR("Run 1:   ") : PSTR("Measured:"));
 	lcd_print_mm(a);
