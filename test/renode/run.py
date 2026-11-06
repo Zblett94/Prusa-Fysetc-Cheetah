@@ -49,6 +49,8 @@ BOARDS = {
     'skr': dict(env='renode_test', repl='stm32g0b1.repl', base=0x08002000, mips=64,
                 cal=[(0x1FFF75A8, 1034), (0x1FFF75CA, 1386), (0x1FFF75AA, 1652)]),
     'cheetah': dict(env='renode_cheetah', repl='stm32f446.repl', base=0x08000000, mips=180,
+                    # MK3S LCD knob on EXP1/EXP2: (GPIO port, pin) of BTN_ENC, BTN_EN1, BTN_EN2
+                    knob=(('gpioPortC', 6), ('gpioPortC', 10), ('gpioPortC', 11)),
                     cal=[(0x1FFF7A2C, 942), (0x1FFF7A2E, 1210), (0x1FFF7A2A, 1520)]),
 }
 
@@ -66,7 +68,9 @@ def main():
     ap.add_argument('--forbid', action='append', default=[], help='regex that must not appear in the serial output')
     ap.add_argument('--expect-lcd', action='append', default=[], help='regex that must appear on the LCD')
     ap.add_argument('--screen', help='write the picture shown on the Ender-3 display (PGM) to this file')
-    ap.add_argument('gcode', nargs='*')
+    ap.add_argument('gcode', nargs='*',
+                    help='G-code lines; @<s>: run <s> emulated seconds; !<cmd>: monitor command; '
+                         'boards with a knob: %%click, %%enc+<n> / %%enc-<n> (detents), %%lcd (print the LCD now)')
     a = ap.parse_args()
     board = BOARDS[a.board]
     if not a.elf:
@@ -97,7 +101,28 @@ def main():
     ]
     if a.profile:
         lines.append(f'cpu EnableProfilerCollapsedStack @{os.path.abspath(a.profile)} true')
+    knob = board.get('knob')
+    def pin(p, level):
+        return f'{p[0]} OnGPIO {p[1]} {"true" if level else "false"}'
+    if knob:  # released: the inputs have pull-ups on the printer
+        i = lines.index(f'emulation RunFor "{a.boot}"')
+        lines[i:i] = [pin(p, True) for p in knob]
     for g in a.gcode:
+        if g == '%lcd':
+            lines += ['echo "SNAP:"', f'sysbus ReadBytes {lcd:#x} 128']
+            continue
+        if g == '%click':
+            lines += [pin(knob[0], False), 'emulation RunFor "0.3"', pin(knob[0], True), 'emulation RunFor "0.5"']
+            continue
+        m = re.match(r'%enc([+-])(\d+)$', g)
+        if m:
+            # one detent = 4 quadrature transitions; (EN1, EN2) levels, 0 = closed
+            seq = [(1, 0), (0, 0), (0, 1), (1, 1)] if m.group(1) == '+' else [(0, 1), (0, 0), (1, 0), (1, 1)]
+            for _ in range(int(m.group(2))):
+                for e1, e2 in seq:
+                    lines += [pin(knob[1], e1), pin(knob[2], e2), 'emulation RunFor "0.004"']
+            lines.append('emulation RunFor "0.4"')
+            continue
         if g.startswith('@'):  # @<seconds>: just run
             lines.append(f'emulation RunFor "{float(g[1:])}"')
             continue
@@ -130,6 +155,14 @@ def main():
         px = [int(x, 16) for x in re.findall(r'0x([0-9A-Fa-f]{2})\b', m2.group(1))][:1024] if m2 else []
         if len(px) == 1024:
             write_screen(a.screen, px)
+    def rows(d):
+        return ''.join('|' + ''.join(chr(c) if 32 <= c < 127 else '?' if c else ' ' for c in d[off:off + 20]) + '|\n'
+                       for off in (0x00, 0x40, 0x14, 0x54))
+    for i, blk in enumerate(re.findall(r'SNAP:(.*?)(?=SNAP:|LCD:)', out, re.S)):
+        d = [int(x, 16) for x in re.findall(r'0x([0-9A-Fa-f]{2})\b', blk)][:128]
+        if len(d) == 128:
+            print(f'=== LCD snapshot {i + 1} ===')
+            print(rows(d), end='')
     print('=== LCD ===')
     screen = ''
     if len(data) == 128:

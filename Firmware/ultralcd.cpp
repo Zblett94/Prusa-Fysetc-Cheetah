@@ -4207,7 +4207,9 @@ static void menuitems_temperature_common() {
 }
 
 void SETTINGS_FANS_CHECK() {
+#ifdef FANCHECK // STM32 port: no toggle for a fan check that is not built in (Cheetah V3)
     MENU_ITEM_TOGGLE_P(_T(MSG_FANS_CHECK), fans_check_enabled ? _T(MSG_ON) : _T(MSG_OFF), lcd_set_fan_check);
+#endif
 }
 
 #define SETTINGS_SOUND \

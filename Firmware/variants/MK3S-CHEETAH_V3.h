@@ -234,7 +234,7 @@
 #endif /* DEBUG_BUILD */
 
 
-#define LINEARITY_CORRECTION
+//#define LINEARITY_CORRECTION // SKR: the TMC2209 has no MSLUT: no linearity correction (menu hidden)
 // SKR: the TMC2209 has no programmable microstep table (MSLUT)
 //#define TMC2130_LINEARITY_CORRECTION
 //#define TMC2130_LINEARITY_CORRECTION_XYZ

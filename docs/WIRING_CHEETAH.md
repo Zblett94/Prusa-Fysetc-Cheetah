@@ -22,6 +22,11 @@ Not available: other languages (the 256 KiB flash holds only English), power pan
 the self test asks on the LCD whether each fan spins),
 LCD backlight dimming.
 
+Menus: the same as on the MK3S (checked in the emulator), including Settings > Mode
+[Normal/Stealth] and Settings > MMU [On/Off]. Not in the menus: Language, RPi port,
+Brightness, Fans check, Lin. correction (the TMC2209 has no microstep table) and the
+memory dump items.
+
 ## Board jumpers
 
 | Jumper | Setting | Why |
