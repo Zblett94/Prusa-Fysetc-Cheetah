@@ -26,6 +26,7 @@ Menus: the same as on the MK3S (checked in the emulator), including Settings > M
 [Normal/Stealth] and Settings > MMU [On/Off]. Not in the menus: Language, RPi port,
 Brightness, Fans check, Lin. correction (the TMC2209 has no microstep table), Belt test,
 Belt status and the memory dump items.
+Added: Settings > HW Setup > E-steps and Calibration > E-steps cal. (see Extruder).
 
 ## Extruder (BMG gears 3:1, FYSETC NEMA 14 pancake motor)
 
@@ -44,9 +45,12 @@ current with M911/M912 above 18 (0.34 A), and leave the "E-cool mode" of the
 Experimental menu off (it drives the extruder with a fixed voltage instead of the
 current setting).
 
-Calibrate the steps after the first start: heat the nozzle, mark the filament 120 mm
-above the extruder, extrude 100 mm (`G91`, `G1 E100 F100`), measure what is left and set
-`M92 E<415 * 100 / extruded length>`, then `M500`. If the filament moves backwards,
+Calibrate the steps after the first start with **Calibration > E-steps cal.** on the
+LCD: it heats the nozzle (temperature to choose), asks to mark the filament 120 mm above
+the top of the extruder, extrudes 100 mm, asks for the distance left from the mark to the
+extruder and computes, shows and saves the new value. Run it twice to check. The value
+can also be set by hand in **Settings > HW Setup > E-steps**, or over USB with
+`M92 E<steps>` and `M500`. If the filament moves backwards,
 reverse the motor: turn its plug around or swap the two wires of one coil (or set
 `INVERT_E0_DIR` to 1 in `Firmware/variants/MK3S-CHEETAH_V3.h`).
 
