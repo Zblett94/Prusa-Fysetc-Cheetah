@@ -133,7 +133,9 @@ static void lcd_menu_fails_stats();
 #endif //TMC2130 or FILAMENT_SENSOR
 
 #ifdef TMC2130
+#if defined(TMC2130) && !defined(NO_BELT_TEST)
 static void lcd_belttest_v();
+#endif
 #endif //TMC2130
 
 static void lcd_selftest_v();
@@ -1444,7 +1446,7 @@ static void lcd_menu_voltages()
 }
 #endif //defined (VOLT_BED_PIN) || defined (VOLT_PWR_PIN) || (defined(FILAMENT_SENSOR) && (FILAMENT_SENSOR_TYPE == FSENSOR_IR_ANALOG))
 
-#ifdef TMC2130
+#if defined(TMC2130) && !defined(NO_BELT_TEST)
 //! @brief Show Belt Status
 //!
 //! @code{.unparsed}
@@ -1461,7 +1463,7 @@ static void lcd_menu_belt_status()
     lcd_printf_P(PSTR("%s\n" " X %d\n" " Y %d"), _T(MSG_BELT_STATUS), eeprom_read_word((uint16_t*)(EEPROM_BELTSTATUS_X)), eeprom_read_word((uint16_t*)(EEPROM_BELTSTATUS_Y)));
     menu_back_if_clicked();
 }
-#endif //TMC2130
+#endif //TMC2130 && !NO_BELT_TEST
 
 #ifdef RESUME_DEBUG
 extern void stop_and_save_print_to_ram(float z_move, float e_move);
@@ -1717,9 +1719,9 @@ static void lcd_support_menu()
   MENU_ITEM_SUBMENU_P(_T(MSG_INFO_EXTRUDER), lcd_menu_extruder_info);
   MENU_ITEM_SUBMENU_P(_T(MSG_INFO_SENSORS), lcd_menu_show_sensors_state);
 
-#ifdef TMC2130
+#if defined(TMC2130) && !defined(NO_BELT_TEST)
   MENU_ITEM_SUBMENU_P(_T(MSG_BELT_STATUS), lcd_menu_belt_status);
-#endif //TMC2130
+#endif //TMC2130 && !NO_BELT_TEST
 
   MENU_ITEM_SUBMENU_P(_T(MSG_MENU_TEMPERATURES), lcd_menu_temperatures);
 
@@ -4540,9 +4542,9 @@ static void lcd_calibration_menu()
         MENU_ITEM_SUBMENU_P(_T(MSG_V2_CALIBRATION), lcd_first_layer_calibration_reset);
     }
     MENU_ITEM_GCODE_P(_T(MSG_AUTO_HOME), G28W);
-#ifdef TMC2130
+#if defined(TMC2130) && !defined(NO_BELT_TEST)
     MENU_ITEM_FUNCTION_P(_T(MSG_BELTTEST), lcd_belttest_v);
-#endif //TMC2130
+#endif //TMC2130 && !NO_BELT_TEST
     MENU_ITEM_FUNCTION_P(_T(MSG_SELFTEST), lcd_selftest_v);
     // MK2
     MENU_ITEM_FUNCTION_P(_T(MSG_CALIBRATE_BED), lcd_mesh_calibration);
@@ -5922,6 +5924,7 @@ void lcd_sdcard_menu()
 	}
 }
 #ifdef TMC2130
+#ifndef NO_BELT_TEST
 static void lcd_belttest_v()
 {
     lcd_belttest();
@@ -5961,6 +5964,7 @@ void lcd_belttest()
 	FORCE_HIGH_POWER_END;
     KEEPALIVE_STATE(NOT_BUSY);
 }
+#endif //NO_BELT_TEST
 #endif //TMC2130
 
 #if defined(FILAMENT_SENSOR) && (FILAMENT_SENSOR_TYPE == FSENSOR_IR_ANALOG)

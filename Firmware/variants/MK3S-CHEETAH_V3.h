@@ -234,6 +234,9 @@
 #endif /* DEBUG_BUILD */
 
 
+// SKR: no belt test (Calibration > Belt test, Support > Belt status): its StallGuard
+// readings are not meaningful with the TMC2209
+#define NO_BELT_TEST
 //#define LINEARITY_CORRECTION // SKR: the TMC2209 has no MSLUT: no linearity correction (menu hidden)
 // SKR: the TMC2209 has no programmable microstep table (MSLUT)
 //#define TMC2130_LINEARITY_CORRECTION
