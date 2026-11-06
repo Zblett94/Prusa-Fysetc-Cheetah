@@ -67,6 +67,7 @@ def main():
     ap.add_argument('--wait', type=float, default=2.0, help='emulated seconds after each command')
     ap.add_argument('--profile', help='write a collapsed stack profile of the commands to this file')
     ap.add_argument('--lang', type=int, default=0, help='language preset: 0 English, 1.. language tables, 255 ask')
+    ap.add_argument('--timeout', type=float, default=1800, help='wall clock limit of the emulator run (s)')
     ap.add_argument('--expect', action='append', default=[], help='regex that must appear in the serial output')
     ap.add_argument('--forbid', action='append', default=[], help='regex that must not appear in the serial output')
     ap.add_argument('--expect-lcd', action='append', default=[], help='regex that must appear on the LCD')
@@ -148,7 +149,7 @@ def main():
     open(resc, 'w').write('\n'.join(lines) + '\n')
 
     r = subprocess.run([a.renode, '--disable-xwt', '--console', '-e', f'include @{resc}'],
-                       capture_output=True, text=True, timeout=1800)
+                       capture_output=True, text=True, timeout=a.timeout)
     out = r.stdout + r.stderr
     serial = open(uart, errors='replace').read() if os.path.exists(uart) else ''
     print('=== serial ===')
