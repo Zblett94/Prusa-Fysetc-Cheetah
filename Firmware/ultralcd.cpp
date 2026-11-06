@@ -4452,8 +4452,9 @@ static void lcd_e_steps_calibration()
     const float old_steps = cs.axis_steps_per_mm[E_AXIS];
     const int16_t old_target = degTargetHotend(0);
 
+    // at most 3 lines: the 4th is the Yes/No line (longer texts become multi-page messages)
     if (lcd_show_multiscreen_message_yes_no_and_wait_P(
-            PSTR("E-steps calibration: extrudes 100mm of filament. Filament loaded?"),
+            PSTR("Extrudes 100mm to calibrate E-steps. Filament loaded?"),
             false, LCD_LEFT_BUTTON_CHOICE) != LCD_LEFT_BUTTON_CHOICE) {
         lcd_return_to_status();
         return;
