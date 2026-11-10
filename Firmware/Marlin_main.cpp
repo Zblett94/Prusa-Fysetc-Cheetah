@@ -9025,7 +9025,10 @@ void manage_inactivity(bool ignore_stepper_queue/*=false*/) //default argument s
     // the EEPROM log is compacted only when nothing moves or prints (hal_stm32/eeprom_flash.cpp)
     {
         static ShortTimer eeprom_idle_timer;
-        if (!blocks_queued() && !printer_active() && buflen == 0) {
+        // ... and the heaters are off: their outputs and the temperature control freeze during
+        // the stall (the log has room for 1500 changes until then, and is compacted at start-up)
+        if (!blocks_queued() && !printer_active() && buflen == 0
+            && degTargetHotend(0) == 0 && degTargetBed() == 0) {
             if (!eeprom_idle_timer.running()) eeprom_idle_timer.start();
             else if (eeprom_idle_timer.expired(2000)) { eeprom_flash_idle(); eeprom_idle_timer.stop(); }
         } else eeprom_idle_timer.stop();

@@ -31,6 +31,8 @@
 //    is the same as on the EINSy.
 //------------------------------------------------------------------------------
 #include "hal_stm32/tmc2209_uart.h"
+#include "ultralcd.h" // alert messages of the link supervision
+#include <avr/wdt.h>
 
 #define TMC2209_GCONF_BASE   0x000001C0 // pdn_disable | mstep_reg_select | multistep_filt
 #define TMC2209_GCONF_SPREAD (TMC2209_GCONF_BASE | 0x04) // en_spreadCycle
@@ -52,7 +54,7 @@ static uint8_t tmc2209_slave[NUM_AXIS] = { X_TMC2209_ADDR, Y_TMC2209_ADDR, Z_TMC
 //! The address straps of the board are not documented unambiguously: find the driver of
 //! each axis by setting its DIR input and reading the IOIN register (DIR = bit 9) of the
 //! four addresses. Keeps the default mapping when the drivers do not answer.
-static void tmc2209_detect_addresses()
+static bool tmc2209_detect_addresses()
 {
 	static const uint8_t dir_bit = 9;
 	uint8_t found[NUM_AXIS] = {0xFF, 0xFF, 0xFF, 0xFF};
@@ -79,10 +81,73 @@ static void tmc2209_detect_addresses()
 		for (uint8_t a = 0; a < NUM_AXIS; a++) tmc2209_slave[a] = found[a];
 	printf_P(PSTR("TMC2209 UART addresses X%d Y%d Z%d E%d%s\n"), tmc2209_slave[X_AXIS], tmc2209_slave[Y_AXIS],
 		tmc2209_slave[Z_AXIS], tmc2209_slave[E_AXIS], ok ? PSTR("") : PSTR(" (default, detection failed)"));
+	return ok;
 }
 #else
 static const uint8_t tmc2209_slave[NUM_AXIS] = { X_TMC2209_ADDR, Y_TMC2209_ADDR, Z_TMC2209_ADDR, E0_TMC2209_ADDR };
 #endif
+
+//------------------------------------------------------------------------------
+// Link supervision. The drivers answer only while the motor supply is on (the board can
+// run from USB alone) and lose their registers when it drops: the firmware must notice
+// both, or a motor runs at the power-on default current of its driver.
+//  - tmc2209_online: the drivers answered at the last check. While offline, writes are
+//    sent unchecked and tmc2130_check_overtemp() probes once per second; when the drivers
+//    come back, everything is configured again.
+//  - every register write is verified with the interface counter of the driver (IFCNT,
+//    +1 per accepted write datagram) and repeated up to three times.
+//  - a counter that changed behind our back means the driver went through a reset.
+//------------------------------------------------------------------------------
+#define TMC2209_REG_IFCNT 0x02
+#ifdef EMULATION
+static const bool tmc2209_online = true; // no TMC2209 model in the emulator: nothing to supervise
+#else
+static bool tmc2209_online;
+static int16_t tmc2209_ifcnt[NUM_AXIS] = {-1, -1, -1, -1}; // last known IFCNT, -1: unknown
+static TMCInitParams tmc2209_init_params;
+
+static void tmc2209_set_offline()
+{
+	if (tmc2209_online) SERIAL_ECHOLNPGM("TMC2209 drivers do not answer");
+	tmc2209_online = false;
+	for (uint8_t a = 0; a < NUM_AXIS; a++) tmc2209_ifcnt[a] = -1;
+	lcd_setalertstatuspgm(PSTR("TMC drivers offline"));
+}
+
+//! true when a driver answers (the four of them share the supply and the UART line)
+static bool tmc2209_probe()
+{
+	uint32_t ioin;
+	return tmc2209_uart_read(tmc2209_slave[X_AXIS], 0x06, &ioin) && (ioin >> 24) == 0x21;
+}
+#endif //EMULATION
+
+//! write a register and check that the driver took it
+static void tmc2209_write(uint8_t axis, uint8_t addr, uint32_t val)
+{
+	const uint8_t slave = tmc2209_slave[axis];
+#ifndef EMULATION
+	if (tmc2209_online) {
+		for (uint8_t attempt = 0; attempt < 3; attempt++) {
+			uint32_t cnt;
+			if (tmc2209_ifcnt[axis] < 0) {
+				if (!tmc2209_uart_read(slave, TMC2209_REG_IFCNT, &cnt)) break;
+				tmc2209_ifcnt[axis] = cnt & 0xFF;
+			}
+			tmc2209_uart_write(slave, addr, val);
+			if (!tmc2209_uart_read(slave, TMC2209_REG_IFCNT, &cnt)) break;
+			const bool taken = ((cnt - tmc2209_ifcnt[axis]) & 0xFF) == 1;
+			tmc2209_ifcnt[axis] = cnt & 0xFF;
+			if (taken) return;
+		}
+		tmc2209_ifcnt[axis] = -1;
+		printf_P(PSTR("TMC2209 write failed: axis %d reg 0x%02x\n"), axis, addr);
+		lcd_setalertstatuspgm(PSTR("TMC write error"));
+		return;
+	}
+#endif //EMULATION
+	tmc2209_uart_write(slave, addr, val);
+}
 
 #else //TMC2209
 #include "spi.h"
@@ -443,11 +508,20 @@ void tmc2130_init(TMCInitParams params)
 //	DBG(_n("tmc2130_init(), mode=%s\n"), tmc2130_mode?_n("STEALTH"):_n("NORMAL"));
 #ifdef TMC2209
 	tmc2209_uart_init();
+#ifndef EMULATION
+	tmc2209_init_params = params;
+	for (uint8_t a = 0; a < NUM_AXIS; a++) tmc2209_ifcnt[a] = -1;
+	if (tmc2209_probe()) tmc2209_online = true;
+	else tmc2209_set_offline(); // motor supply off? tmc2130_check_overtemp() tries again
+#endif //EMULATION
 #ifdef TMC2209_ADDR_DETECT
+	// repeated at every init until it worked once (not while the drivers are off)
 	static bool addresses_known;
-	if (!addresses_known) {
-		tmc2209_detect_addresses();
-		addresses_known = true;
+	if (!addresses_known && tmc2209_online) {
+		addresses_known = tmc2209_detect_addresses();
+#ifndef EMULATION // (no TMC2209 model in the emulator)
+		if (!addresses_known) lcd_setalertstatuspgm(PSTR("TMC address error"));
+#endif
 	}
 #endif
 	// DIAG outputs are push-pull, active high: no pull-ups
@@ -650,8 +724,18 @@ bool tmc2130_wait_standstill_xy(int timeout)
 	{
 		uint32_t drv_status_x = 0;
 		uint32_t drv_status_y = 0;
+#ifdef TMC2209
+		// drivers which do not answer cost several ms per (repeated) read: 1000 rounds of
+		// that would outlast the watchdog
+		if (!tmc2209_online
+			|| !tmc2209_uart_read(tmc2209_slave[X_AXIS], TMC2130_REG_DRV_STATUS, &drv_status_x)
+			|| !tmc2209_uart_read(tmc2209_slave[Y_AXIS], TMC2130_REG_DRV_STATUS, &drv_status_y))
+			return false;
+		wdt_reset();
+#else
 		tmc2130_rd(X_AXIS, TMC2130_REG_DRV_STATUS, &drv_status_x);
 		tmc2130_rd(Y_AXIS, TMC2130_REG_DRV_STATUS, &drv_status_y);
+#endif
 //		DBG(_n("\tdrv_status_x=0x%08x drv_status_x=0x%08x\n"), drv_status_x, drv_status_y);
 		standstill = (drv_status_x & 0x80000000) && (drv_status_y & 0x80000000);
 		tmc2130_check_overtemp();
@@ -664,15 +748,52 @@ void tmc2130_check_overtemp()
 {
 	if (tmc2130_overtemp_timer.expired_cont(1000))
 	{
+#ifdef TMC2209
+		// One register read per second: a read on the bit-banged UART of the Cheetah keeps
+		// the interrupts off for 0.4 ms (step timing). The axes take turns, and so do the
+		// temperature flag and the supervision of the link (see tmc2209_online).
+		static uint8_t turn;
+		const uint_least8_t i = turn & 3;
+		const bool check_link = turn & 4;
+		turn = (turn + 1) & 7;
+		uint32_t drv_status = 0;
+#ifndef EMULATION
+		tmc2130_overtemp_timer.start();
+		if (!tmc2209_online) {
+			if (tmc2209_probe()) {
+				SERIAL_ECHOLNPGM("TMC2209 drivers answer: configuring");
+				tmc2130_init(tmc2209_init_params);
+				if (tmc2209_online) lcd_setstatuspgm(PSTR("TMC drivers ready"));
+			}
+			return;
+		}
+		if (check_link) {
+			uint32_t cnt;
+			if (!tmc2209_uart_read(tmc2209_slave[i], TMC2209_REG_IFCNT, &cnt)) tmc2209_set_offline();
+			else if (tmc2209_ifcnt[i] >= 0 && (cnt & 0xFF) != (uint32_t)tmc2209_ifcnt[i]) {
+				// the driver lost its registers (supply dip): configure all of them again
+				printf_P(PSTR("TMC2209 driver %d was reset: configuring\n"), i);
+				tmc2130_init(tmc2209_init_params);
+			} else tmc2209_ifcnt[i] = cnt & 0xFF;
+			return;
+		}
+		if (!tmc2209_uart_read(tmc2209_slave[i], TMC2130_REG_DRV_STATUS, &drv_status)) {
+			tmc2209_set_offline();
+			return;
+		}
+#else //EMULATION
+		(void)check_link;
+		tmc2130_rd(i, TMC2130_REG_DRV_STATUS, &drv_status);
+#endif //EMULATION
+		{
+			if (drv_status & TMC2209_DRV_STATUS_OTPW)
+#else //TMC2209
 		for (uint_least8_t i = 0; i < 4; i++)
 		{
 			uint32_t drv_status = 0;
 			tmc2130_rd(i, TMC2130_REG_DRV_STATUS, &drv_status);
-#ifdef TMC2209
-			if (drv_status & TMC2209_DRV_STATUS_OTPW)
-#else
 			if (drv_status & ((uint32_t)1 << 26))
-#endif
+#endif //TMC2209
 			{ // BIT 26 - over temp prewarning ~120C (+-20C)
 				SERIAL_ERRORRPGM(MSG_TMC_OVERTEMP);
 				SERIAL_ECHOLN(i);
@@ -926,7 +1047,7 @@ static void tmc2130_tx(uint8_t axis, uint8_t addr, uint32_t wval)
 		break;
 	case TMC2130_REG_COOLCONF:
 		// StallGuard2 threshold -> StallGuard4 threshold, coolStep stays disabled
-		tmc2209_uart_write(tmc2209_slave[axis], TMC2209_REG_SGTHRS, (wval >> 16) & 0xFF);
+		tmc2209_write(axis, TMC2209_REG_SGTHRS, (wval >> 16) & 0xFF);
 		addr = 0x42; // TMC2209 COOLCONF
 		wval = 0;
 		break;
@@ -941,7 +1062,7 @@ static void tmc2130_tx(uint8_t axis, uint8_t addr, uint32_t wval)
 	case TMC2130_REG_ENCM_CTRL:
 		return; // not available on the TMC2209
 	}
-	tmc2209_uart_write(tmc2209_slave[axis], addr, wval);
+	tmc2209_write(axis, addr, wval);
 }
 
 static uint8_t tmc2130_rx(uint8_t axis, uint8_t addr, uint32_t* rval)

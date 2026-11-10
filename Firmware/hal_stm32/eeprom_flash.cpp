@@ -190,9 +190,15 @@ static void append(uint16_t addr) {
 		pending = true;
 		return;
 	}
-	while (log_used < LOG_RECORDS) {
-		const uintptr_t a = SECTOR_ADDR(active) + LOG_OFS + log_used * 4;
-		log_used++;
+	for (;;) {
+		// take a log slot: atomic, an interrupt handler may write to the EEPROM as well
+		const uint32_t primask = __get_PRIMASK();
+		__disable_irq();
+		const bool full = active < 0 || log_used >= LOG_RECORDS;
+		const uintptr_t a = full ? 0 : SECTOR_ADDR(active) + LOG_OFS + log_used * 4;
+		if (!full) log_used++;
+		__set_PRIMASK(primask);
+		if (full) break;
 		if (flash_program(a, record(addr, mirror[addr]))) return;
 		// a word that does not program (worn or disturbed) is skipped
 	}

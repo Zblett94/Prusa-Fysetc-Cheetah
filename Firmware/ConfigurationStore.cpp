@@ -192,6 +192,20 @@ void Config_StoreSettings()
   SERIAL_ECHOLNPGM("Settings Stored");
 }
 
+//! STM32 port (E-steps from the LCD): store cs.axis_steps_per_mm[E_AXIS] only. Unlike
+//! M500 this does not make other settings permanent which G-codes changed for a print
+//! (M201/M203/M204/M205 of a slicer start G-code).
+void Config_StoreESteps()
+{
+  char version[sizeof(cs.version)];
+  eeprom_read_block(reinterpret_cast<uint8_t*>(version), reinterpret_cast<uint8_t*>(EEPROM_M500_base->version), sizeof(version));
+  if (strncmp_P(version, default_conf.version, sizeof(EEPROM_VERSION)) != 0) {
+    Config_StoreSettings(); // nothing valid stored yet: the single value would not be read back
+    return;
+  }
+  eeprom_update_float_notify(&EEPROM_M500_base->axis_steps_per_mm[E_AXIS], cs.axis_steps_per_mm[E_AXIS]);
+}
+
 
 //! @brief Read M500 configuration
 //! @retval true Succeeded. Stored settings retrieved or default settings retrieved in case EEPROM cs was empty.

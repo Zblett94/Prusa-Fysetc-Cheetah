@@ -113,6 +113,16 @@ Do not flash `firmware.bin`: it spans the settings sectors and would erase them.
 On the first start the settings are empty: the printer starts like a new MK3S, run the
 **Wizard** (self test, XYZ calibration, first layer calibration).
 
+Status line messages of the driver supervision:
+
+- **TMC drivers offline**: the drivers do not answer, normally because the board runs from
+  USB with the 12/24 V supply off. The firmware checks every second and configures the
+  drivers as soon as they answer ("TMC drivers ready").
+- **TMC address error**: the drivers answer, but their addresses could not be told apart
+  (the default assignment is used). Check the serial log.
+- **TMC write error**: a driver did not take a setting after three attempts (wiring or
+  noise on the UART line). The serial log names the axis and register.
+
 At start-up the firmware finds out which TMC2209 UART address belongs to which axis
 (FYSETC's documents disagree on the straps) and prints it:
 `TMC2209 UART addresses X0 Y2 Z1 E3`.

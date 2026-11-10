@@ -4391,9 +4391,13 @@ static void nozzle_change()
 
 static void lcd_e_steps_save(float v)
 {
+    st_synchronize();
     cs.axis_steps_per_mm[E_AXIS] = v;
     reset_acceleration_rates();
-    Config_StoreSettings(); // like M92 E<v> + M500
+    // the planner keeps the E position in steps: without this the next move would extrude or
+    // retract the difference between the old and the new scale
+    plan_set_e_position(current_position[E_AXIS]);
+    Config_StoreESteps(); // this value only (M500 would also store limits changed by G-codes)
     printf_P(PSTR("E-steps: %.2f steps/mm (saved)\n"), v);
 }
 
@@ -4440,6 +4444,7 @@ static float lcd_e_steps_enter(const char *title1, const char *title2, float v, 
 //! Settings > HW Setup > E-steps
 static void lcd_e_steps_edit()
 {
+    if (printer_active()) return; // blocks the G-code processing: not during a print
     const float v = lcd_e_steps_enter(PSTR("E-steps (steps/mm)"), PSTR("Turn to change"),
         cs.axis_steps_per_mm[E_AXIS], 20, 2000, 0.1f, PSTR("steps/mm"));
     if (v != cs.axis_steps_per_mm[E_AXIS]) lcd_e_steps_save(v);
@@ -4449,6 +4454,7 @@ static void lcd_e_steps_edit()
 static void lcd_e_steps_calibration()
 {
     static const float mark_mm = 120, extrude_mm = 100;
+    if (printer_active()) return; // not during a print
     const float old_steps = cs.axis_steps_per_mm[E_AXIS];
     const int16_t old_target = degTargetHotend(0);
 
@@ -4469,9 +4475,21 @@ static void lcd_e_steps_calibration()
     LcdUpdateDisabler lcdUpdateDisabler;
     raise_z_above(MIN_Z_FOR_LOAD); // like Load filament: room below the nozzle
     setTargetHotend(temp);
+    lcd_clear();
+    lcd_puts_at_P(0, 0, PSTR("Preheating nozzle"));
+    lcd_puts_at_P(0, 3, PSTR("Click to cancel"));
+    lcd_consume_click();
     while (degHotend(0) < temp - TEMP_HYSTERESIS) {
-        lcd_wait_for_heater();
-        delay_keep_alive(1000);
+        lcd_set_cursor(0, 1);
+        lcd_printf_P(PSTR("%c%3d/%3d%c"), LCD_STR_THERMOMETER[0], (int16_t)degHotend(0), temp, LCD_STR_DEGREE[0]);
+        for (uint8_t i = 0; i < 10; i++) {
+            delay_keep_alive(100);
+            if (lcd_clicked()) { // cancelled
+                setTargetHotend(old_target);
+                lcd_return_to_status();
+                return;
+            }
+        }
     }
 
     lcd_show_fullscreen_message_and_wait_P(
@@ -4531,6 +4549,7 @@ void lcd_hw_setup_menu(void)                      // can not be "static"
     SETTINGS_NOZZLE;
     MENU_ITEM_FUNCTION_P(_T(MSG_NOZZLE_CNG_MENU),nozzle_change);
 #ifdef E_STEPS_MENU
+    if (!printer_active())
     {
         static char e_steps_text[8];
         snprintf(e_steps_text, sizeof(e_steps_text), "%.1f", cs.axis_steps_per_mm[E_AXIS]);
@@ -4685,7 +4704,7 @@ static void lcd_calibration_menu()
 #endif //TMC2130 && !NO_BELT_TEST
     MENU_ITEM_FUNCTION_P(_T(MSG_SELFTEST), lcd_selftest_v);
 #ifdef E_STEPS_MENU
-    MENU_ITEM_FUNCTION_P(PSTR("E-steps cal."), lcd_e_steps_calibration);
+    if (!printer_active()) MENU_ITEM_FUNCTION_P(PSTR("E-steps cal."), lcd_e_steps_calibration);
 #endif //E_STEPS_MENU
     // MK2
     MENU_ITEM_FUNCTION_P(_T(MSG_CALIBRATE_BED), lcd_mesh_calibration);
