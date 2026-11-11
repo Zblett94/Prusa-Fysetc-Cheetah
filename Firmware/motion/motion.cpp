@@ -28,6 +28,14 @@ struct __attribute__((packed)) StoredShaper {
 static_assert(sizeof(StoredShaper) <= EEPROM_INPUT_SHAPER_SIZE, "input shaper EEPROM area too small");
 constexpr uint8_t STORED_MAGIC = 0x5A;
 
+//! EEPROM image of the default pressure advance
+struct __attribute__((packed)) StoredPressureAdvance {
+    uint8_t magic;
+    float k;
+    float smooth_time;
+};
+static_assert(sizeof(StoredPressureAdvance) <= EEPROM_PRESSURE_ADVANCE_SIZE, "pressure advance EEPROM area too small");
+
 input_shaper::Config config;   // as configured (M593 / EEPROM)
 input_shaper::Config active;   // in use: Y frequency adjusted to the bed weight (M74)
 float bed_weight;              // g, 0 = not set
@@ -73,8 +81,26 @@ void motion_config_init() {
             config.weight_adjust_y.mass_limit = s.wa_mass_limit;
         }
     }
+    StoredPressureAdvance pa;
+    eeprom_read_block(&pa, (const void *)EEPROM_PRESSURE_ADVANCE, sizeof(pa));
+    if (pa.magic == STORED_MAGIC && pa.k >= 0.f && pa.k <= 10.f && pa.smooth_time >= 0.f && pa.smooth_time <= 0.2f) {
+        extruder_advance_K = pa.k;
+        pa_smooth_time = pa.smooth_time;
+    }
     bed_weight = 0.f;
     update_active();
+}
+
+void motion_store_pressure_advance() {
+    StoredPressureAdvance pa;
+    pa.magic = STORED_MAGIC;
+    pa.k = extruder_advance_K;
+    pa.smooth_time = pa_smooth_time;
+    eeprom_update_block(&pa, (void *)EEPROM_PRESSURE_ADVANCE, sizeof(pa));
+}
+
+const input_shaper::Config &motion_shaper_setting() {
+    return config;
 }
 
 void motion_store_shaper_config() {

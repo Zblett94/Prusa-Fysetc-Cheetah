@@ -17,6 +17,7 @@ MMU2S/MMU3 support, Live Z / steel sheets, statistics and so on. What changed is
 hardware layer underneath it (`Firmware/hal_stm32`), which reproduces the timers,
 ADC, EEPROM, serial lines and stepper drivers of the EINSy on the STM32. See
 [docs/PORTING.md](docs/PORTING.md) for the details.
+Input shaper and pressure advance can be tuned from the LCD: [docs/TUNING.md](docs/TUNING.md).
 
 The stepper interrupt is the one part that is new: a motion engine
 (`Firmware/motion`) with the **input shaper and pressure advance of the Original Prusa

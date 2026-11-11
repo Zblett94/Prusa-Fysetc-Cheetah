@@ -5,6 +5,9 @@
 
 #include "temperature.h"
 #include "ultralcd.h"
+#ifdef MOTION_ENGINE
+#include "motion/motion.h" // Settings > Input shaper, PA
+#endif
 #include "lcd_tft.h"
 #include "Marlin.h"
 #include "language.h"
@@ -4403,8 +4406,9 @@ static void lcd_e_steps_save(float v)
 
 //! Blocking number entry: the knob changes v by step (fast turns by 10 steps),
 //! a click confirms. Two title lines, the value on the third line.
+//! @param decimals 1 or 3 decimal places shown
 static float lcd_e_steps_enter(const char *title1, const char *title2, float v, float vmin, float vmax,
-                               float step, const char *unit)
+                               float step, const char *unit, uint8_t decimals = 1)
 {
     LcdUpdateDisabler lcdUpdateDisabler;
     const int16_t encoder_saved = lcd_encoder; // the menu position
@@ -4430,7 +4434,7 @@ static float lcd_e_steps_enter(const char *title1, const char *title2, float v, 
         if (redraw) {
             redraw = false;
             lcd_set_cursor(0, 2);
-            lcd_printf_P(PSTR("%c %6.1f %-11s"), LCD_STR_ARROW_RIGHT[0], v, unit);
+            lcd_printf_P(decimals == 3 ? PSTR("%c %6.3f %-11s") : PSTR("%c %6.1f %-11s"), LCD_STR_ARROW_RIGHT[0], v, unit);
         }
         delay_keep_alive(50);
         if (lcd_clicked()) break;
@@ -4523,6 +4527,90 @@ static void lcd_e_steps_calibration()
     setTargetHotend(old_target);
     lcd_return_to_status();
 }
+
+#ifdef MOTION_ENGINE
+//------------------------------------------------------------------------------
+// STM32 port: Settings > Input shaper, PA
+// Shaper type and frequency of X and Y and the default pressure advance, to enter the
+// values read from a test print (docs/TUNING.md). Stored at once.
+//------------------------------------------------------------------------------
+
+static const char *lcd_shaper_type_name(const input_shaper::AxisConfig &c)
+{
+    static const char *const names[] = { "ZV", "ZVD", "MZV", "EI", "EI2", "EI3" };
+    return (c.enabled && uint8_t(c.type) < 6) ? names[uint8_t(c.type)] : "Off";
+}
+
+//! next type: ZV, ZVD, MZV, EI, EI 2 hump, EI 3 hump, off
+static void lcd_shaper_next_type(uint8_t axis)
+{
+    if (printer_active()) return;
+    input_shaper::AxisConfig c = motion_shaper_setting().axis[axis];
+    if (!c.enabled) {
+        if (c.frequency < input_shaper::frequency_safe_min) c = input_shaper::axis_defaults[axis];
+        c.enabled = true;
+        c.type = input_shaper::Type::zv;
+    } else if (c.type == input_shaper::Type::ei_3hump) c.enabled = false;
+    else c.type = input_shaper::Type(uint8_t(c.type) + 1);
+    motion_set_shaper(axis, c);
+    motion_store_shaper_config();
+}
+
+static void lcd_shaper_edit_frequency(uint8_t axis)
+{
+    if (printer_active()) return;
+    input_shaper::AxisConfig c = motion_shaper_setting().axis[axis];
+    const float f = lcd_e_steps_enter(axis == X_AXIS ? PSTR("X shaper frequency") : PSTR("Y shaper frequency"),
+        PSTR("Turn to change"), c.frequency, input_shaper::frequency_safe_min, input_shaper::frequency_safe_max, 0.1f, PSTR("Hz"));
+    if (f == c.frequency) return;
+    c.frequency = f;
+    motion_set_shaper(axis, c);
+    motion_store_shaper_config();
+}
+
+static void lcd_shaper_x_type() { lcd_shaper_next_type(X_AXIS); }
+static void lcd_shaper_y_type() { lcd_shaper_next_type(Y_AXIS); }
+static void lcd_shaper_x_freq() { lcd_shaper_edit_frequency(X_AXIS); }
+static void lcd_shaper_y_freq() { lcd_shaper_edit_frequency(Y_AXIS); }
+
+static void lcd_pressure_advance_edit()
+{
+    if (printer_active()) return;
+    const float k = lcd_e_steps_enter(PSTR("Pressure advance"), PSTR("0 = off"),
+        motion_pressure_advance(), 0, 1, 0.001f, PSTR("s"), 3);
+    if (k == motion_pressure_advance()) return;
+    motion_set_pressure_advance(k, motion_pa_smooth_time());
+    motion_store_pressure_advance();
+    motion_report_pressure_advance();
+}
+
+static void lcd_shaper_defaults()
+{
+    if (printer_active()) return;
+    motion_set_shaper(X_AXIS, input_shaper::axis_defaults[X_AXIS]);
+    motion_set_shaper(Y_AXIS, input_shaper::axis_defaults[Y_AXIS]);
+    motion_store_shaper_config();
+    motion_report_shaper();
+}
+
+static void lcd_motion_tuning_menu()
+{
+    const input_shaper::Config &c = motion_shaper_setting();
+    char xf[10], yf[10], pa[8];
+    snprintf(xf, sizeof(xf), "%.1fHz", c.axis[X_AXIS].frequency);
+    snprintf(yf, sizeof(yf), "%.1fHz", c.axis[Y_AXIS].frequency);
+    snprintf(pa, sizeof(pa), "%.3f", motion_pressure_advance());
+    MENU_BEGIN();
+    MENU_ITEM_BACK_P(_T(MSG_SETTINGS));
+    MENU_ITEM_TOGGLE_P(PSTR("X shaper"), lcd_shaper_type_name(c.axis[X_AXIS]), lcd_shaper_x_type);
+    MENU_ITEM_TOGGLE_P(PSTR("X freq."), xf, lcd_shaper_x_freq);
+    MENU_ITEM_TOGGLE_P(PSTR("Y shaper"), lcd_shaper_type_name(c.axis[Y_AXIS]), lcd_shaper_y_type);
+    MENU_ITEM_TOGGLE_P(PSTR("Y freq."), yf, lcd_shaper_y_freq);
+    MENU_ITEM_TOGGLE_P(PSTR("Press.adv"), pa, lcd_pressure_advance_edit);
+    MENU_ITEM_FUNCTION_P(PSTR("Shaper defaults"), lcd_shaper_defaults);
+    MENU_END();
+}
+#endif //MOTION_ENGINE
 #endif //E_STEPS_MENU
 
 void lcd_hw_setup_menu(void)                      // can not be "static"
@@ -4613,6 +4701,9 @@ static void lcd_settings_menu()
 
     SETTINGS_FANS_CHECK();
     SETTINGS_SILENT_MODE();
+#if defined(E_STEPS_MENU) && defined(MOTION_ENGINE)
+    if (!printer_active()) MENU_ITEM_SUBMENU_P(PSTR("Input shaper, PA"), lcd_motion_tuning_menu);
+#endif
 
     if(!farm_mode)
     {

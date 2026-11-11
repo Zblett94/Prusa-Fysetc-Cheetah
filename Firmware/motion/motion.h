@@ -18,10 +18,16 @@ void motion_set_weight_adjust(const input_shaper::WeightAdjustConfig &config);
 void motion_set_bed_weight(float grams);
 //! Store the input shaper configuration in the EEPROM (M593 W)
 void motion_store_shaper_config();
+//! Input shaper configuration as set (motion_shaper_config() has the Y frequency adjusted
+//! to the bed weight of M74)
+const input_shaper::Config &motion_shaper_setting();
 
 //! Pressure advance (s) and its smoothing time (s); waits until the motion stops.
 void motion_set_pressure_advance(float k, float smooth_time);
 float motion_pressure_advance();
+//! Store the pressure advance and its smoothing time as the power-on default (LCD menu).
+//! M900 K / M572 S of a print still override it until the next start.
+void motion_store_pressure_advance();
 float motion_pa_smooth_time();
 
 //! Report settings and statistics (M593 / M572 without parameters)

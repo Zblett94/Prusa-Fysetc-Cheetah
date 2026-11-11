@@ -672,7 +672,10 @@ static Sheets * const EEPROM_Sheets_base = (Sheets*)(EEPROM_SHEETS_BASE);
 #define EEPROM_INPUT_SHAPER_SIZE 56
 #define EEPROM_INPUT_SHAPER (EEPROM_CHECK_FILAMENT-EEPROM_INPUT_SHAPER_SIZE) // StoredShaper
 //This is supposed to point to last item to allow EEPROM overrun check. Please update when adding new items.
-#define EEPROM_LAST_ITEM EEPROM_INPUT_SHAPER
+// STM32 port: default pressure advance of the motion engine (StoredPressureAdvance, motion/motion.cpp)
+#define EEPROM_PRESSURE_ADVANCE_SIZE 9
+#define EEPROM_PRESSURE_ADVANCE (EEPROM_INPUT_SHAPER-EEPROM_PRESSURE_ADVANCE_SIZE)
+#define EEPROM_LAST_ITEM EEPROM_PRESSURE_ADVANCE
 // !!!!!
 // !!!!! this is end of EEPROM section ... all updates MUST BE inserted before this mark !!!!!
 // !!!!!
