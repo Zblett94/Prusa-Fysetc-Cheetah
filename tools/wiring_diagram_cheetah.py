@@ -1,172 +1,195 @@
 # Generates docs/wiring_cheetah.svg: python3 tools/wiring_diagram_cheetah.py > docs/wiring_cheetah.svg
-# Connector positions follow FYSETC's board render (github.com/FYSETC/Cheetah_V3.0), simplified.
+# Dark theme, numbered connectors. The board layout follows FYSETC's render of the
+# Cheetah V3.0 (github.com/FYSETC/Cheetah_V3.0), simplified.
 import html
-W, H = 1960, 1400
-BX0, BY0, BX1, BY1 = 600, 330, 1330, 900   # board outline
+W, H = 2000, 1085
+BG, PANEL, EDGE, TXT, MUTED = '#0d1117', '#161b22', '#30363d', '#e6edf3', '#8b949e'
+C = {'motor': '#58a6ff', 'power': '#ff7b72', 'fan': '#bc8cff', 'sensor': '#3fb950',
+     'lcd': '#f0883e', 'comm': '#39c5cf', 'jumper': '#e3b341', 'unused': '#6e7681'}
+FONT = "Inter, 'Segoe UI', Helvetica, Arial, sans-serif"
 out = []
 def esc(s): return html.escape(s, quote=True)
-def text(x, y, s, size=14, anchor='start', weight='normal', fill='#1f2933'):
-    out.append(f'<text x="{x}" y="{y}" font-size="{size}" text-anchor="{anchor}" font-weight="{weight}" fill="{fill}">{esc(s)}</text>')
-def rect(x, y, w, h, fill, stroke='none', rx=4, sw=1.5):
-    out.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" fill="{fill}" stroke="{stroke}" stroke-width="{sw}"/>')
-def line(pts, color):
-    d = 'M' + ' L'.join(f'{x},{y}' for x, y in pts)
-    out.append(f'<path d="{d}" stroke="{color}" stroke-width="2" fill="none"/>')
-    out.append(f'<circle cx="{pts[0][0]}" cy="{pts[0][1]}" r="3.5" fill="{color}"/>')
+def text(x, y, s, size=14, anchor='start', weight='400', fill=TXT, spacing=None):
+    ls = f' letter-spacing="{spacing}"' if spacing else ''
+    out.append(f'<text x="{x:.1f}" y="{y:.1f}" font-size="{size}" text-anchor="{anchor}" font-weight="{weight}" fill="{fill}"{ls}>{esc(s)}</text>')
+def rect(x, y, w, h, fill, stroke='none', rx=4, sw=1.5, extra=''):
+    out.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="{rx}" fill="{fill}" stroke="{stroke}" stroke-width="{sw}" {extra}/>')
+def circle(x, y, r, fill, stroke='none', sw=1.5):
+    out.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="{fill}" stroke="{stroke}" stroke-width="{sw}"/>')
+def badge(x, y, label, group, r=13):
+    circle(x, y, r, C[group], BG, 2)
+    text(x, y + 4.5, label, 12.5 if len(label) < 2 else 11.5, 'middle', '700', '#0d1117')
 
-C = {'motor': '#2563eb', 'power': '#dc2626', 'sensor': '#059669', 'fan': '#7c3aed',
-     'lcd': '#d97706', 'comm': '#475569', 'unused': '#9ca3af', 'jumper': '#b45309'}
-
-def box(bx, by, bw, title, lines, group):
+# ---- board (coordinates of FYSETC's render, 855 x 590, scaled) -----------------
+BX, BY, S = 585, 190, 0.97
+def bx(v): return BX + v * S
+def by(v): return BY + v * S
+def part(x0, y0, x1, y1, name, group, size=11, dim=False, pins=0, vertical=False):
+    """a connector on the board; returns its rectangle in page coordinates"""
+    x, y, w, h = bx(x0), by(y0), (x1 - x0) * S, (y1 - y0) * S
     col = C[group]
-    bh = 24 + 17 * len(lines)
-    rect(bx, by, bw, bh, '#ffffff', col, 6, 2)
-    rect(bx, by, 6, bh, col, 'none', 3)
-    text(bx + 14, by + 18, title, 14, weight='bold', fill=col)
-    for i, l in enumerate(lines):
-        text(bx + 14, by + 36 + 17 * i, l, 12.5)
-    return bh
-
-def callout(p, bx, by, bw, title, lines, group, via=None, side=None):
-    """connector point p -> label box; the leader ends on the given side of the box"""
-    bh = 24 + 17 * len(lines)
-    if side is None:
-        side = 'right' if p[0] > bx + bw else 'left' if p[0] < bx else ('bottom' if p[1] > by else 'top')
-    end = {'right': (bx + bw, by + bh / 2), 'left': (bx, by + bh / 2),
-           'top': (min(max(p[0], bx + 20), bx + bw - 20), by),
-           'bottom': (min(max(p[0], bx + 20), bx + bw - 20), by + bh)}[side]
-    line([p] + (via or []) + [end], C[group])
-    box(bx, by, bw, title, lines, group)
-
-def conn(x, y, w, h, name, group, size=11.5):
-    rect(x, y, w, h, '#f8fafc', C[group], 3, 2)
-    text(x + w / 2, y + h / 2 + 4, name, size, 'middle', 'bold', '#0f172a')
+    rect(x, y, w, h, '#10151c' if dim else '#1b222c', col, 4, 1.2 if dim else 2, 'opacity="0.75"' if dim else '')
+    if pins:  # pin dots along the long side
+        for i in range(pins):
+            if vertical: circle(x + w / 2, y + h * (i + 0.5) / pins, 1.6, col)
+            else: circle(x + w * (i + 0.5) / pins, y + h - 7, 1.6, col)
+    if name:
+        text(x + w / 2, y + (h / 2 + 4 if not pins or vertical else h / 2 + 1), name, size, 'middle', '600', MUTED if dim else TXT)
     return (x, y, w, h)
 
-def T(c): return (c[0] + c[2] / 2, c[1])
-def B(c): return (c[0] + c[2] / 2, c[1] + c[3])
-def R(c): return (c[0] + c[2], c[1] + c[3] / 2)
-def L(c): return (c[0], c[1] + c[3] / 2)
+out.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="{FONT}">')
+out.append('<defs><linearGradient id="pcb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#151b24"/><stop offset="1" stop-color="#0a0e14"/></linearGradient>'
+           '<filter id="sh" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000" flood-opacity="0.55"/></filter></defs>')
+rect(0, 0, W, H, BG, rx=0)
 
-out.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="Helvetica, Arial, sans-serif">')
-rect(0, 0, W, H, '#f1f5f9', rx=0)
-text(W / 2, 46, 'Original Prusa i3 MK3S  →  FYSETC Cheetah V3.0', 28, 'middle', 'bold', '#0f172a')
-text(W / 2, 74, 'Where every cable plugs in (firmware: pio run -e MK3S_CHEETAH_V3). Simplified layout: positions are approximate, go by the names printed on the board.', 15, 'middle', fill='#475569')
+# header
+text(60, 64, 'MK3S  →  FYSETC Cheetah V3.0', 30, weight='700')
+text(60, 92, 'WIRING GUIDE', 13, weight='600', fill=MUTED, spacing='2.5')
+text(W - 60, 58, 'Prusa-Firmware 3.14.1  ·  pio run -e MK3S_CHEETAH_V3', 14, 'end', fill=MUTED)
+text(W - 60, 80, 'Simplified layout: go by the names printed on the board', 14, 'end', fill=MUTED)
+out.append(f'<line x1="60" y1="112" x2="{W - 60}" y2="112" stroke="{EDGE}" stroke-width="1"/>')
 
-# board
-rect(BX0, BY0, BX1 - BX0, BY1 - BY0, '#111827', '#000000', 14, 3)
-rect(BX0 + 10, BY0 + 10, BX1 - BX0 - 20, BY1 - BY0 - 20, 'none', '#374151', 10, 1)
-text(BX0 + 30, BY0 + 300, 'Cheetah V3.0', 24, 'start', 'bold', '#e5e7eb')
-text(BX0 + 30, BY0 + 322, 'STM32F446RC · 4× TMC2209', 13, fill='#9ca3af')
-rect(BX0 + 500, BY0 + 265, 80, 80, '#1f2937', '#4b5563', 4)
-text(BX0 + 540, BY0 + 310, 'STM32', 12, 'middle', 'bold', '#9ca3af')
+# board body
+rect(bx(22), by(0), 818 * S, 572 * S, 'url(#pcb)', '#3d444d', 16, 2, 'filter="url(#sh)"')
+rect(bx(30), by(8), 802 * S, 556 * S, 'none', '#222a35', 11, 1)
+for hx, hy in ((190, 38), (668, 38), (298, 325), (793, 527)):
+    circle(bx(hx), by(hy), 13, '#0d1117', '#c9a227', 4)
+text(bx(52), by(292), 'Cheetah V3.0', 21, weight='700', fill='#c9d1d9')
+text(bx(52), by(314), 'STM32F446 · 4× TMC2209', 11.5, fill=MUTED)
+# chips
+for cx, n in ((112, 'X'), (268, 'Y'), (422, 'Z'), (578, 'E')):
+    rect(bx(cx - 22), by(140), 44 * S, 44 * S, '#0a0d12', '#2b323c', 3, 1)
+    text(bx(cx - 1), by(160), 'TMC', 8.5, 'middle', '600', '#59636e'); text(bx(cx - 1), by(172), n, 9.5, 'middle', '700', '#7d8590')
+rect(bx(556), by(292), 80 * S, 80 * S, '#0a0d12', '#2b323c', 4, 1)
+text(bx(595), by(336), 'STM32', 10.5, 'middle', '600', '#59636e')
+circle(bx(74), by(398), 34, '#0a0d12', '#2b323c', 1.5)   # capacitor
+rect(bx(40), by(446), 62 * S, 30 * S, '#12305c', '#1f4b8f', 4, 1)  # fuse
 
-# top edge: motors, SD
-mot = {}
-for name, x in (('X', 20), ('Y', 150), ('Z', 262), ('Z ', 374), ('E', 486)):
-    mot[name] = conn(BX0 + x, BY0 + 14, 100, 34, name.strip() + ' motor', 'motor')
-    rect(BX0 + x + 27, BY0 + 110, 46, 46, '#1f2937', '#4b5563', 3)
-    text(BX0 + x + 50, BY0 + 138, 'TMC', 10.5, 'middle', 'bold', '#9ca3af')
-sd = conn(BX0 + 618, BY0 + 14, 96, 70, 'microSD', 'lcd')
-usb = conn(BX0 + 650, BY0 + 150, 64, 50, 'USB-C', 'comm')
-exp1 = conn(BX0 + 596, BY0 + 262, 56, 150, 'EXP1', 'lcd')
-exp2 = conn(BX0 + 660, BY0 + 262, 56, 150, 'EXP2', 'lcd')
-exp3 = conn(BX0 + 596, BY0 + 422, 120, 40, 'EXP3', 'unused')
-
-# DIAG jumpers, BT0, Pi header
-diag = []
-for n, x in (('X', 110), ('Y', 180), ('Z', 430)):
-    rect(BX0 + x, BY0 + 200, 58, 24, '#fbbf24', '#92400e', 3)
-    text(BX0 + x + 29, BY0 + 216, n + '-DIAG', 10.5, 'middle', 'bold', '#78350f')
-    diag.append((BX0 + x, BY0 + 212))
-bt0 = conn(BX0 + 500, BY0 + 200, 86, 24, '3V3 B0 G', 'jumper', 10.5)
-pi = conn(BX0 + 300, BY0 + 236, 120, 30, 'Pi header', 'comm')
-
-# middle 3-pin connectors and the fan voltage jumpers
-mid = conn(BX0 + 300, BY0 + 345, 46, 50, 'Probe', 'sensor', 10.5)
-fil = conn(BX0 + 352, BY0 + 345, 46, 50, 'FIL', 'sensor', 10.5)
-rgb = conn(BX0 + 404, BY0 + 345, 46, 50, 'RGB', 'sensor', 10.5)
-for i in range(3):
-    rect(BX0 + 296 + i * 52, BY0 + 425, 46, 20, '#fbbf24', '#92400e', 3)
-    text(BX0 + 319 + i * 52, BY0 + 439, '5 12 24', 9.5, 'middle', 'bold', '#78350f')
-text(BX0 + 296, BY0 + 462, 'fan voltage jumpers', 10.5, fill='#fde68a')
-
-# bottom edge
-pw = conn(BX0 + 14, BY0 + 516, 74, 40, '24V in', 'power')
-bed = conn(BX0 + 96, BY0 + 516, 74, 40, 'Bed', 'power')
-he = conn(BX0 + 178, BY0 + 516, 74, 40, 'E0 heat', 'power')
+mx = part(55, 12, 155, 56, 'X', 'motor', 12, pins=4)
+my = part(215, 12, 315, 56, 'Y', 'motor', 12, pins=4)
+mz1 = part(325, 12, 425, 56, 'Z', 'motor', 12, pins=4)
+mz2 = part(432, 12, 532, 56, 'Z', 'motor', 12, pins=4)
+me = part(540, 12, 640, 56, 'E', 'motor', 12, pins=4)
+sd = part(708, 24, 828, 132, 'microSD', 'lcd', 11.5)
+usb = part(762, 178, 828, 248, 'USB-C', 'comm', 11)
+exp1 = part(672, 268, 744, 416, 'EXP1', 'lcd', 11.5)
+exp2 = part(756, 268, 828, 416, 'EXP2', 'lcd', 11.5)
+exp3 = part(668, 432, 828, 498, 'EXP3', 'unused', 11, dim=True)
+pi = part(352, 262, 472, 300, 'Pi header', 'comm', 10.5)
+boot = part(538, 232, 640, 256, '3V3 B0 G', 'jumper', 9.5)
+jx = part(118, 214, 178, 236, 'X-DIAG', 'jumper', 9)
+jy = part(206, 232, 266, 254, 'Y-DIAG', 'jumper', 9)
+jz = part(462, 212, 522, 234, 'Z-DIAG', 'jumper', 9)
+probe = part(342, 364, 386, 430, 'Probe', 'sensor', 9.5)
+fil = part(392, 364, 436, 430, 'FIL', 'sensor', 9.5)
+rgb = part(442, 364, 486, 430, 'RGB', 'sensor', 9.5)
+fj0 = part(340, 440, 386, 458, '5 12 24', 'jumper', 8)
+fj1 = part(390, 440, 436, 458, '5 12 24', 'jumper', 8)
+fj2 = part(440, 440, 486, 458, '5 12 24', 'unused', 8, dim=True)
+bl = part(530, 462, 640, 490, 'BLTouch', 'unused', 9.5, dim=True)
+pw = part(52, 504, 128, 560, '24V IN', 'power', 10.5)
+bed = part(142, 504, 218, 560, 'BED', 'power', 10.5)
+he = part(232, 504, 308, 560, 'E0', 'power', 10.5)
 bot = {}
 for i, (n, g) in enumerate((('FAN0', 'fan'), ('FAN1', 'fan'), ('FAN2', 'unused'), ('X-MIN', 'unused'), ('Y-MIN', 'unused'),
                             ('Z-MIN', 'unused'), ('T0', 'sensor'), ('T1', 'sensor'), ('T2', 'sensor'))):
-    bot[n] = conn(BX0 + 268 + i * 50, BY0 + 516, 46, 40, n, g, 10)
+    bot[n] = part(338 + i * 48.5, 504, 380 + i * 48.5, 560, n, g, 9, dim=(g == 'unused'))
 
-# ---- callouts -------------------------------------------------------------
-LX, LW = 40, 440       # left column
-RX, RW = 1480, 440     # right column
-callout(T(mot['X']), LX, 120, LW, 'X motor', ['X-axis stepper motor (XYE cable bundle).', 'MCU: step PC0, dir PC1, enable PC3.'], 'motor',
-        via=[(T(mot['X'])[0], 270), (520, 270), (520, 150)], side='right')
-callout(T(mot['Y']), LX, 200, LW, 'Y motor', ['Y-axis stepper motor.', 'MCU: step PC14, dir PC13, enable PC15.'], 'motor',
-        via=[(T(mot['Y'])[0], 290), (540, 290), (540, 230)], side='right')
-zl, zr = T(mot['Z']), T(mot['Z '])
-callout(zl, 700, 110, 330, 'Z motors (both)', ['Left and right Z motor on the two Z', 'connectors (one driver, as on the EINSy).'], 'motor',
-        via=[(zl[0], 250)], side='bottom')
-line([zr, (zr[0], 250), (zl[0], 250)], C['motor'])
-callout(T(mot['E']), 1060, 110, 370, 'Extruder motor', ['FYSETC NEMA 14 on the BMG 3:1 extruder.', 'Firmware limits it to 0.33 A. If it turns', 'backwards: turn the plug around.'], 'motor', side='bottom')
+def top(c): return (c[0] + c[2] / 2, c[1] - 20)
+def below(c): return (c[0] + c[2] / 2, c[1] + c[3] + 20)
+def right(c): return (c[0] + c[2] + 22, c[1] + c[3] / 2)
+def corner(c): return (c[0] + c[2] - 2, c[1] + 2)
+def stem(c, p, group):
+    out.append(f'<line x1="{c[0] + c[2] / 2:.1f}" y1="{(c[1] if p[1] < c[1] else c[1] + c[3]):.1f}" x2="{p[0]:.1f}" y2="{p[1]:.1f}" stroke="{C[group]}" stroke-width="1.5" opacity="0.6"/>')
+def hstem(c, p, group):
+    out.append(f'<line x1="{c[0] + c[2]:.1f}" y1="{p[1]:.1f}" x2="{p[0]:.1f}" y2="{p[1]:.1f}" stroke="{C[group]}" stroke-width="1.5" opacity="0.6"/>')
 
-callout(diag[0], LX, 290, LW, 'Jumpers to set (amber on the board)', [
-    'X, Y, Z DIAG: installed (sensorless homing, crash detection).',
-    'Fan voltage of FAN0 and FAN1 (5 / 12 / 24): on 5.',
-    'Probe voltage jumper: on 5V.',
-    'B0 (boot): on G for normal use; on 3V3 only to flash.'], 'jumper',
-        via=[(560, diag[0][1]), (560, 336)], side='right')
+for c, n in ((mx, '1'), (my, '2'), (mz1, '3'), (mz2, '3'), (me, '4')):
+    stem(c, top(c), 'motor'); badge(*top(c), n, 'motor')
+for c, n, g in ((pw, '5', 'power'), (bed, '6', 'power'), (he, '7', 'power'), (bot['FAN0'], '8', 'fan'), (bot['FAN1'], '9', 'fan'),
+                (bot['T0'], '10', 'sensor'), (bot['T1'], '11', 'sensor'), (bot['T2'], '12', 'sensor')):
+    stem(c, below(c), g); badge(*below(c), n, g)
+for c, n, g in ((sd, '16', 'lcd'), (usb, '17', 'comm'), (exp2, '15', 'lcd')):
+    hstem(c, right(c), g); badge(*right(c), n, g)
+badge(*corner(exp1), '15', 'lcd', 11)
+badge(*corner(probe), '13', 'sensor', 11); badge(*corner(fil), '14', 'sensor', 11); badge(*corner(rgb), '14', 'sensor', 11)
+badge(*corner(pi), '18', 'comm', 11)
+for c in (jx, jy, jz): badge(*corner(c), 'A', 'jumper', 10)
+for c in (fj0, fj1): badge(c[0] + c[2] / 2, c[1] + c[3] + 13, 'B', 'jumper', 10)
+badge(*corner(boot), 'D', 'jumper', 10)
 
-callout(B(pw), LX, 430, LW, 'Power supply 24 V', ['PSU + and − to the power input terminals.', 'Check the polarity printed on the board.'], 'power',
-        via=[(B(pw)[0], 960), (540, 960), (540, 460)], side='right')
-callout(B(bed), LX, 510, LW, 'Heatbed MK52', ['Both bed wires to the Heated-Bed terminals', '(on-board MOSFET, MCU PC8).'], 'power',
-        via=[(B(bed)[0], 980), (520, 980), (520, 540)], side='right')
-callout(B(he), LX, 590, LW, 'Hotend heater (40 W)', ['To the E0 heater terminals (MCU PC7).'], 'power',
-        via=[(B(he)[0], 1000), (500, 1000), (500, 612)], side='right')
+# ---- side panels ---------------------------------------------------------------
+def section(x, y, w, title, group, items, note=None):
+    col = C[group]
+    h = 44 + sum(30 + 17 * len(l) for _, _, l in items) + (8 + 16 * len(note) if note else 0)
+    rect(x, y, w, h, PANEL, EDGE, 10, 1)
+    rect(x, y + 12, 4, 20, col, rx=2)
+    text(x + 18, y + 27, title.upper(), 12.5, weight='700', fill=col, spacing='1.6')
+    cy = y + 46
+    for b, t, lines in items:
+        if b: badge(x + 30, cy + 9, b, group, 12)
+        text(x + 54, cy + 14, t, 14.5, weight='600')
+        for i, l in enumerate(lines):
+            text(x + 54, cy + 33 + 17 * i, l, 12.5, fill=MUTED)
+        cy += 30 + 17 * len(lines)
+    if note:
+        for i, l in enumerate(note):
+            text(x + 18, cy + 12 + 16 * i, l, 12, fill='#d29922')
+    return y + h + 16
 
-callout(B(bot['FAN0']), LX, 1040, LW, 'Print fan (5 V blower)', ['FAN0, voltage jumper on 5. Red = +, black = −.', 'Leave the tachometer wire unconnected.'], 'fan',
-        via=[(B(bot['FAN0'])[0], 1070)], side='right')
-callout(B(bot['FAN1']), LX, 1120, LW, 'Hotend fan (5 V Noctua)', ['FAN1, voltage jumper on 5.', 'Leave the tachometer wire unconnected.'], 'fan',
-        via=[(B(bot['FAN1'])[0], 1150)], side='right')
-callout(B(bot['X-MIN']), LX, 1200, LW, 'Leave empty', ['FAN2, X-MIN, Y-MIN, Z-MIN, EXP3 and the PSU', 'power panic cable are not used. Nothing may be', 'plugged into X/Y/Z-MIN with the DIAG jumpers on.'], 'unused',
-        via=[(B(bot['X-MIN'])[0], 1240)], side='right')
+LX, RX, PW = 60, 1470, 470
+y = 136
+y = section(LX, y, PW, 'Motors', 'motor', [
+    ('1', 'X motor', ['X-axis stepper']),
+    ('2', 'Y motor', ['Y-axis stepper']),
+    ('3', 'Z motors', ['Left and right motor on the two Z connectors']),
+    ('4', 'Extruder motor', ['FYSETC NEMA 14 on the BMG 3:1 extruder (0.33 A).', 'Runs backwards? Turn the plug around.'])])
+y = section(LX, y, PW, 'Power and heaters', 'power', [
+    ('5', 'Power supply 24 V', ['PSU + and − ; check the polarity marks']),
+    ('6', 'Heatbed MK52', ['Both bed wires']),
+    ('7', 'Hotend heater', ['40 W heater cartridge'])],
+    note=['Terminal order not confirmed: read the board labels.'])
+y = section(LX, y, PW, 'Fans', 'fan', [
+    ('8', 'Print fan', ['5 V blower on FAN0. Tachometer wire unconnected.']),
+    ('9', 'Hotend fan', ['5 V Noctua on FAN1. Tachometer wire unconnected.'])])
+y = section(LX, y, PW, 'Jumpers', 'jumper', [
+    ('A', 'X, Y, Z DIAG: installed', ['Sensorless homing and crash detection']),
+    ('B', 'Fan voltage FAN0, FAN1: 5', ['The MK3S fans are 5 V fans']),
+    ('C', 'Probe voltage: 5V', ['Next to the Probe connector (not drawn)']),
+    ('D', 'B0: on G', ['On 3V3 only while flashing over USB'])])
 
-t0, t1, t2 = B(bot['T0']), B(bot['T1']), B(bot['T2'])
-callout(t1, 1080, 1010, 360, 'Thermistors', ['T0: hotend (MCU PC5)', 'T1: heatbed (MCU PB0)', 'T2: P.I.N.D.A. v2 (MCU PB1); a SuperPINDA', 'has none (see docs/WIRING_CHEETAH.md)'], 'sensor', side='top')
-line([t0, (t0[0], 960), (t1[0], 960)], C['sensor']); line([t2, (t2[0], 960), (t1[0], 960)], C['sensor'])
+y = 136
+y = section(RX, y, PW, 'Display and connections', 'lcd', [
+    ('15', 'MK3S LCD', ['Flat cables P1 → EXP1, P2 → EXP2.', 'Blank or garbled screen: a plug is the wrong way round.']),
+    ('16', 'SD card', ['Use this slot or the one of the LCD, not both'])])
+y = section(RX, y, PW, 'USB and MMU', 'comm', [
+    ('17', 'USB-C', ['PC / OctoPrint, and flashing']),
+    ('18', 'MMU2S / MMU3 (optional)', ['TX1 → MMU RX.  GND ↔ GND.', 'RX1 ← MMU TX through 1 kΩ, with 2 kΩ to GND.', 'No Raspberry Pi needed.'])])
+y = section(RX, y, PW, 'Sensors', 'sensor', [
+    ('10', 'Hotend thermistor', ['T0']),
+    ('11', 'Heatbed thermistor', ['T1']),
+    ('12', 'P.I.N.D.A. thermistor', ['T2 (PINDA v2 only; a SuperPINDA has none)']),
+    ('13', 'P.I.N.D.A. probe', ['Signal, 5 V and GND on the Probe connector']),
+    ('14', 'IR filament sensor', ['Signal and GND on FIL-DET, 5 V from RGB.', 'BAT85 diode in the signal wire, band to the sensor.'])],
+    note=['Order of Probe / FIL / RGB not confirmed: read the board labels.'])
 
-callout(R(sd), RX, 120, RW, 'SD card', ['Use the slot of the LCD or this one,', 'not both at once (same SPI bus).'], 'lcd', via=[(1440, R(sd)[1]), (1440, 150)], side='left')
-callout(R(usb), RX, 210, RW, 'USB-C', ['PC / OctoPrint, and flashing (DFU) with the', 'B0 jumper on 3V3.'], 'comm', via=[(1420, R(usb)[1]), (1420, 240)], side='left')
-callout(R(exp2), RX, 300, RW, 'MK3S LCD: EXP1 and EXP2', ['The two flat cables of the original LCD:', 'P1 → EXP1, P2 → EXP2. Check the orientation', '(EXP1 pin 1 = 5 V, pin 2 = GND): a wrong', 'way round shows a blank or garbled screen.'], 'lcd',
-        via=[(1400, R(exp2)[1]), (1400, 346)], side='left')
-e1 = T(exp1)
-line([e1, (e1[0], BY0 + 246), (BX1 + 40, BY0 + 246), (BX1 + 40, R(exp2)[1])], C['lcd'])
+# ---- below the board -----------------------------------------------------------
+fy = by(572) + 70
+fx, fw = bx(22), 818 * S
+rect(fx, fy, fw, 118, PANEL, EDGE, 10, 1)
+rect(fx, fy + 12, 4, 20, C['unused'], rx=2)
+text(fx + 18, fy + 27, 'LEAVE EMPTY', 12.5, weight='700', fill=C['unused'], spacing='1.6')
+text(fx + 18, fy + 54, 'FAN2 · X-MIN · Y-MIN · Z-MIN · EXP3 · BLTouch · PSU power panic cable', 14, weight='600')
+text(fx + 18, fy + 76, 'Nothing may be plugged into X/Y/Z-MIN while the DIAG jumpers are installed.', 12.5, fill=MUTED)
+text(fx + 18, fy + 98, 'Power panic and the fan speed check are not used in this firmware.', 12.5, fill=MUTED)
 
-# the three small connectors in the middle leave the board through the free strip above the bottom row
-y1, y2, y3 = BY0 + 478, BY0 + 490, BY0 + 502
-pr, fl, rg = B(mid), B(fil), B(rgb)
-callout(pr, RX, 440, RW, 'P.I.N.D.A. probe', ['Probe connector: signal, 5 V, GND (MCU PA0).', 'Probe voltage jumper on 5V.'], 'sensor',
-        via=[(pr[0], BY0 + 410), (BX0 + 280, BY0 + 410), (BX0 + 280, y3), (1380, y3), (1380, 470)], side='left')
-callout(fl, RX, 520, RW, 'IR filament sensor', ['FIL-DET: signal and GND (MCU PA1).', '5 V for the sensor from the RGB (Neopixel)', 'connector. Schottky diode (BAT85) in the', 'signal wire, band toward the sensor.'], 'sensor',
-        via=[(fl[0], BY0 + 404), (BX0 + 470, BY0 + 404), (BX0 + 470, y2), (1360, y2), (1360, 570)], side='left')
-line([rg, (rg[0], BY0 + 404)], C['sensor'])
-callout(R(pi), RX, 630, RW, 'MMU2S / MMU3 (optional)', ['Raspberry Pi header UART, no Pi needed:', 'TX1 (PA9) → MMU RX', 'RX1 (PA10) ← MMU TX through a divider:', '1 kΩ in series, 2 kΩ to GND (MMU is 5 V)', 'GND ↔ GND. MMU power from the PSU.'], 'comm',
-        via=[(BX0 + 484, R(pi)[1]), (BX0 + 484, y1), (1340, y1), (1340, 690)], side='left')
-
-# legend
-lx, ly = 1480, 1040
-rect(lx, ly, 440, 250, '#ffffff', '#cbd5e1', 8)
-text(lx + 16, ly + 26, 'Colours', 15, weight='bold')
-for i, (g, n) in enumerate((('motor', 'Stepper motors'), ('power', 'Power, heaters'), ('sensor', 'Sensors, thermistors'),
-                            ('fan', 'Fans'), ('lcd', 'LCD, SD card'), ('comm', 'USB, MMU'), ('jumper', 'Jumpers'), ('unused', 'Not used'))):
-    rect(lx + 18 + (i % 2) * 210, ly + 44 + (i // 2) * 28, 18, 14, C[g], rx=3)
-    text(lx + 44 + (i % 2) * 210, ly + 56 + (i // 2) * 28, n, 13)
-text(lx + 16, ly + 180, 'First start: run the Wizard, then', 13)
-text(lx + 16, ly + 198, 'Calibration > E-steps cal.', 13)
-text(lx + 16, ly + 222, 'Not tested on hardware yet: check each', 13, fill='#b91c1c')
-text(lx + 16, ly + 240, 'connection against the board silkscreen.', 13, fill='#b91c1c')
+ly = fy + 138
+rect(fx, ly, fw, 92, PANEL, EDGE, 10, 1)
+for i, (g, n) in enumerate((('motor', 'Motors'), ('power', 'Power, heaters'), ('fan', 'Fans'), ('sensor', 'Sensors'),
+                            ('lcd', 'Display, SD'), ('comm', 'USB, MMU'), ('jumper', 'Jumpers'), ('unused', 'Not used'))):
+    cx = fx + 22 + (i % 4) * (fw - 30) / 4
+    cy = ly + 24 + (i // 4) * 26
+    circle(cx + 6, cy, 6, C[g]); text(cx + 22, cy + 4.5, n, 13, fill='#c9d1d9')
+text(fx + 22, ly + 78, 'First start: run the Wizard, then Calibration › E-steps cal.   Not yet tested on hardware.', 12.5, fill='#d29922')
 out.append('</svg>')
 print('\n'.join(out))
