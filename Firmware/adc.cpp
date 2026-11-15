@@ -53,7 +53,10 @@ static void adc_analog_pins()
 	for (uint8_t i = 0; i < 32; i++) {
 		if (ADC_CHAN_MSK & (1UL << i)) {
 			const uint32_t pin = adc_channel_pin(i);
-			if (pin >= NUM_DIGITAL_PINS) continue; // internal channel
+			// internal channel (temperature sensor, VREFINT). The analog pins are given as the
+			// core's PIN_Ax aliases (0xC0 + n), which are above NUM_DIGITAL_PINS as well:
+			// compare with the marker only (fastio resolves the aliases).
+			if (pin == NUM_DIGITAL_PINS) continue;
 			GPIO_TypeDef *port = _FIO_PORT(pin);
 			const uint32_t b = fastio::pin_bit(pin);
 			port->PUPDR &= ~(3UL << (b * 2));
@@ -142,6 +145,25 @@ static void adc_setmux(uint8_t ch)
 #endif // STM32 family
 
 #endif //__AVR__
+
+#ifndef __AVR__
+//! D9 of the STM32 port: raw readings of the ADC channels in use (diagnostics)
+void adc_report()
+{
+	puts_P(PSTR("D9 - ADC (10 bit average of the last cycle, 1023 = 3.3 V)"));
+	for (uint8_t ch = 0, i = 0; ch < 32; ch++) {
+		if (!(ADC_CHAN_MSK & (1UL << ch))) continue;
+		const uint32_t pin = adc_channel_pin(ch);
+		const uint16_t raw = adc_values[i++] / ADC_OVRSAMPL;
+		if (pin == NUM_DIGITAL_PINS)
+			printf_P(PSTR("  ch%2u internal  %4u\n"), ch, raw);
+		else
+			printf_P(PSTR("  ch%2u P%c%-2u      %4u  %4u mV  mode %lu\n"), ch, 'A' + (fastio::pin_name(pin) >> 4),
+				fastio::pin_bit(pin), raw, (uint16_t)((uint32_t)raw * 3300 / 1023),
+				(unsigned long)((_FIO_PORT(pin)->MODER >> (fastio::pin_bit(pin) * 2)) & 3));
+	}
+}
+#endif
 
 static void adc_reset()
 {

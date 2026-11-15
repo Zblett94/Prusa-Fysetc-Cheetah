@@ -19,6 +19,9 @@ http://resnet.uoregon.edu/~gurney_j/jmpc/bitwise.html
 
 extern volatile uint8_t adc_channel;
 extern volatile uint16_t adc_values[ADC_CHAN_CNT];
+#ifndef __AVR__
+void adc_report(); //!< D9: raw ADC readings (STM32 port)
+#endif
 
 extern void adc_init();
 extern void adc_start_cycle(); //should be called from an atomic context only

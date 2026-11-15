@@ -8499,6 +8499,11 @@ void process_commands()
     Writes the current time in the log file.
     */
 #endif //DEBUG_DCODES
+#if !defined(__AVR__) && !defined(DEBUG_DCODES)
+	// STM32 port: D9 prints the raw readings of the thermistor inputs (bring-up diagnostics)
+	case 9:
+		adc_report(); break;
+#endif
 
 #ifdef XFLASH_DUMP
     /*!
