@@ -43,7 +43,7 @@ Checked against the BIGTREETECH schematic and pin diagram of the V3.0 board
 
 | Jumper | Setting | Why |
 |---|---|---|
-| DIAG X, Y, Z (next to the drivers) | **installed** | StallGuard output of the TMC2209 to X-STOP/Y-STOP/Z-STOP: sensorless homing, crash detection, Z calibration |
+| DIAG X, Y, Z (next to the drivers) | **installed** | StallGuard output of the TMC2209 to X-STOP/Y-STOP/Z-STOP: sensorless homing, Z calibration (no crash detection: X/Y print in spreadCycle) |
 | DIAG E0 | **removed** | E0-STOP is used by the filament sensor |
 | Neo-PWR (next to the Neopixel header) | **onboard 5 V** (default) | "PWR" rail = 5 V for the Z-PROBE, TFT and Neopixel headers |
 

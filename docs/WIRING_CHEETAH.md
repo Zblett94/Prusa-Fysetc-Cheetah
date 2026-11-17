@@ -20,7 +20,7 @@ are not used.
 
 Everything else of the MK3S firmware works as on the SKR Mini port: original LCD menus
 (English), its SD card slot, P.I.N.D.A. with temperature compensation, XYZ / Z / first
-layer calibration, crash detection and sensorless homing, IR filament sensor, input
+layer calibration, sensorless homing, IR filament sensor, input
 shaper and pressure advance (MK3.5 motion), thermal model.
 
 Not available: other languages (the 256 KiB flash holds only English), power panic
@@ -69,7 +69,7 @@ reverse the motor: turn its plug around or swap the two wires of one coil (or se
 
 | Jumper | Setting | Why |
 |---|---|---|
-| X, Y, Z DIAG (JP3, JP4, JP5, next to X-min/Y-min/Z-min) | **installed** | StallGuard of the TMC2209 to the X/Y/Z-min inputs: sensorless homing, crash detection, Z calibration. Leave the X-min/Y-min/Z-min connectors empty |
+| X, Y, Z DIAG (JP3, JP4, JP5, next to X-min/Y-min/Z-min) | **installed** | StallGuard of the TMC2209 to the X/Y/Z-min inputs: sensorless homing, Z calibration (no crash detection: X/Y print in spreadCycle). Leave the X-min/Y-min/Z-min connectors empty |
 | FAN0 voltage (JP2) | **5V** | MK3S print fan (5 V blower) |
 | FAN1 voltage (JP1) | **5V** | MK3S hotend fan (5 V Noctua) |
 | Probe voltage (JP8) | **5V** | P.I.N.D.A. / SuperPINDA |

@@ -3457,8 +3457,10 @@ static void lcd_silent_mode_set() {
 #endif //TMC2130
 
 #ifdef TMC2130
+#ifndef TMC2209_NORMAL_MODE_SPREADCYCLE
   if (eeprom_read_byte((uint8_t*)EEPROM_CRASH_DET) && (SilentModeMenu != SILENT_MODE_NORMAL))
 	  menu_submenu(lcd_crash_mode_info2);
+#endif
 #endif //TMC2130
 }
 
@@ -4173,7 +4175,9 @@ static void SETTINGS_SILENT_MODE()
             {
                 MENU_ITEM_TOGGLE_P(_T(MSG_MODE), _T(MSG_NORMAL), lcd_silent_mode_set);
             }
+#ifndef TMC2209_NORMAL_MODE_SPREADCYCLE // (no crash detection: X/Y in spreadCycle)
             MENU_ITEM_TOGGLE_P(_T(MSG_CRASHDETECT), eeprom_read_byte((uint8_t*)EEPROM_CRASH_DET) ? _T(MSG_ON) : _T(MSG_OFF), crash_mode_switch);
+#endif
         }
         else
         {
@@ -4185,7 +4189,9 @@ static void SETTINGS_SILENT_MODE()
             {
                 MENU_ITEM_TOGGLE_P(_T(MSG_MODE), _T(MSG_STEALTH), lcd_silent_mode_set);
             }
+#ifndef TMC2209_NORMAL_MODE_SPREADCYCLE
             MENU_ITEM_TOGGLE_P(_T(MSG_CRASHDETECT), NULL, lcd_crash_mode_info);
+#endif
         }
 #else  // TMC2130
         switch (eeprom_read_byte((uint8_t *)EEPROM_SILENT))

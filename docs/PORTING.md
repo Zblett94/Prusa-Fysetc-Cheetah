@@ -237,13 +237,14 @@ interface and translates:
   values (0-63, M911/M912/M913) keep their meaning; they are converted so that the
   motor current is the same as on the EINSy.
 - **StallGuard.** StallGuard4 (SGTHRS/SG_RESULT) replaces StallGuard2 (COOLCONF SGT).
-  StallGuard4 only works in stealthChop, so the axes that need stall detection run in
-  stealthChop where the TMC2130 used spreadCycle: X/Y during homing and in the Normal
-  mode when crash detection is on, Z always. With crash detection off, X/Y use
-  spreadCycle in the Normal mode (full torque for the MK3.5 speeds); the setting is
-  applied when crash detection is switched in the menu. The extruder keeps
-  spreadCycle. Define `TMC2209_NORMAL_MODE_SPREADCYCLE` to use spreadCycle on X/Y in
-  the Normal mode in any case (crash detection is then not available).
+  StallGuard4 only works in stealthChop. `TMC2209_NORMAL_MODE_SPREADCYCLE` (set in
+  both STM32 variants): X/Y run spreadCycle in the Normal mode (full torque for the
+  MK3.5 speeds; stealthChop shifted layers on the first hardware prints) and switch to
+  stealthChop only while homing (tmc2130_home_enter / home_exit); their stall output is
+  off otherwise, and crash detection is not available (menu item hidden). Z stays in
+  stealthChop with StallGuard4 (Calibrate Z), the extruder in spreadCycle, the Stealth
+  mode uses stealthChop on all axes. Without the define, X/Y follow the crash
+  detection setting.
   The thresholds are `TMC2209_SGTHRS_*` in the variant file, `M916 X<n> Y<n>`
   changes them at run time. **Higher values are more sensitive** (the opposite of the
   TMC2130).

@@ -12,7 +12,7 @@ to 32-bit boards with TMC2209 drivers:
 The printer logic is Prusa's own code, not a reimplementation: the same G-code
 handling and planner, mesh bed leveling (G80) with the
 P.I.N.D.A., XYZ calibration, PINDA temperature calibration, thermal model, LCD menus
-and wizard, self test, crash detection, power panic recovery, filament sensor,
+and wizard, self test, power panic recovery (SKR), filament sensor,
 MMU2S/MMU3 support, Live Z / steel sheets, statistics and so on. What changed is the
 hardware layer underneath it (`Firmware/hal_stm32`), which reproduces the timers,
 ADC, EEPROM, serial lines and stepper drivers of the EINSy on the STM32. See
@@ -85,7 +85,7 @@ custom harness) are build options.
 | Print from SD | on-board micro-SD slot |
 | Print over USB (PrusaSlicer, OctoPrint, M862 checks) | native USB, reports as MK3S |
 | Thermal model, temperature runaway, min/max temp protection | unchanged; "ambient" is the STM32 temperature sensor instead of the EINSy board thermistor |
-| Sensorless homing, crash detection, belt test | TMC2209 StallGuard4, thresholds need tuning (M916). StallGuard4 needs stealthChop: with crash detection **on**, X/Y run in stealthChop (less torque at high speed); with it **off**, X/Y use spreadCycle for the MK3.5 speeds. See [docs/PORTING.md](docs/PORTING.md) |
+| Sensorless homing | TMC2209 StallGuard4, sensitivity in Calibration > Homing sensitivity. X/Y print in spreadCycle (full torque for the MK3.5 speeds) and use stealthChop only while homing, because StallGuard4 works only there. **No crash detection, no belt test.** See [docs/PORTING.md](docs/PORTING.md) |
 | Normal / Stealth mode, motor currents (M911-M913), microstepping (M350) | yes, currents converted for the 0.11 Ω sense resistors |
 | IR filament sensor, runout, autoload | yes (digital input) |
 | Fan check, Noctua/alt-fan detection | yes, needs the tach wires (see wiring) |
@@ -121,9 +121,9 @@ is the one this firmware understands: G80, M862.3 P "MK3S"...) and raise the mac
 limits and the speeds of the print profile towards the MK3.5 values. MK3.5 G-code
 files cannot be printed as they are: they use Buddy specific commands (G29, M555...).
 
-For speed, switch **crash detection off** (Settings menu): the TMC2209 can only detect
-stalls in stealthChop, which loses torque at high speed; with crash detection off X/Y
-run in spreadCycle like on the MK3.5.
+X/Y print in spreadCycle like on the MK3.5: stealthChop, the only mode in which the
+TMC2209 detects stalls, shifted layers at these speeds. There is therefore no crash
+detection. The Stealth mode (Settings > Mode) uses stealthChop at lower limits.
 
 The input shaper frequencies of the MK3.5 were measured by Prusa on the MK3.5 / MK3S
 mechanics. Belts, frame and bed weight make them differ slightly between printers;

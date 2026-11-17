@@ -1300,6 +1300,9 @@ void setup()
 	tmc2130_mode = TMC2130_MODE_NORMAL;
 
   tmc2130_sg_stop_on_crash = eeprom_init_default_byte((uint8_t*)EEPROM_CRASH_DET, farm_mode ? false : true);
+#ifdef TMC2209_NORMAL_MODE_SPREADCYCLE
+  tmc2130_sg_stop_on_crash = false; // X/Y in spreadCycle: no crash detection
+#endif
 
 	if (tmc2130_sg_stop_on_crash) {
     puts_P(_N("CrashDetect ENABLED!"));

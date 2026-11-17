@@ -318,6 +318,10 @@
 #define TMC2209_SGTHRS_HOME_Z   80
 
 #define TMC2130_SG_HOMING       1     // stallguard homing
+// SKR: X/Y in spreadCycle in the Normal mode (full torque for the MK3.5 speeds and
+// accelerations: stealthChop shifted layers). StallGuard4 works only in stealthChop, so
+// X/Y use it only while homing; crash detection is not available. Z stays in stealthChop.
+#define TMC2209_NORMAL_MODE_SPREADCYCLE
 #define TMC2130_SG_THRS_X       3     // stallguard sensitivity for X axis
 #define TMC2130_SG_THRS_Y       3     // stallguard sensitivity for Y axis
 #define TMC2130_SG_THRS_Z       4     // stallguard sensitivity for Z axis

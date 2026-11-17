@@ -497,7 +497,12 @@ static void tmc2130_XYZ_reg_init(uint8_t axis)
 	const bool isStealth = (tmc2130_mode == TMC2130_MODE_SILENT);
 	// StallGuard4 threshold (stall detection and crash detection) for all modes
 	tmc2130_wr(axis, TMC2130_REG_COOLCONF, (((uint32_t)tmc2130_sg_thr[axis]) << 16));
+#ifdef TMC2209_NORMAL_MODE_SPREADCYCLE
+	// X/Y run spreadCycle: no StallGuard4 there, keep their stall output off (home_enter sets it)
+	tmc2130_wr(axis, TMC2130_REG_TCOOLTHRS, (isStealth || axis != Z_AXIS) ? 0 : __tcoolthrs(axis));
+#else
 	tmc2130_wr(axis, TMC2130_REG_TCOOLTHRS, isStealth ? 0 : __tcoolthrs(axis));
+#endif
 	tmc2130_wr(axis, TMC2130_REG_PWMCONF, pwmconf[axis].dw);
 	if (axis == Z_AXIS) {
 		// Z: always stealthChop, StallGuard4 in the normal mode (Z calibration)
@@ -655,6 +660,10 @@ void tmc2130_st_isr()
 }
 
 void crashdet_use_eeprom_setting() {
+#ifdef TMC2209_NORMAL_MODE_SPREADCYCLE
+	tmc2130_sg_stop_on_crash = false; // X/Y in spreadCycle: no stall detection while printing
+	return;
+#endif
 	tmc2130_sg_stop_on_crash = eeprom_read_byte((uint8_t*)EEPROM_CRASH_DET);
 #if defined(TMC2209) && defined(MOTION_ENGINE)
 	// the X/Y chopper mode follows the crash detection setting (see tmc2209_gconf)
@@ -723,13 +732,16 @@ void tmc2130_home_exit()
 		tmc2130_wait_standstill_xy(1000);
 	if (tmc2130_sg_homing_axes_mask)
 	{
+		const uint8_t homed = tmc2130_sg_homing_axes_mask;
+		// STM32 port: clear the mask first. The TMC2209 chopper mode depends on it (see
+		// tmc2209_gconf): with the bit still set, X/Y stayed in stealthChop after homing.
+		tmc2130_sg_homing_axes_mask = 0x00;
 		for (uint8_t axis = X_AXIS, mask = X_AXIS_MASK; axis <= Z_AXIS; axis++, mask <<= 1) //X Y and Z axes
 		{
-			if (tmc2130_sg_homing_axes_mask & mask) {
+			if (homed & mask) {
 				tmc2130_XYZ_reg_init(axis);
 			}
 		}
-		tmc2130_sg_homing_axes_mask = 0x00;
 	}
 	tmc2130_sg_crash = false;
 #endif
