@@ -65,7 +65,7 @@
 #define Z_DIR_PIN            PB5
 #define Z_ENABLE_PIN         PC2
 #define Z_MIN_PIN            PA0    // "Probe" header (BAT85 level shifter on the board): P.I.N.D.A.
-#define Z_MAX_PIN            -1
+#define Z_MAX_PIN            Z_TMC2130_DIAG // stall at the top: Calibrate Z (stepper.cpp checks Z+ only if defined)
 #define Z_MS1_PIN            -1
 #define Z_MS2_PIN            -1
 

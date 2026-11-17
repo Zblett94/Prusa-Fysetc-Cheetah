@@ -60,7 +60,7 @@
 #define Z_DIR_PIN            PC5
 #define Z_ENABLE_PIN         PB1
 #define Z_MIN_PIN            PC14   // Z-PROBE header, PROBE pin: P.I.N.D.A.
-#define Z_MAX_PIN            -1
+#define Z_MAX_PIN            Z_TMC2130_DIAG // stall at the top: Calibrate Z (stepper.cpp checks Z+ only if defined)
 #define Z_MS1_PIN            -1
 #define Z_MS2_PIN            -1
 
