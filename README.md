@@ -129,9 +129,10 @@ The MK3.5 G-code is translated:
 | `G28` | homing only (the plain MK3S `G28` would also level the whole bed) |
 | `G29 P1`, `G29 P1 X Y W H C`, `G29 P3.x`, `G29 A` | collects the print and purge areas, then `G80` over them |
 | `M486` (object labels) | ignored |
-| `M572`, `M593`, `M74`, per layer `M201` | as on the MK3.5 |
+| `M572 S` (filament pressure advance) | ignored by default: the LCD value is used (Settings > Input shaper, PA > PA from G-code) |
+| `M593`, `M74`, per layer `M201` | as on the MK3.5 |
 
-The MK3S profiles work as before (`G28 W`, `G80`, `M900 K` = pressure advance).
+The MK3S profiles work as before (`G28 W`, `G80`; `M900 K` is pressure advance, ignored like `M572 S` unless PA from G-code is on).
 
 X/Y print in spreadCycle like on the MK3.5: stealthChop, the only mode in which the
 TMC2209 detects stalls, shifted layers at these speeds. There is therefore no crash

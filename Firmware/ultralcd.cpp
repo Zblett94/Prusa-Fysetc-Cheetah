@@ -4591,6 +4591,13 @@ static void lcd_pressure_advance_edit()
     motion_report_pressure_advance();
 }
 
+//! No (default): M572 S / M900 K of the G-code (filament profiles) are ignored, the
+//! Press.adv value is used. Yes: the G-code may change it (e.g. the PA tuning print).
+static void lcd_pa_from_gcode_toggle()
+{
+    motion_set_pa_from_gcode(!motion_pa_from_gcode());
+}
+
 static void lcd_shaper_defaults()
 {
     if (printer_active()) return;
@@ -4614,6 +4621,7 @@ static void lcd_motion_tuning_menu()
     MENU_ITEM_TOGGLE_P(PSTR("Y shaper"), lcd_shaper_type_name(c.axis[Y_AXIS]), lcd_shaper_y_type);
     MENU_ITEM_TOGGLE_P(PSTR("Y freq."), yf, lcd_shaper_y_freq);
     MENU_ITEM_TOGGLE_P(PSTR("Press.adv"), pa, lcd_pressure_advance_edit);
+    MENU_ITEM_TOGGLE_P(PSTR("PA from G-code"), motion_pa_from_gcode() ? _T(MSG_YES) : _T(MSG_NO), lcd_pa_from_gcode_toggle);
     MENU_ITEM_FUNCTION_P(PSTR("Shaper defaults"), lcd_shaper_defaults);
     MENU_END();
 }

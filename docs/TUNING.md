@@ -7,6 +7,7 @@ Both STM32 builds (SKR Mini E3 V3, Cheetah V3) have **Settings > Input shaper, P
 | X shaper / Y shaper | Type: ZV, ZVD, MZV (default), EI, EI2, EI3 (2 and 3 hump EI) or Off. A click steps to the next one |
 | X freq. / Y freq. | Shaper frequency, 10 to 100 Hz in 0.1 Hz steps (turn fast for 1 Hz steps) |
 | Press.adv | Pressure advance in seconds, 0 = off, in 0.001 steps (turn fast for 0.01) |
+| PA from G-code | No (default): the pressure advance of the slicer's filament profiles (`M572 S`, `M900 K`) is ignored, Press.adv is always used. Yes: the G-code may change it |
 | Shaper defaults | Back to the MK3.5 values: MZV, X 50.7 Hz, Y 40.6 Hz |
 
 Every change is stored at once and used from the next move on. The menu is not available
@@ -46,22 +47,23 @@ rounder corners).
 ## Pressure advance
 
 1. Model: the same square tube, 50 mm high, printed at your normal speeds.
-2. Before layer change G-code:
+2. Set **PA from G-code** to **Yes** for this test (otherwise the printer ignores the
+   per-layer values below), and back to No afterwards.
+3. Before layer change G-code:
 
        M572 S{layer_z * 0.002}
 
    The pressure advance rises with the height: 0 at the bottom, 0.1 at 50 mm.
-3. Look at the corners. Too little: bulging corners. Too much: rounded corners with gaps
+4. Look at the corners. Too little: bulging corners. Too much: rounded corners with gaps
    before them. Find the height where the corners are sharp and the walls even.
-4. Enter **height in mm x 0.002** as Press.adv (a geared BMG extruder is typically
+5. Enter **height in mm x 0.002** as Press.adv (a geared BMG extruder is typically
    between 0.02 and 0.06 with PLA).
 
-The value of the LCD is the default after power-on. A slicer profile can still set its
-own value for a print: the MK3S filament profiles of PrusaSlicer contain a line
-`M900 K...` in the filament start G-code, which then replaces the LCD value until the
-next start. Delete that line (or put your value there) to print with the tuned one.
-Different materials want different values (PETG and flexibles more than PLA): per
-material values belong in the filament start G-code as `M572 S<value>`.
+By default the printer always uses the LCD value: the pressure advance lines of the
+PrusaSlicer filament profiles (`M572 S...` of the MK3.5 profiles, `M900 K...` of the MK3S
+ones) are ignored (the serial log says so). Set **PA from G-code** to Yes to let the
+filament profiles choose again, e.g. for different values per material (PETG and
+flexibles want more than PLA).
 
 ## The same from G-code
 

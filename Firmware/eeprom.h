@@ -678,7 +678,9 @@ static Sheets * const EEPROM_Sheets_base = (Sheets*)(EEPROM_SHEETS_BASE);
 // STM32 port: StallGuard4 homing thresholds X, Y, Z of the TMC2209 (magic + 3 bytes, tmc2130.cpp)
 #define EEPROM_SG_HOME_SIZE 4
 #define EEPROM_SG_HOME (EEPROM_PRESSURE_ADVANCE-EEPROM_SG_HOME_SIZE)
-#define EEPROM_LAST_ITEM EEPROM_SG_HOME
+// STM32 port: 1 = pressure advance from the G-code (M572 S / M900 K) allowed, else only the LCD value
+#define EEPROM_PA_FROM_GCODE (EEPROM_SG_HOME-1) // uint8
+#define EEPROM_LAST_ITEM EEPROM_PA_FROM_GCODE
 // !!!!!
 // !!!!! this is end of EEPROM section ... all updates MUST BE inserted before this mark !!!!!
 // !!!!!

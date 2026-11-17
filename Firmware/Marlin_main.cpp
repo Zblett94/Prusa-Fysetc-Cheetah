@@ -1925,7 +1925,14 @@ inline void gcode_M900() {
     float newK = code_seen('K') ? code_value() : -2;
 #ifdef MOTION_ENGINE
     // STM32: the K factor (filament mm per mm/s, Linear Advance 1.5) is the pressure advance
-    // time constant (s) of the motion engine, see M572
+    // time constant (s) of the motion engine, see M572. Ignored unless "PA from G-code" is on.
+    if (newK >= 0 && !motion_pa_from_gcode()) {
+        SERIAL_ECHOLNPGM("echo:M900 K ignored: pressure advance is set on the LCD (Settings > Input shaper, PA)");
+        SERIAL_ECHO_START;
+        SERIAL_ECHOPGM("Advance K=");
+        SERIAL_ECHOLN(extruder_advance_K);
+        return;
+    }
 #define LA_SET_K(k) motion_set_pressure_advance((k), motion_pa_smooth_time())
 #else
 #define LA_SET_K(k) (extruder_advance_K = (k))
@@ -2025,7 +2032,12 @@ static void gcode_G29() {
 static void gcode_M572() {
     float k = motion_pressure_advance();
     float w = motion_pa_smooth_time();
-    const bool seen_s = code_seen('S');
+    bool seen_s = code_seen('S');
+    if (seen_s && !motion_pa_from_gcode()) {
+        // the filament profiles of PrusaSlicer set their own value: the LCD value is used
+        SERIAL_ECHOLNPGM("echo:M572 S ignored: pressure advance is set on the LCD (Settings > Input shaper, PA)");
+        seen_s = false;
+    }
     if (seen_s) {
         const float v = code_value();
         if (v >= 0.f && v <= 10.f) k = v;

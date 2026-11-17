@@ -25,6 +25,10 @@ const input_shaper::Config &motion_shaper_setting();
 //! Pressure advance (s) and its smoothing time (s); waits until the motion stops.
 void motion_set_pressure_advance(float k, float smooth_time);
 float motion_pressure_advance();
+//! May the G-code (M572 S, M900 K of the slicer's filament profiles) change the pressure
+//! advance? Default no: the value set on the LCD is used (Settings > Input shaper, PA).
+bool motion_pa_from_gcode();
+void motion_set_pa_from_gcode(bool on);
 //! Back to the stored input shaper and pressure advance settings (start of a print: the
 //! end G-code of the PrusaSlicer MK3.5 profiles switches both off with M593 F0 / M572 S0)
 void motion_restore_defaults();

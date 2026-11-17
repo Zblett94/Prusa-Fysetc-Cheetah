@@ -161,6 +161,8 @@ void motion_set_pressure_advance(float k, float smooth_time) {
 }
 
 float motion_pressure_advance() { return extruder_advance_K; }
+bool motion_pa_from_gcode() { return eeprom_read_byte((uint8_t *)EEPROM_PA_FROM_GCODE) == 1; }
+void motion_set_pa_from_gcode(bool on) { eeprom_update_byte((uint8_t *)EEPROM_PA_FROM_GCODE, on ? 1 : 0); }
 float motion_pa_smooth_time() { return pa_smooth_time; }
 
 static void report_axis(char name, const input_shaper::AxisConfig &a) {
