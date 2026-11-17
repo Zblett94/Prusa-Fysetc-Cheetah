@@ -89,6 +89,7 @@
 #include "la10compat.h"
 #ifdef MOTION_ENGINE
 #include "motion/motion.h"
+#include "shaker.h"
 #endif
 #endif
 
@@ -7755,6 +7756,22 @@ void process_commands()
         break;
     case 74:
         gcode_M74();
+        break;
+    /*!
+    ### M975 - Shake an axis (STM32 port)
+    `M975 X|Y [S<start Hz>] [E<end Hz>] [I<step Hz>]`: frequency sweep for an external
+    accelerometer, 15..95 Hz in 1 Hz steps by default; see docs/SHAKER.md.
+    */
+    case 975:
+    {
+        const bool x = code_seen('X'), y = code_seen('Y');
+        if (x == y) { puts_P(PSTR("SHAKE END ? failed: M975 needs X or Y")); break; }
+        float f0 = 15.f, f1 = 95.f, st = 1.f;
+        if (code_seen('S')) f0 = code_value();
+        if (code_seen('E')) f1 = code_value();
+        if (code_seen('I')) st = code_value();
+        shaker_sweep(x, f0, f1, st);
+    }
         break;
 #endif
 

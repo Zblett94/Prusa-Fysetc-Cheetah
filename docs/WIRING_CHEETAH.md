@@ -104,10 +104,10 @@ chip select and card detect. Use one of them, not both at once.
 
 The MCU debug pins (SWDIO/SWCLK) drive FAN1/FAN0: a debugger can not be used.
 
-## Accelerometer (optional, input shaper calibration)
+## Input shaper measurement (optional)
 
-See [ACCELEROMETER.md](ACCELEROMETER.md): an ADXL345 on the LCD's EXP2 connector, used by
-Calibration > Shaper cal. X / Y.
+See [SHAKER.md](SHAKER.md): the printer shakes an axis, an external Raspberry Pi or ESP32 with an
+accelerometer measures it. Nothing is wired to the board.
 
 ## Flashing
 

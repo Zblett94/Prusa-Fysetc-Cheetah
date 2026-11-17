@@ -7,7 +7,7 @@ to 32-bit boards with TMC2209 drivers:
 | Board | MCU | Build | Display | Notes |
 |---|---|---|---|---|
 | **BigTreeTech SKR Mini E3 V3.0** | STM32G0B1 (512 KiB) | `pio run -e MK3S_SKR_MINI_E3_V3` | color TFT (default), Ender-3 LCD or MK3S LCD | all features, 14 languages. [Wiring](docs/WIRING.md) |
-| **FYSETC Cheetah V3.0** | STM32F446RC (256 KiB) | `pio run -e MK3S_CHEETAH_V3` | original MK3S LCD on EXP1/EXP2, no custom cable | English only; MMU on the Pi header; no power panic, no fan check. [Wiring and flashing](docs/WIRING_CHEETAH.md); optional [ADXL345 shaper calibration](docs/ACCELEROMETER.md) |
+| **FYSETC Cheetah V3.0** | STM32F446RC (256 KiB) | `pio run -e MK3S_CHEETAH_V3` | original MK3S LCD on EXP1/EXP2, no custom cable | English only; MMU on the Pi header; no power panic, no fan check. [Wiring and flashing](docs/WIRING_CHEETAH.md); optional [input shaper measurement with an external accelerometer](docs/SHAKER.md) |
 
 The printer logic is Prusa's own code, not a reimplementation: the same G-code
 handling and planner, mesh bed leveling (G80) with the
@@ -141,7 +141,7 @@ detection. The Stealth mode (Settings > Mode) uses stealthChop, capped at 100 mm
 
 The input shaper frequencies of the MK3.5 were measured by Prusa on the MK3.5 / MK3S
 mechanics. Belts, frame and bed weight make them differ slightly between printers;
-they can be changed with M593 (there is no accelerometer calibration).
+they can be changed with M593 (measure the resonance with an external accelerometer: docs/SHAKER.md).
 
 ## Repository layout
 

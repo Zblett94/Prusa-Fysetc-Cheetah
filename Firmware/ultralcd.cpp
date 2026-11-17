@@ -6,9 +6,9 @@
 #include "temperature.h"
 #include "ultralcd.h"
 #ifdef MOTION_ENGINE
-#include "motion/motion.h" // Settings > Input shaper, PA
+#include "motion/motion.h" // Calibration > Input shaper, PA
 #endif
-#include "shaper_cal.h" // Calibration > Shaper cal. X / Y (accelerometer)
+#include "shaker.h" // Calibration > Shake X / Y (frequency sweep for an external accelerometer)
 #include "lcd_tft.h"
 #include "Marlin.h"
 #include "language.h"
@@ -4538,7 +4538,7 @@ static void lcd_e_steps_calibration()
 
 #ifdef MOTION_ENGINE
 //------------------------------------------------------------------------------
-// STM32 port: Settings > Input shaper, PA
+// STM32 port: Calibration > Input shaper, PA
 // Shaper type and frequency of X and Y and the default pressure advance, to enter the
 // values read from a test print (docs/TUNING.md). Stored at once.
 //------------------------------------------------------------------------------
@@ -4616,7 +4616,7 @@ static void lcd_motion_tuning_menu()
     snprintf(yf, sizeof(yf), "%.1fHz", c.axis[Y_AXIS].frequency);
     snprintf(pa, sizeof(pa), "%.3f", motion_pressure_advance());
     MENU_BEGIN();
-    MENU_ITEM_BACK_P(_T(MSG_SETTINGS));
+    MENU_ITEM_BACK_P(_T(MSG_CALIBRATION));
     MENU_ITEM_TOGGLE_P(PSTR("X shaper"), lcd_shaper_type_name(c.axis[X_AXIS]), lcd_shaper_x_type);
     MENU_ITEM_TOGGLE_P(PSTR("X freq."), xf, lcd_shaper_x_freq);
     MENU_ITEM_TOGGLE_P(PSTR("Y shaper"), lcd_shaper_type_name(c.axis[Y_AXIS]), lcd_shaper_y_type);
@@ -4783,7 +4783,6 @@ static void lcd_settings_menu()
     SETTINGS_FANS_CHECK();
     SETTINGS_SILENT_MODE();
 #if defined(E_STEPS_MENU) && defined(MOTION_ENGINE)
-    if (!printer_active()) MENU_ITEM_SUBMENU_P(PSTR("Input shaper, PA"), lcd_motion_tuning_menu);
 #endif
 #if defined(E_STEPS_MENU) && defined(TMC2209)
     if (!printer_active()) MENU_ITEM_SUBMENU_P(PSTR("Motor current"), lcd_motor_current_menu);
@@ -4883,10 +4882,11 @@ static void lcd_calibration_menu()
 #ifdef TMC2209
     if (!printer_active()) MENU_ITEM_SUBMENU_P(PSTR("Homing sensitivity"), lcd_homing_sensitivity_menu);
 #endif
-#ifdef SHAPER_CAL
+#ifdef MOTION_ENGINE
+    if (!printer_active()) MENU_ITEM_SUBMENU_P(PSTR("Input shaper, PA"), lcd_motion_tuning_menu);
     if (!printer_active()) {
-        MENU_ITEM_FUNCTION_P(PSTR("Shaper cal. X"), shaper_cal_x);
-        MENU_ITEM_FUNCTION_P(PSTR("Shaper cal. Y"), shaper_cal_y);
+        MENU_ITEM_FUNCTION_P(PSTR("Shake X"), shaker_x);
+        MENU_ITEM_FUNCTION_P(PSTR("Shake Y"), shaker_y);
     }
 #endif
 #endif //E_STEPS_MENU

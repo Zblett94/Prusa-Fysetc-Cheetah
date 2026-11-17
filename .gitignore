@@ -6,4 +6,3 @@ test/lcd/test_st7920
 test/tft/test_tft
 test/eeprom/test_eeprom
 test/tmcuart/test_tmcuart
-test/resonance/test_resonance
