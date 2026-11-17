@@ -91,6 +91,7 @@ public:
   bool logging;
   bool sdprinting;
   bool mounted;
+  bool binary_gcode; //!< STM32 port: the last file opened for printing was binary G-code (.bgcode), refused
   char filename[FILENAME_LENGTH];
   // There are scenarios when simple modification time is not enough (on MS Windows)
   // Therefore these timestamps hold the most recent one of creation/modification date/times

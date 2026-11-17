@@ -7435,6 +7435,10 @@ static bool check_file(const char* filename) {
 	if (farm_mode) return true;
 	card.openFileReadFilteredGcode(filename, true);
 	bool result = false;
+	if (card.binary_gcode) { // STM32 port: refused by openFileReadFilteredGcode
+		lcd_show_fullscreen_message_and_wait_P(PSTR("Binary G-code is not supported. PrusaSlicer: Printer Settings > Firmware: binary G-code off"));
+		return false;
+	}
 	const uint32_t filesize = card.getFileSize();
 	uint32_t startPos = 0;
 	const uint16_t bytesToCheck = min(END_FILE_SECTION, filesize);
@@ -7514,7 +7518,8 @@ static void menu_action_sdfile(const char* filename)
     }
 
   if (!check_file(selected_filename)) {
-      result = !lcd_show_multiscreen_message_yes_no_and_wait_P(_T(MSG_FILE_INCOMPLETE), false);
+      if (card.binary_gcode) result = false; // not printable, message shown
+      else result = !lcd_show_multiscreen_message_yes_no_and_wait_P(_T(MSG_FILE_INCOMPLETE), false);
       lcd_update_enable(true);
   }
   if (result) {

@@ -143,7 +143,7 @@
 #define NORMAL_MAX_FEEDRATE_XY   300  // max feedrate in mm/s
 
 //number of bytes from end of the file to start check
-#define END_FILE_SECTION 30720
+#define END_FILE_SECTION 61440 // SKR: 60 KiB (MK3S: 30 KiB): the settings block that PrusaSlicer writes after the end G-code (M84) of the MK3.5 profiles is larger
 
 #define Z_AXIS_ALWAYS_ON 1
 

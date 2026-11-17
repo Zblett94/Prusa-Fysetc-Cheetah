@@ -423,6 +423,7 @@ void CardReader::openFileReadFilteredGcode(const char* name, bool replace_curren
         SERIAL_ECHOLN(name);
     }
     sdprinting = false;
+    binary_gcode = false;
 
     const char *fname=name;
     if (!diveSubfolder(fname))
@@ -431,6 +432,24 @@ void CardReader::openFileReadFilteredGcode(const char* name, bool replace_curren
     if (file.openFilteredGcode(curDir, fname)) {
         getfilename(0, fname);
         filesize = file.fileSize();
+#ifndef __AVR__
+        // STM32 port: binary G-code (.bgcode, "GCDE" header, PrusaSlicer for the Buddy
+        // firmware) can not be read here. Refuse it: read as text, its compressed data
+        // could form random commands.
+        {
+            // the header starts with "GCDE": not a comment, the G-code filter returns it as is
+            binary_gcode = filesize >= 4;
+            for (uint8_t i = 0; i < 4 && binary_gcode; i++)
+                binary_gcode = file.readFilteredGcode() == "GCDE"[i];
+            setIndex(0);
+            if (binary_gcode) {
+                file.close();
+                SERIAL_ERROR_START;
+                SERIAL_ERRORLNPGM("Binary G-code (.bgcode) not supported: export plain G-code");
+                return;
+            }
+        }
+#endif
         SERIAL_PROTOCOLRPGM(ofFileOpened);////MSG_SD_FILE_OPENED
         printAbsFilenameFast();
         SERIAL_PROTOCOLRPGM(ofSize);////MSG_SD_SIZE

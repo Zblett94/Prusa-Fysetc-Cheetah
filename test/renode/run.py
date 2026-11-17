@@ -71,6 +71,7 @@ def main():
     ap.add_argument('--quantum', default='0.00001',
                     help='CPU/timer synchronization step (s); 0.0001 for long runs: the emulator '
                          'needs about 10x less memory per emulated second (it grows by ~0.1 GB/s at 0.00001)')
+    ap.add_argument('--sd-image', help='FAT image for the emulated SD card (Cheetah)')
     ap.add_argument('--timeout', type=float, default=1800, help='wall clock limit of the emulator run (s)')
     ap.add_argument('--expect', action='append', default=[], help='regex that must appear in the serial output')
     ap.add_argument('--forbid', action='append', default=[], help='regex that must not appear in the serial output')
@@ -85,6 +86,12 @@ def main():
         a.elf = os.path.join(ROOT, '.pio/build/%s/firmware.elf' % board['env'])
 
     tmp = tempfile.mkdtemp()
+    repl = os.path.join(HERE, board['repl'])
+    if a.sd_image:  # the SD card model with the given image (a copy of the platform file)
+        text = open(repl).read().replace('    capacity: 0x2000000\n',
+            '    capacity: %d\n    imageFile: "%s"\n' % (os.path.getsize(a.sd_image), os.path.abspath(a.sd_image)))
+        repl = os.path.join(tmp, 'platform.repl')
+        open(repl, 'w').write(text)
     uart = os.path.join(tmp, 'uart.txt')
     lcd = elf_symbol(a.elf, 'emu_lcd_ddram')
     lang = elf_symbol(a.elf, 'emu_lang')
@@ -92,7 +99,7 @@ def main():
     lines = [
         'using sysbus',
         'mach create "skr"',
-        f'machine LoadPlatformDescription @{HERE}/{board["repl"]}',
+        f'machine LoadPlatformDescription @{repl}',
         f'sysbus LoadELF @{a.elf}',
         f'sysbus LoadBinary @{fw_bin} {board["base"]:#x}',
         f'sysbus WriteByte {lang:#x} {a.lang}',
