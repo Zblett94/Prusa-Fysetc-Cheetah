@@ -36,6 +36,7 @@
 #define E0_TMC2209_ADDR      3
 #define TMC2209_RSENSE       0.22f // ohm (same as the EINSy)
 #define TMC_UART_PIN         PB3   // shared PDN_UART line of the four drivers
+#define TMC_UART_DMA                // replies captured by TIM4 paced DMA1 stream 6 (hal_stm32/tmc2209_uart.cpp)
 
 // The DIAG outputs of the drivers reach X-MIN/Y-MIN/Z-MIN through the jumpers JP3/JP4/JP5
 // (X, Y and Z must be installed; nothing may be plugged into X-min/Y-min/Z-min then).

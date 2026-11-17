@@ -217,7 +217,7 @@ The same HAL supports the STM32F446 of the Cheetah V3.0 (`env:MK3S_CHEETAH_V3`,
 | heatbed PWM | TIM1 CH2 (PC9) | TIM3 CH3 (PC8), 58.6 kHz instead of 62.5 kHz |
 | ADC | G0 ADC (CHSELR), temp. sensor IN12, VREFINT IN13 | F4 ADC (SQR3), temp. sensor IN18, VREFINT IN17 |
 | EEPROM | AT24C32 I2C | flash sectors 1+2: RAM copy, snapshot + byte log (`eeprom_flash.cpp`); compaction (a sector erase stalls the CPU up to 0.5 s) only when the printer is idle |
-| TMC2209 UART | USART4 (PC10/PC11) | PB3 bit-banged at 230400 Bd with the DWT cycle counter; driver addresses detected at start-up from the IOIN DIR bit |
+| TMC2209 UART | USART4 (PC10/PC11) | PB3: requests bit-banged at 230400 Bd with the DWT cycle counter (interrupts off 43 us per byte), replies captured by DMA (TIM4 paces DMA1 stream 6 sampling GPIOB 8x per bit, decoded by `tmc2209_rx_decode.h`, host test `test/tmcuart`) so the interrupts stay enabled while a driver answers; bit-banged fallback after 3 failed DMA captures (`M913` prints the counters); driver addresses detected at start-up from the IOIN DIR bit |
 | flash | 512 KiB, 14 languages | 256 KiB: English only (`LANG_MODE=0`), LTO, compact single precision printf/strtod (`compact_stdio.cpp`) instead of newlib's (-12 KiB), image split around the EEPROM sectors (`buildroot/ld/cheetah_v3.ld`) |
 | display | color TFT / Ender-3 / MK3S LCD | MK3S LCD on EXP1/EXP2 (HD44780 driver of the Prusa code, unchanged) |
 | free pins | MMU, power panic, fan tachs | only USART1 (PA9/PA10): MMU. No power panic, no fan check |

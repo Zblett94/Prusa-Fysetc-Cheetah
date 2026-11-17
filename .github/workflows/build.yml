@@ -30,6 +30,9 @@ jobs:
       - name: Flash EEPROM emulation test (Cheetah V3, with power cuts)
         run: sh test/eeprom/run.sh
 
+      - name: TMC2209 UART reply decoder test (Cheetah V3)
+        run: sh test/tmcuart/run.sh
+
       - name: Install PlatformIO
         run: pip install platformio
 

@@ -837,12 +837,12 @@ bool tmc2130_wait_standstill_xy(int timeout)
 
 void tmc2130_check_overtemp()
 {
-#if defined(TMC2209) && defined(TMC_UART_PIN)
-	// Cheetah V3: a read on the bit-banged UART stops the step interrupt for 0.4 ms (the
-	// steps then come late in a burst: lost steps at the MK3.5 speeds). Read the drivers
-	// only while nothing moves. The TMC2209 switches itself off at 150 C (overtemperature
-	// shutdown); the pre-warning check here runs between the moves and after the print.
-	if (blocks_queued()) return;
+#ifdef TMC2209
+	// Cheetah V3: a bit-banged read stops the step interrupt for 0.4 ms (the steps then come
+	// late in a burst: lost steps at the MK3.5 speeds). Reads during a print only with the DMA
+	// capture of the reply (tmc2209_uart_nonblocking(): interrupts stay enabled); else only
+	// while nothing moves. The TMC2209 shuts itself off at 150 C in any case.
+	if (blocks_queued() && !tmc2209_uart_nonblocking()) return;
 #endif
 	if (tmc2130_overtemp_timer.expired_cont(1000))
 	{
@@ -1016,6 +1016,9 @@ void tmc2130_print_currents()
 		currents[2].getOriginaliHold(), currents[2].getOriginaliRun(),
 		currents[3].getOriginaliHold(), currents[3].getOriginaliRun()
 	);
+#ifdef TMC2209
+	tmc2209_uart_report();
+#endif
 }
 
 void tmc2130_set_pwm_ampl(uint8_t axis, uint8_t pwm_ampl)
