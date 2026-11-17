@@ -25,6 +25,9 @@ const input_shaper::Config &motion_shaper_setting();
 //! Pressure advance (s) and its smoothing time (s); waits until the motion stops.
 void motion_set_pressure_advance(float k, float smooth_time);
 float motion_pressure_advance();
+//! Back to the stored input shaper and pressure advance settings (start of a print: the
+//! end G-code of the PrusaSlicer MK3.5 profiles switches both off with M593 F0 / M572 S0)
+void motion_restore_defaults();
 //! Store the pressure advance and its smoothing time as the power-on default (LCD menu).
 //! M900 K / M572 S of a print still override it until the next start.
 void motion_store_pressure_advance();

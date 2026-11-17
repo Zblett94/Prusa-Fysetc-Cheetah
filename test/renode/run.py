@@ -140,7 +140,8 @@ def main():
         if g.startswith('!'):  # !<monitor command>, e.g. !gpioPortC OnGPIO 14 true
             lines.append(g[1:])
             continue
-        lines.append(f'usart2 WriteLine "{g}"')
+        # the monitor string: single quotes when the G-code has double quotes (M862.3 P "MK3S")
+        lines.append(f"usart2 WriteLine '{g}'" if '"' in g else f'usart2 WriteLine "{g}"')
         lines.append(f'emulation RunFor "{a.wait}"')
     if a.profile:
         lines.append('cpu DisableProfiler')

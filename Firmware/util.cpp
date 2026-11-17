@@ -209,6 +209,12 @@ bool show_upgrade_dialog_if_version_newer(const char *version_string)
     int8_t upgrade = is_provided_version_newer(version_string);
     if (upgrade < 0)
         return false;
+#ifdef MOTION_ENGINE
+    // PrusaSlicer MK3.5 profiles: M115 U6.x.x, the version of the Buddy firmware (32-bit
+    // printers), not an update of this one: no "new firmware" screen
+    if (version_string[0] >= '4' && version_string[0] <= '9' && version_string[1] == '.')
+        return true;
+#endif
 
     if (upgrade) {
         lcd_display_message_fullscreen_P(_T(MSG_NEW_FIRMWARE_AVAILABLE));
@@ -405,6 +411,11 @@ void gcode_level_check(uint16_t nGcodeLevel) {
         return;
     if (nGcodeLevel <= (uint16_t)GCODE_LEVEL)
         return;
+#ifdef MOTION_ENGINE
+    // level 2: the G-code of the MK3.5 profiles (G29 area probing, M555...), supported
+    if (nGcodeLevel <= 2)
+        return;
+#endif
 
     // SERIAL_ECHO_START;
     // SERIAL_ECHOLNPGM("Printer G-code level differs from the G-code ...");
@@ -430,6 +441,14 @@ void printer_smodel_check(const char *pStrPos, const char *actualPrinterSModel) 
         if(compareLength == smodel.GetLength()) {
             if (strncmp_P(smodel.GetUnquotedString(), actualPrinterSModel, compareLength) == 0) return;
         }
+#ifdef MOTION_ENGINE
+        // the MK3.5 / MK3.5S profiles of PrusaSlicer (with and without MMU3) are for this printer
+        static const char *const mk35[] = { "MK3.5", "MK3.5S", "MK3.5MMU3", "MK3.5SMMU3" };
+        for (const char *m : mk35) {
+            const uint8_t len = strlen(m);
+            if (len == smodel.GetLength() && strncmp(smodel.GetUnquotedString(), m, len) == 0) return;
+        }
+#endif
     }
 
     render_M862_warnings(

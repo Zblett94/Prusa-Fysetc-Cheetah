@@ -91,6 +91,13 @@ void motion_config_init() {
     update_active();
 }
 
+void motion_restore_defaults() {
+    motion_wait_idle();
+    extruder_advance_K = 0.f; // no stored value: off, as after power-on
+    pa_smooth_time = 0.04f;
+    motion_config_init();
+}
+
 void motion_store_pressure_advance() {
     StoredPressureAdvance pa;
     pa.magic = STORED_MAGIC;

@@ -1959,6 +1959,64 @@ inline void gcode_M900() {
 #endif // LIN_ADVANCE
 
 #ifdef MOTION_ENGINE
+// MK3.5 G-code (PrusaSlicer MK3.5 / MK3.5S profiles): print area of M555 and the area
+// collected by G29 P1 for the G80 run by G29 A
+static float m555_area[4];          // x, y, w, h
+static bool m555_valid;
+static float g29_area[4];           // x0, y0, x1, y1
+static uint8_t g29_state;           // 0: nothing, 1: area collected, 2: whole bed
+
+static void gcode_M555() {
+    if (code_seen('X')) m555_area[0] = code_value();
+    if (code_seen('Y')) m555_area[1] = code_value();
+    if (code_seen('W')) m555_area[2] = code_value();
+    if (code_seen('H')) m555_area[3] = code_value();
+    m555_valid = m555_area[2] > 0 && m555_area[3] > 0;
+    motion_restore_defaults();
+}
+
+static void g29_add_area(float x, float y, float w, float h) {
+    if (g29_state == 2) return; // whole bed already
+    if (g29_state == 0) {
+        g29_area[0] = x; g29_area[1] = y; g29_area[2] = x + w; g29_area[3] = y + h;
+    } else {
+        g29_area[0] = fminf(g29_area[0], x); g29_area[1] = fminf(g29_area[1], y);
+        g29_area[2] = fmaxf(g29_area[2], x + w); g29_area[3] = fmaxf(g29_area[3], y + h);
+    }
+    g29_state = 1;
+}
+
+static void gcode_G29() {
+    if (code_seen('A')) { // activate: probe the collected area now
+        char cmd[48];
+        if (g29_state == 1)
+            snprintf(cmd, sizeof(cmd), "G80 X%.1f Y%.1f W%.1f H%.1f", g29_area[0], g29_area[1],
+                g29_area[2] - g29_area[0], g29_area[3] - g29_area[1]);
+        else
+            strcpy(cmd, "G80");
+        g29_state = 0;
+        printf_P(PSTR("echo:G29 A -> %s\n"), cmd);
+        enquecommand_front(cmd);
+        return;
+    }
+    if (code_seen('P')) {
+        if (code_value() != 1.f) return; // P3.x: interpolation, done by G80
+        static const char letters[4] = {'X', 'Y', 'W', 'H'};
+        float a[4];
+        uint8_t seen = 0;
+        for (uint8_t i = 0; i < 4; i++)
+            if (code_seen(letters[i])) { a[i] = code_value(); seen++; }
+        if (seen == 4) g29_add_area(a[0], a[1], a[2], a[3]); // "probe also here"
+        else {
+            g29_state = 0; // invalidate, probe the print area
+            if (m555_valid) g29_add_area(m555_area[0], m555_area[1], m555_area[2], m555_area[3]);
+            else g29_state = 2;
+        }
+        return;
+    }
+    enquecommand_front("G80"); // plain G29: the whole bed
+}
+
 /**
  * M572: Set or report the pressure advance (Prusa-Firmware-Buddy / MK3.5)
  *  S<seconds>  pressure advance (0 = off, same as M900 K)
@@ -4382,11 +4440,33 @@ void process_commands()
 #else
       gcode_G28(home_x, home_x_value, home_y, home_y_value, home_z, home_z_value, without_mbl);
 #endif //TMC2130
+#ifdef MOTION_ENGINE
+      // STM32 port: a print starts with homing: back to the stored input shaper and pressure
+      // advance (the MK3.5 end G-code switches them off). A plain G28 (MK3.5 G-code) is
+      // followed by its own G29 bed leveling: homing only, no second mesh leveling.
+      if ((home_x || home_y || home_z) == false) motion_restore_defaults();
+#else
       if ((home_x || home_y || without_mbl || home_z) == false) {
           gcode_G80();
       }
+#endif
       break;
     }
+#ifdef MOTION_ENGINE
+    /*!
+    ### G29 - Mesh bed leveling of the MK3.5 G-code (STM32 port)
+    The start G-code of the PrusaSlicer MK3.5 profiles (Buddy firmware) levels the bed with
+        G29 P1                     invalidate the mesh, probe the print area (M555)
+        G29 P1 X23 Y5 W80 H20 C    probe also near the purge line
+        G29 P3.2 / G29 P3.13       interpolate / extrapolate the probes
+        G29 A                      activate the mesh
+    Here the areas are collected and G29 A runs G80 over them (G80 interpolates itself).
+    A G29 without parameters levels the whole bed (G80).
+    */
+    case 29:
+        gcode_G29();
+        break;
+#endif
 
 #ifdef MESH_BED_LEVELING
 
@@ -7643,6 +7723,20 @@ void process_commands()
     */
     case 572:
         gcode_M572();
+        break;
+    /*!
+    ### M555 - Print area (MK3.5 G-code, STM32 port)
+    `M555 X<min x> Y<min y> W<width> H<height>`: the area G29 P1 probes. As the first command
+    of every MK3.5 print it also restores the stored input shaper and pressure advance.
+    */
+    case 555:
+        gcode_M555();
+        break;
+    /*!
+    ### M486 - Object labels (MK3.5 G-code, STM32 port)
+    Sent around every object by the MK3.5 print profiles (cancel object): ignored.
+    */
+    case 486:
         break;
     case 593:
         gcode_M593();

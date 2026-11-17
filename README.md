@@ -116,10 +116,22 @@ advance to the extruder. Its defaults are those of the MK3.5:
 `M593 W` stores the input shaper settings in the EEPROM, `M593 X F0` disables the
 shaper of an axis.
 
-To print faster, keep using the **MK3S** PrusaSlicer printer profile (its start G-code
-is the one this firmware understands: G80, M862.3 P "MK3S"...) and raise the machine
-limits and the speeds of the print profile towards the MK3.5 values. MK3.5 G-code
-files cannot be printed as they are: they use Buddy specific commands (G29, M555...).
+**PrusaSlicer:** use the **Original Prusa MK3.5 & MK3.5S** printer profile (with or
+without MMU3) and its print and filament profiles as they are. One setting must be
+changed: *Printer Settings > General > Firmware > Supports binary G-code* **off** (this
+firmware reads text G-code only; the MK3.5 profiles write binary `.bgcode` by default).
+The MK3.5 G-code is translated:
+
+| MK3.5 G-code | Here |
+|---|---|
+| `M862.3 P "MK3.5"`, `M862.5 P2`, `M862.6`, `M115 U6.x` | accepted (no model, level or firmware version prompts) |
+| `M555` (print area) | stored for G29; restores the stored input shaper and pressure advance (the MK3.5 end G-code switches both off) |
+| `G28` | homing only (the plain MK3S `G28` would also level the whole bed) |
+| `G29 P1`, `G29 P1 X Y W H C`, `G29 P3.x`, `G29 A` | collects the print and purge areas, then `G80` over them |
+| `M486` (object labels) | ignored |
+| `M572`, `M593`, `M74`, per layer `M201` | as on the MK3.5 |
+
+The MK3S profiles work as before (`G28 W`, `G80`, `M900 K` = pressure advance).
 
 X/Y print in spreadCycle like on the MK3.5: stealthChop, the only mode in which the
 TMC2209 detects stalls, shifted layers at these speeds. There is therefore no crash
