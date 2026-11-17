@@ -680,7 +680,10 @@ static Sheets * const EEPROM_Sheets_base = (Sheets*)(EEPROM_SHEETS_BASE);
 #define EEPROM_SG_HOME (EEPROM_PRESSURE_ADVANCE-EEPROM_SG_HOME_SIZE)
 // STM32 port: 1 = pressure advance from the G-code (M572 S / M900 K) allowed, else only the LCD value
 #define EEPROM_PA_FROM_GCODE (EEPROM_SG_HOME-1) // uint8
-#define EEPROM_LAST_ITEM EEPROM_PA_FROM_GCODE
+// STM32 port: X and Y running current set on the LCD: magic + 2 x uint16 (mA RMS, tmc2130.cpp)
+#define EEPROM_XY_CURRENT_SIZE 5
+#define EEPROM_XY_CURRENT (EEPROM_PA_FROM_GCODE-EEPROM_XY_CURRENT_SIZE)
+#define EEPROM_LAST_ITEM EEPROM_XY_CURRENT
 // !!!!!
 // !!!!! this is end of EEPROM section ... all updates MUST BE inserted before this mark !!!!!
 // !!!!!

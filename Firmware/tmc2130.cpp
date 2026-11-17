@@ -311,6 +311,50 @@ uint8_t tmc2130_sg_thr[4] = {TMC2209_SGTHRS_X, TMC2209_SGTHRS_Y, TMC2209_SGTHRS_
 static uint8_t tmc2130_sg_thr_home[4] = {TMC2209_SGTHRS_HOME_X, TMC2209_SGTHRS_HOME_Y, TMC2209_SGTHRS_HOME_Z, TMC2209_SGTHRS_E};
 #define SG_HOME_MAGIC 0xA7
 //! the X, Y, Z homing thresholds stored by the LCD menu or M916 H (EEPROM_SG_HOME)
+#define XY_CURRENT_MAGIC 0xC5
+static void tmc2209_apply_xy_current(uint8_t axis, uint16_t mA)
+{
+	const uint8_t val = tmc2130_cur2val(mA);
+	currents[axis].setiHold(val); // like M907
+	currents[axis].setiRun(val);
+}
+//! the X/Y current stored by the LCD menu (once, at the first driver init: M907 changes of
+//! the running printer survive a mode change)
+static void tmc2209_load_xy_current()
+{
+	static bool loaded;
+	if (loaded) return;
+	loaded = true;
+	if (eeprom_read_byte((uint8_t *)EEPROM_XY_CURRENT) != XY_CURRENT_MAGIC) return;
+	for (uint8_t axis = X_AXIS; axis <= Y_AXIS; axis++) {
+		const uint16_t mA = eeprom_read_word((uint16_t *)(EEPROM_XY_CURRENT + 1 + 2 * axis));
+		if (mA >= TMC_XY_CURRENT_MIN && mA <= TMC_XY_CURRENT_MAX) tmc2209_apply_xy_current(axis, mA);
+	}
+}
+uint16_t tmc2130_get_xy_current(uint8_t axis)
+{
+	return (uint16_t)(tmc2130_val2cur(currents[axis].getOriginaliRun()) + 0.5f);
+}
+void tmc2130_set_xy_current(uint8_t axis, uint16_t mA)
+{
+	if (axis > Y_AXIS) return;
+	if (mA < TMC_XY_CURRENT_MIN) mA = TMC_XY_CURRENT_MIN;
+	if (mA > TMC_XY_CURRENT_MAX) mA = TMC_XY_CURRENT_MAX;
+	tmc2209_apply_xy_current(axis, mA);
+	tmc2130_setup_chopper(axis, tmc2130_mres[axis]);
+	eeprom_update_word((uint16_t *)(EEPROM_XY_CURRENT + 1 + 2 * axis), mA);
+	eeprom_update_byte((uint8_t *)EEPROM_XY_CURRENT, XY_CURRENT_MAGIC);
+}
+void tmc2130_reset_xy_current()
+{
+	for (uint8_t axis = X_AXIS; axis <= Y_AXIS; axis++) {
+		currents[axis].setiHold(tmc2130_default_current_h[axis]);
+		currents[axis].setiRun(tmc2130_default_current_r[axis]);
+		tmc2130_setup_chopper(axis, tmc2130_mres[axis]);
+	}
+	eeprom_update_byte((uint8_t *)EEPROM_XY_CURRENT, 0xFF);
+}
+
 static void tmc2209_load_sg_thr_home()
 {
 	if (eeprom_read_byte((uint8_t *)EEPROM_SG_HOME) != SG_HOME_MAGIC) return; // defaults of the variant
@@ -543,6 +587,7 @@ void tmc2130_init(TMCInitParams params)
 {
 #ifdef TMC2209
 	tmc2209_load_sg_thr_home();
+	tmc2209_load_xy_current();
 #endif
 //	DBG(_n("tmc2130_init(), mode=%s\n"), tmc2130_mode?_n("STEALTH"):_n("NORMAL"));
 #ifdef TMC2209

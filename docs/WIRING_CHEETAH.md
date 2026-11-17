@@ -36,6 +36,9 @@ Added: Settings > HW Setup > E-steps and Calibration > E-steps cal. (see Extrude
 Added: Calibration > Homing sensitivity: StallGuard thresholds of the sensorless homing of
 X, Y and Z (higher = more sensitive; raise it if an axis bounces or grinds at the end before
 it stops, lower it if it stops early), with Home X / Home Y to try the value. Stored at once.
+Added: Settings > Motor current: X / Y running and holding current in mA RMS (default 450 / 510;
+the MK3.5 runs these motors at 300 / 370). More current = more torque against skipped steps at
+the MK3.5 accelerations, warmer motors. Stored at once; Defaults restores the firmware values.
 Added: Settings > Input shaper, PA: shaper type and frequency of X and Y and the pressure
 advance, with test prints to find the values: see [TUNING.md](TUNING.md).
 

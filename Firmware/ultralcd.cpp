@@ -4629,6 +4629,33 @@ static void lcd_motion_tuning_menu()
 
 #ifdef TMC2209
 //------------------------------------------------------------------------------
+// STM32 port: Settings > Motor current: X / Y running and holding current (mA RMS)
+//------------------------------------------------------------------------------
+static void lcd_xy_current_edit(uint8_t axis)
+{
+    if (printer_active()) return;
+    const float v = lcd_e_steps_enter(axis == X_AXIS ? PSTR("X motor current") : PSTR("Y motor current"),
+        PSTR("More = more torque"), tmc2130_get_xy_current(axis), TMC_XY_CURRENT_MIN, TMC_XY_CURRENT_MAX, 10, PSTR("mA RMS"), 0);
+    tmc2130_set_xy_current(axis, (uint16_t)(v + 0.5f));
+}
+static void lcd_xy_current_x() { lcd_xy_current_edit(X_AXIS); }
+static void lcd_xy_current_y() { lcd_xy_current_edit(Y_AXIS); }
+static void lcd_xy_current_defaults() { tmc2130_reset_xy_current(); }
+
+static void lcd_motor_current_menu()
+{
+    char x[8], y[8];
+    snprintf(x, sizeof(x), "%umA", tmc2130_get_xy_current(X_AXIS));
+    snprintf(y, sizeof(y), "%umA", tmc2130_get_xy_current(Y_AXIS));
+    MENU_BEGIN();
+    MENU_ITEM_BACK_P(_T(MSG_SETTINGS));
+    MENU_ITEM_TOGGLE_P(PSTR("X current"), x, lcd_xy_current_x);
+    MENU_ITEM_TOGGLE_P(PSTR("Y current"), y, lcd_xy_current_y);
+    MENU_ITEM_FUNCTION_P(PSTR("Defaults"), lcd_xy_current_defaults);
+    MENU_END();
+}
+
+//------------------------------------------------------------------------------
 // STM32 port: Calibration > Homing sensitivity
 // StallGuard4 thresholds of the sensorless homing (also Calibrate Z and the self test
 // axis check). Higher = more sensitive: raise it if an axis bounces or grinds at the end
@@ -4756,6 +4783,9 @@ static void lcd_settings_menu()
     SETTINGS_SILENT_MODE();
 #if defined(E_STEPS_MENU) && defined(MOTION_ENGINE)
     if (!printer_active()) MENU_ITEM_SUBMENU_P(PSTR("Input shaper, PA"), lcd_motion_tuning_menu);
+#endif
+#if defined(E_STEPS_MENU) && defined(TMC2209)
+    if (!printer_active()) MENU_ITEM_SUBMENU_P(PSTR("Motor current"), lcd_motor_current_menu);
 #endif
 
     if(!farm_mode)
