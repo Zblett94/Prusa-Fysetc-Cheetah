@@ -136,7 +136,8 @@ The MK3S profiles work as before (`G28 W`, `G80`; `M900 K` is pressure advance, 
 
 X/Y print in spreadCycle like on the MK3.5: stealthChop, the only mode in which the
 TMC2209 detects stalls, shifted layers at these speeds. There is therefore no crash
-detection. The Stealth mode (Settings > Mode) uses stealthChop at lower limits.
+detection. The Stealth mode (Settings > Mode) uses stealthChop, capped at 100 mm/s and 2000 mm/s² on X/Y
+(less torque than spreadCycle: no lost steps).
 
 The input shaper frequencies of the MK3.5 were measured by Prusa on the MK3.5 / MK3S
 mechanics. Belts, frame and bed weight make them differ slightly between printers;

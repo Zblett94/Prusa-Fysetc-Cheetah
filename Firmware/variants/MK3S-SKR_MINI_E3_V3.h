@@ -107,7 +107,7 @@
 // Configuration_MK3.5.h), same mechanics as the MK3S, made usable by the input shaper.
 // Z and E keep the MK3S maximum feedrates (the MK3.5 hardware limits are the same).
 #define DEFAULT_MAX_FEEDRATE                {200, 200, 12, 120}      // (mm/sec)   max feedrate (M203)
-#define DEFAULT_MAX_FEEDRATE_SILENT         {160, 160, 12, 100}      // (mm/sec)   max feedrate (M203), silent mode
+#define DEFAULT_MAX_FEEDRATE_SILENT         {100, 100, 12, 100}      // (mm/sec)   max feedrate (M203), silent mode
 
 #define DEFAULT_MAX_ACCELERATION            {1250, 1250, 400, 4000}  // (mm/sec^2) max acceleration (M201)
 #define DEFAULT_MAX_ACCELERATION_SILENT     {1250, 1250, 200, 2500}  // (mm/sec^2) max acceleration (M201), silent mode
@@ -128,8 +128,8 @@
 // SKR: hardware limits of the MK3.5 (HWLIMIT_STEALTH_* / HWLIMIT_NORMAL_*): the upper
 // bounds of M201 / M203 for X and Y
 //Silent mode limits
-#define SILENT_MAX_ACCEL_XY     2500ul  // max acceleration in silent mode in mm/s^2
-#define SILENT_MAX_FEEDRATE_XY   160  // max feedrate in mm/s
+#define SILENT_MAX_ACCEL_XY     2000ul  // max acceleration in silent mode in mm/s^2 (SKR: stealthChop has less torque: lower than the MK3.5's 2500)
+#define SILENT_MAX_FEEDRATE_XY   100  // max feedrate in mm/s (SKR: stealthChop, no lost steps; MK3.5: 160)
 
 //Normal mode limits
 #define NORMAL_MAX_ACCEL_XY     7000ul  // max acceleration in normal mode in mm/s^2
