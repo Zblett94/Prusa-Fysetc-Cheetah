@@ -329,6 +329,10 @@
 // accelerations: stealthChop shifted layers). StallGuard4 works only in stealthChop, so
 // X/Y use it only while homing; crash detection is not available. Z stays in stealthChop.
 #define TMC2209_NORMAL_MODE_SPREADCYCLE
+// SKR: self test X/Y axis length check. StallGuard4 of the TMC2209 stops less repeatably than
+// the StallGuard2 of the EINSy (first hardware tests: the two passes differed by more than 1 mm).
+#define SELFTEST_AXIS_LENGTH_TOL 8   // mm, measured vs. expected length (MK3S: 5)
+#define SELFTEST_AXIS_REPEAT_TOL 3   // mm, difference of the two passes (MK3S: 1)
 #define TMC2130_SG_THRS_X       3     // stallguard sensitivity for X axis
 #define TMC2130_SG_THRS_Y       3     // stallguard sensitivity for Y axis
 #define TMC2130_SG_THRS_Z       4     // stallguard sensitivity for Z axis

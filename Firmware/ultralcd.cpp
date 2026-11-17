@@ -6601,7 +6601,13 @@ static bool lcd_selfcheck_axis_sg(uint8_t axis) {
 	float axis_length, current_position_init, current_position_final;
 	float measured_axis_length[2];
 	float margin = 60;
-	float max_error_mm = 5;
+#ifndef SELFTEST_AXIS_LENGTH_TOL
+#define SELFTEST_AXIS_LENGTH_TOL 5   // mm, measured axis length vs. expected (Prusa)
+#endif
+#ifndef SELFTEST_AXIS_REPEAT_TOL
+#define SELFTEST_AXIS_REPEAT_TOL 1   // mm, difference of the two measurements (Prusa)
+#endif
+	float max_error_mm = SELFTEST_AXIS_LENGTH_TOL;
 	switch (axis) {
 	case 0: axis_length = X_MAX_POS; break;
 	case 1: axis_length = Y_MAX_POS - Y_MIN_POS + 4; break;
@@ -6684,7 +6690,7 @@ static bool lcd_selfcheck_axis_sg(uint8_t axis) {
 
 		printf_P(_N("Axis length difference:%.3f\n"), fabs(measured_axis_length[0] - measured_axis_length[1]));
 
-		if (fabs(measured_axis_length[0] - measured_axis_length[1]) > 1) { //check if difference between first and second measurement is low
+		if (fabs(measured_axis_length[0] - measured_axis_length[1]) > SELFTEST_AXIS_REPEAT_TOL) { //check if difference between first and second measurement is low
 			//loose pulleys
 			lcd_selftest_axis_error(axis, AxisError::Inconsistent, measured_axis_length[0], measured_axis_length[1]);
 			current_position[axis] = 0;
@@ -7053,9 +7059,9 @@ static void lcd_selftest_axis_error(uint8_t axis, AxisError error, float a, floa
 
 	// the same explanation on the serial line (log of the host / OctoPrint)
 	if (error == AxisError::Inconsistent)
-		printf_P(PSTR("Selftest error: %c axis length inconsistent: %.1f mm and %.1f mm in two runs (max. 1 mm apart)\n"), name, a, b);
+		printf_P(PSTR("Selftest error: %c axis length inconsistent: %.1f mm and %.1f mm in two runs (max. %d mm apart)\n"), name, a, b, SELFTEST_AXIS_REPEAT_TOL);
 	else
-		printf_P(PSTR("Selftest error: %c axis %s: measured %.1f mm, expected %.1f mm (+-5 mm)\n"), name, what, a, b);
+		printf_P(PSTR("Selftest error: %c axis %s: measured %.1f mm, expected %.1f mm (+-%d mm)\n"), name, what, a, b, SELFTEST_AXIS_LENGTH_TOL);
 	printf_P(PSTR("Check:"));
 	for (uint8_t i = 0; i < 3; i++) printf_P(PSTR("%s%c"), cause[i], i < 2 ? ',' : '\n');
 	if (error == AxisError::TooShort)
