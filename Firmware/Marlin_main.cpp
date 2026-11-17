@@ -7881,7 +7881,8 @@ void process_commands()
         // STM32 port (TMC2209 StallGuard4, SGTHRS 0..255, higher = more sensitive):
         //   M916 X.. Y.. Z..     crash detection while printing (applied by the next driver init)
         //   M916 H X.. Y.. Z..   homing, Calibrate Z and the self test axis check (next homing)
-        // Not stored: for tuning; the values found belong into TMC2209_SGTHRS_* of the variant.
+        // The homing values are stored (as by Calibration > Homing sensitivity on the LCD);
+        // the crash detection values are not.
         const bool home = code_seen('H');
         for (uint8_t axis = 0; axis < NUM_AXIS; axis++) {
             if (code_seen(axis_codes[axis])) {

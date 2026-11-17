@@ -33,6 +33,9 @@ Menus: the same as on the MK3S (checked in the emulator), including Settings > M
 Brightness, Fans check, Lin. correction (the TMC2209 has no microstep table), Belt test,
 Belt status and the memory dump items.
 Added: Settings > HW Setup > E-steps and Calibration > E-steps cal. (see Extruder).
+Added: Calibration > Homing sensitivity: StallGuard thresholds of the sensorless homing of
+X, Y and Z (higher = more sensitive; raise it if an axis bounces or grinds at the end before
+it stops, lower it if it stops early), with Home X / Home Y to try the value. Stored at once.
 Added: Settings > Input shaper, PA: shaper type and frequency of X and Y and the pressure
 advance, with test prints to find the values: see [TUNING.md](TUNING.md).
 

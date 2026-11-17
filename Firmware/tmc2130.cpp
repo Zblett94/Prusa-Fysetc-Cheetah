@@ -308,8 +308,36 @@ uint8_t tmc2130_mres[4] = {0, 0, 0, 0}; //will be filed at begin of init
 // StallGuard4 thresholds (SGTHRS). Higher values are more sensitive (the opposite of the TMC2130 SGT).
 uint8_t tmc2130_sg_thr[4] = {TMC2209_SGTHRS_X, TMC2209_SGTHRS_Y, TMC2209_SGTHRS_Z, TMC2209_SGTHRS_E};
 static uint8_t tmc2130_sg_thr_home[4] = {TMC2209_SGTHRS_HOME_X, TMC2209_SGTHRS_HOME_Y, TMC2209_SGTHRS_HOME_Z, TMC2209_SGTHRS_E};
-void tmc2130_set_sg_thr_home(uint8_t axis, uint8_t thr) { if (axis < 4) tmc2130_sg_thr_home[axis] = thr; }
+#define SG_HOME_MAGIC 0xA7
+//! the X, Y, Z homing thresholds stored by the LCD menu or M916 H (EEPROM_SG_HOME)
+static void tmc2209_load_sg_thr_home()
+{
+	if (eeprom_read_byte((uint8_t *)EEPROM_SG_HOME) != SG_HOME_MAGIC) return; // defaults of the variant
+	for (uint8_t axis = X_AXIS; axis <= Z_AXIS; axis++) {
+		const uint8_t v = eeprom_read_byte((uint8_t *)EEPROM_SG_HOME + 1 + axis);
+		if (v) tmc2130_sg_thr_home[axis] = v;
+	}
+}
+static void tmc2209_store_sg_thr_home()
+{
+	for (uint8_t axis = X_AXIS; axis <= Z_AXIS; axis++)
+		eeprom_update_byte((uint8_t *)EEPROM_SG_HOME + 1 + axis, tmc2130_sg_thr_home[axis]);
+	eeprom_update_byte((uint8_t *)EEPROM_SG_HOME, SG_HOME_MAGIC);
+}
+void tmc2130_set_sg_thr_home(uint8_t axis, uint8_t thr)
+{
+	if (axis > Z_AXIS || thr == 0) return;
+	tmc2130_sg_thr_home[axis] = thr;
+	tmc2209_store_sg_thr_home();
+}
 uint8_t tmc2130_get_sg_thr_home(uint8_t axis) { return axis < 4 ? tmc2130_sg_thr_home[axis] : 0; }
+void tmc2130_reset_sg_thr_home()
+{
+	tmc2130_sg_thr_home[X_AXIS] = TMC2209_SGTHRS_HOME_X;
+	tmc2130_sg_thr_home[Y_AXIS] = TMC2209_SGTHRS_HOME_Y;
+	tmc2130_sg_thr_home[Z_AXIS] = TMC2209_SGTHRS_HOME_Z;
+	eeprom_update_byte((uint8_t *)EEPROM_SG_HOME, 0xFF);
+}
 #else
 uint8_t tmc2130_sg_thr[4] = {TMC2130_SG_THRS_X, TMC2130_SG_THRS_Y, TMC2130_SG_THRS_Z, TMC2130_SG_THRS_E};
 static uint8_t tmc2130_sg_thr_home[4] = TMC2130_SG_THRS_HOME;
@@ -507,6 +535,9 @@ static void tmc2130_XYZ_reg_init(uint8_t axis)
 
 void tmc2130_init(TMCInitParams params)
 {
+#ifdef TMC2209
+	tmc2209_load_sg_thr_home();
+#endif
 //	DBG(_n("tmc2130_init(), mode=%s\n"), tmc2130_mode?_n("STEALTH"):_n("NORMAL"));
 #ifdef TMC2209
 	tmc2209_uart_init();

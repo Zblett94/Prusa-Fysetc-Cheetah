@@ -675,7 +675,10 @@ static Sheets * const EEPROM_Sheets_base = (Sheets*)(EEPROM_SHEETS_BASE);
 // STM32 port: default pressure advance of the motion engine (StoredPressureAdvance, motion/motion.cpp)
 #define EEPROM_PRESSURE_ADVANCE_SIZE 9
 #define EEPROM_PRESSURE_ADVANCE (EEPROM_INPUT_SHAPER-EEPROM_PRESSURE_ADVANCE_SIZE)
-#define EEPROM_LAST_ITEM EEPROM_PRESSURE_ADVANCE
+// STM32 port: StallGuard4 homing thresholds X, Y, Z of the TMC2209 (magic + 3 bytes, tmc2130.cpp)
+#define EEPROM_SG_HOME_SIZE 4
+#define EEPROM_SG_HOME (EEPROM_PRESSURE_ADVANCE-EEPROM_SG_HOME_SIZE)
+#define EEPROM_LAST_ITEM EEPROM_SG_HOME
 // !!!!!
 // !!!!! this is end of EEPROM section ... all updates MUST BE inserted before this mark !!!!!
 // !!!!!

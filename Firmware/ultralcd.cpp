@@ -4434,7 +4434,8 @@ static float lcd_e_steps_enter(const char *title1, const char *title2, float v, 
         if (redraw) {
             redraw = false;
             lcd_set_cursor(0, 2);
-            lcd_printf_P(decimals == 3 ? PSTR("%c %6.3f %-11s") : PSTR("%c %6.1f %-11s"), LCD_STR_ARROW_RIGHT[0], v, unit);
+            lcd_printf_P(decimals == 3 ? PSTR("%c %6.3f %-11s") : decimals == 0 ? PSTR("%c %6.0f %-11s") : PSTR("%c %6.1f %-11s"),
+                LCD_STR_ARROW_RIGHT[0], v, unit);
         }
         delay_keep_alive(50);
         if (lcd_clicked()) break;
@@ -4611,6 +4612,44 @@ static void lcd_motion_tuning_menu()
     MENU_END();
 }
 #endif //MOTION_ENGINE
+
+#ifdef TMC2209
+//------------------------------------------------------------------------------
+// STM32 port: Calibration > Homing sensitivity
+// StallGuard4 thresholds of the sensorless homing (also Calibrate Z and the self test
+// axis check). Higher = more sensitive: raise it if an axis bounces or grinds at the end
+// before it stops, lower it if it stops before the end. Stored at once.
+//------------------------------------------------------------------------------
+static void lcd_sg_home_edit(uint8_t axis)
+{
+    if (printer_active()) return;
+    static const char *const titles[] = { "X homing sens.", "Y homing sens.", "Z homing sens." };
+    const float v = lcd_e_steps_enter(titles[axis], PSTR("Higher=more sens."),
+        tmc2130_get_sg_thr_home(axis), 1, 255, 1, PSTR(""), 0);
+    tmc2130_set_sg_thr_home(axis, (uint8_t)(v + 0.5f));
+}
+static void lcd_sg_home_x() { lcd_sg_home_edit(X_AXIS); }
+static void lcd_sg_home_y() { lcd_sg_home_edit(Y_AXIS); }
+static void lcd_sg_home_z() { lcd_sg_home_edit(Z_AXIS); }
+static void lcd_sg_home_defaults() { tmc2130_reset_sg_thr_home(); }
+
+static void lcd_homing_sensitivity_menu()
+{
+    char x[5], y[5], z[5];
+    snprintf(x, sizeof(x), "%u", tmc2130_get_sg_thr_home(X_AXIS));
+    snprintf(y, sizeof(y), "%u", tmc2130_get_sg_thr_home(Y_AXIS));
+    snprintf(z, sizeof(z), "%u", tmc2130_get_sg_thr_home(Z_AXIS));
+    MENU_BEGIN();
+    MENU_ITEM_BACK_P(_T(MSG_CALIBRATION));
+    MENU_ITEM_TOGGLE_P(PSTR("X sensitivity"), x, lcd_sg_home_x);
+    MENU_ITEM_GCODE_P(PSTR("Home X"), PSTR("G28 X"));
+    MENU_ITEM_TOGGLE_P(PSTR("Y sensitivity"), y, lcd_sg_home_y);
+    MENU_ITEM_GCODE_P(PSTR("Home Y"), PSTR("G28 Y"));
+    MENU_ITEM_TOGGLE_P(PSTR("Z sensitivity"), z, lcd_sg_home_z);
+    MENU_ITEM_FUNCTION_P(PSTR("Defaults"), lcd_sg_home_defaults);
+    MENU_END();
+}
+#endif //TMC2209
 #endif //E_STEPS_MENU
 
 void lcd_hw_setup_menu(void)                      // can not be "static"
@@ -4796,6 +4835,9 @@ static void lcd_calibration_menu()
     MENU_ITEM_FUNCTION_P(_T(MSG_SELFTEST), lcd_selftest_v);
 #ifdef E_STEPS_MENU
     if (!printer_active()) MENU_ITEM_FUNCTION_P(PSTR("E-steps cal."), lcd_e_steps_calibration);
+#ifdef TMC2209
+    if (!printer_active()) MENU_ITEM_SUBMENU_P(PSTR("Homing sensitivity"), lcd_homing_sensitivity_menu);
+#endif
 #endif //E_STEPS_MENU
     // MK2
     MENU_ITEM_FUNCTION_P(_T(MSG_CALIBRATE_BED), lcd_mesh_calibration);
