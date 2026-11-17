@@ -320,7 +320,7 @@
 #define TMC2209_SGTHRS_Y        100
 #define TMC2209_SGTHRS_Z        80
 #define TMC2209_SGTHRS_E        0
-#define TMC2209_SGTHRS_HOME_X   100   // sensorless homing
+#define TMC2209_SGTHRS_HOME_X   110   // sensorless homing (CHEETAH: X bounced at the end before stopping with 100); M916 H X.. to try values
 #define TMC2209_SGTHRS_HOME_Y   100
 #define TMC2209_SGTHRS_HOME_Z   80
 

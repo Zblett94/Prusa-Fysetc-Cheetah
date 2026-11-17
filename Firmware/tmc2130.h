@@ -11,6 +11,11 @@ extern uint8_t tmc2130_mres[4];
 
 //flags for axis stall detection
 extern uint8_t tmc2130_sg_thr[4];
+#ifdef TMC2209
+//! StallGuard4 thresholds for homing (M916 H), used from the next tmc2130_home_enter()
+void tmc2130_set_sg_thr_home(uint8_t axis, uint8_t thr);
+uint8_t tmc2130_get_sg_thr_home(uint8_t axis);
+#endif
 
 extern bool tmc2130_sg_stop_on_crash;
 extern uint8_t tmc2130_sg_crash; //crash mask

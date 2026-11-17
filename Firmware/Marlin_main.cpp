@@ -7861,7 +7861,7 @@ void process_commands()
     }
     break;
 
-#ifdef TMC2130_SERVICE_CODES_M910_M918
+#if defined(TMC2130_SERVICE_CODES_M910_M918) || defined(TMC2209)
     /*!
     ### M916 - Set TMC2130 Stallguard sensitivity threshold <a href="https://reprap.org/wiki/G-code#M916:_Set_TMC2130_Stallguard_sensitivity_threshold">M916: Set TMC2130 Stallguard sensitivity threshold</a>
     Not active in default, only if `TMC2130_SERVICE_CODES_M910_M918` is defined in source code.
@@ -7877,14 +7877,32 @@ void process_commands()
     */
     case 916:
     {
+#ifdef TMC2209
+        // STM32 port (TMC2209 StallGuard4, SGTHRS 0..255, higher = more sensitive):
+        //   M916 X.. Y.. Z..     crash detection while printing (applied by the next driver init)
+        //   M916 H X.. Y.. Z..   homing, Calibrate Z and the self test axis check (next homing)
+        // Not stored: for tuning; the values found belong into TMC2209_SGTHRS_* of the variant.
+        const bool home = code_seen('H');
+        for (uint8_t axis = 0; axis < NUM_AXIS; axis++) {
+            if (code_seen(axis_codes[axis])) {
+                const uint8_t v = code_value_uint8();
+                if (home) tmc2130_set_sg_thr_home(axis, v);
+                else tmc2130_sg_thr[axis] = v;
+            }
+            printf_P(_N("sg_thr[%c]=%d home=%d\n"), "XYZE"[axis], tmc2130_sg_thr[axis], tmc2130_get_sg_thr_home(axis));
+        }
+#else
         for (uint8_t axis = 0; axis < NUM_AXIS; axis++) {
             if (code_seen(axis_codes[axis])) {
                     tmc2130_sg_thr[axis] = code_value_uint8();
             }
             printf_P(_N("tmc2130_sg_thr[%c]=%d\n"), "XYZE"[axis], tmc2130_sg_thr[axis]);
         }
+#endif
     }
     break;
+#endif //TMC2130_SERVICE_CODES_M910_M918 || TMC2209
+#ifdef TMC2130_SERVICE_CODES_M910_M918
 
     /*!
     ### M917 - Set TMC2130 PWM amplitude offset (pwm_ampl) <a href="https://reprap.org/wiki/G-code#M917:_Set_TMC2130_PWM_amplitude_offset_.28pwm_ampl.29">M917: Set TMC2130 PWM amplitude offset (pwm_ampl)</a>

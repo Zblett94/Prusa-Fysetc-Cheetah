@@ -308,6 +308,8 @@ uint8_t tmc2130_mres[4] = {0, 0, 0, 0}; //will be filed at begin of init
 // StallGuard4 thresholds (SGTHRS). Higher values are more sensitive (the opposite of the TMC2130 SGT).
 uint8_t tmc2130_sg_thr[4] = {TMC2209_SGTHRS_X, TMC2209_SGTHRS_Y, TMC2209_SGTHRS_Z, TMC2209_SGTHRS_E};
 static uint8_t tmc2130_sg_thr_home[4] = {TMC2209_SGTHRS_HOME_X, TMC2209_SGTHRS_HOME_Y, TMC2209_SGTHRS_HOME_Z, TMC2209_SGTHRS_E};
+void tmc2130_set_sg_thr_home(uint8_t axis, uint8_t thr) { if (axis < 4) tmc2130_sg_thr_home[axis] = thr; }
+uint8_t tmc2130_get_sg_thr_home(uint8_t axis) { return axis < 4 ? tmc2130_sg_thr_home[axis] : 0; }
 #else
 uint8_t tmc2130_sg_thr[4] = {TMC2130_SG_THRS_X, TMC2130_SG_THRS_Y, TMC2130_SG_THRS_Z, TMC2130_SG_THRS_E};
 static uint8_t tmc2130_sg_thr_home[4] = TMC2130_SG_THRS_HOME;
