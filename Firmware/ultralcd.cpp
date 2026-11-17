@@ -8,6 +8,7 @@
 #ifdef MOTION_ENGINE
 #include "motion/motion.h" // Settings > Input shaper, PA
 #endif
+#include "shaper_cal.h" // Calibration > Shaper cal. X / Y (accelerometer)
 #include "lcd_tft.h"
 #include "Marlin.h"
 #include "language.h"
@@ -4881,6 +4882,12 @@ static void lcd_calibration_menu()
     if (!printer_active()) MENU_ITEM_FUNCTION_P(PSTR("E-steps cal."), lcd_e_steps_calibration);
 #ifdef TMC2209
     if (!printer_active()) MENU_ITEM_SUBMENU_P(PSTR("Homing sensitivity"), lcd_homing_sensitivity_menu);
+#endif
+#ifdef SHAPER_CAL
+    if (!printer_active()) {
+        MENU_ITEM_FUNCTION_P(PSTR("Shaper cal. X"), shaper_cal_x);
+        MENU_ITEM_FUNCTION_P(PSTR("Shaper cal. Y"), shaper_cal_y);
+    }
 #endif
 #endif //E_STEPS_MENU
     // MK2

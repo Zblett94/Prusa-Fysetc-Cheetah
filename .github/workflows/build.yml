@@ -33,6 +33,9 @@ jobs:
       - name: TMC2209 UART reply decoder test (Cheetah V3)
         run: sh test/tmcuart/run.sh
 
+      - name: Resonance analysis test (input shaper calibration)
+        run: sh test/resonance/run.sh
+
       - name: Install PlatformIO
         run: pip install platformio
 
