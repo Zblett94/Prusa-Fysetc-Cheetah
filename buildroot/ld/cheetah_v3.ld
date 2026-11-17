@@ -36,15 +36,18 @@ SECTIONS
     . = ALIGN(4);
     *libc_nano.a:*(.text .text*)
     *libgcc.a:*(.text .text*)
-    *libm.a:libm_a-kf_rem_pio2.o(.text .text*)
-    *libm.a:libm_a-ef_rem_pio2.o(.text .text*)
-    /* more of libm in the free room of sector 0 (frees sectors 3..5) */
-    *libm.a:libm_a-ef_pow.o(.text .text*)
-    *libm.a:libm_a-wf_pow.o(.text .text*)
-    *libm.a:libm_a-ef_exp.o(.text .text*)
+    /* the largest parts of libm (code and tables) that fit in the
+       free room of sector 0: frees room in sectors 3..5 (the linker stops if it overflows) */
+    *libm.a:libm_a-kf_rem_pio2.o(.text .text* .rodata .rodata*)
+    *libm.a:libm_a-ef_rem_pio2.o(.text .text* .rodata .rodata*)
+    *libm.a:libm_a-ef_exp.o(.text .text* .rodata .rodata*)
     *libm.a:libm_a-wf_exp.o(.text .text*)
     *libm.a:libm_a-sf_sin.o(.text .text*)
     *libm.a:libm_a-sf_cos.o(.text .text*)
+    *libm.a:libm_a-kf_sin.o(.text .text*)
+    *libm.a:libm_a-kf_cos.o(.text .text*)
+    *libm.a:libm_a-sf_atan.o(.text .text* .rodata .rodata*)
+    *libm.a:libm_a-ef_atan2.o(.text .text* .rodata .rodata*)
     . = ALIGN(4);
   } >FLASH0
 

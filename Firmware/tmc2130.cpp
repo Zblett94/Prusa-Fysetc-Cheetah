@@ -1382,6 +1382,11 @@ void tmc2130_get_wave(uint8_t axis, uint8_t* data)
 	tmc2130_set_pwr(axis, pwr);
 }
 
+#ifdef TMC2209
+//! STM32 port: the TMC2209 has no microstep table (MSLUT): linearity correction does nothing
+//! (and leaves powf and the table code out of the flash)
+void tmc2130_set_wave(uint8_t, uint8_t, uint8_t) {}
+#else
 void tmc2130_set_wave(uint8_t axis, uint8_t amp, uint8_t fac1000)
 {
 // TMC2130 wave compression algorithm
@@ -1459,6 +1464,7 @@ void tmc2130_set_wave(uint8_t axis, uint8_t amp, uint8_t fac1000)
 	} while (i++ != 255);
 	tmc2130_wr_MSLUTSEL(axis, x[0], x[1], x[2], w[0], w[1], w[2], w[3]);
 }
+#endif //TMC2209
 
 void bubblesort_uint8(uint8_t* data, uint8_t size, uint8_t* data2)
 {

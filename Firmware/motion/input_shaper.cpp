@@ -64,7 +64,7 @@ Shaper get(const float damping_ratio, const float shaper_freq, const float vibra
         const float v_tol = 1.f / vibration_reduction;
         const float K = expf(-damping_ratio * float(M_PI) / df);
         const float V2 = sqr(v_tol);
-        const float X = powf(V2 * (sqrtf(1.f - V2) + 1.f), 1.f / 3.f);
+        const float X = cbrtf(V2 * (sqrtf(1.f - V2) + 1.f)); // = powf(.., 1/3): cbrtf is far smaller
         const float a1 = (3.f * X * X + 2.f * X + 3.f * V2) / (16.f * X);
         const float a2 = (.5f - a1) * K;
         s.num_pulses = 4;
