@@ -32,6 +32,7 @@
 //------------------------------------------------------------------------------
 #include "hal_stm32/tmc2209_uart.h"
 #include "ultralcd.h" // alert messages of the link supervision
+#include "planner.h" // blocks_queued()
 #include <avr/wdt.h>
 
 #define TMC2209_GCONF_BASE   0x000001C0 // pdn_disable | mstep_reg_select | multistep_filt
@@ -791,6 +792,13 @@ bool tmc2130_wait_standstill_xy(int timeout)
 
 void tmc2130_check_overtemp()
 {
+#if defined(TMC2209) && defined(TMC_UART_PIN)
+	// Cheetah V3: a read on the bit-banged UART stops the step interrupt for 0.4 ms (the
+	// steps then come late in a burst: lost steps at the MK3.5 speeds). Read the drivers
+	// only while nothing moves. The TMC2209 switches itself off at 150 C (overtemperature
+	// shutdown); the pre-warning check here runs between the moves and after the print.
+	if (blocks_queued()) return;
+#endif
 	if (tmc2130_overtemp_timer.expired_cont(1000))
 	{
 #ifdef TMC2209
