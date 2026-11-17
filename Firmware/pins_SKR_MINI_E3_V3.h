@@ -43,7 +43,7 @@
 #define X_STEP_PIN           PB13
 #define X_DIR_PIN            PB12
 #define X_ENABLE_PIN         PB14
-#define X_MIN_PIN            -1
+#define X_MIN_PIN            X_TMC2130_DIAG // homeaxis() runs only if the pin of the home side is defined (the EINSy uses a spare pin); the stop itself is the DIAG stall
 #define X_MAX_PIN            X_TMC2130_DIAG
 #define X_MS1_PIN            -1
 #define X_MS2_PIN            -1
@@ -51,7 +51,7 @@
 #define Y_STEP_PIN           PB10
 #define Y_DIR_PIN            PB2
 #define Y_ENABLE_PIN         PB11
-#define Y_MIN_PIN            -1
+#define Y_MIN_PIN            Y_TMC2130_DIAG // see X_MIN_PIN
 #define Y_MAX_PIN            Y_TMC2130_DIAG
 #define Y_MS1_PIN            -1
 #define Y_MS2_PIN            -1

@@ -250,8 +250,12 @@ your extruder heater takes 2 minutes to hit the target on heating.
 
 // The pullups are needed if you directly connect a mechanical endswitch between the signal and ground pins.
 
+#ifndef X_MAX_ENDSTOP_INVERTING // STM32 port: set by the variant
 #define X_MAX_ENDSTOP_INVERTING 0 // set to 1 to invert the logic of the endstop.
+#endif
+#ifndef Y_MAX_ENDSTOP_INVERTING
 #define Y_MAX_ENDSTOP_INVERTING 0 // set to 1 to invert the logic of the endstop.
+#endif
 #define Z_MAX_ENDSTOP_INVERTING 1 // set to 1 to invert the logic of the endstop.
 //#define DISABLE_MAX_ENDSTOPS
 //#define DISABLE_MIN_ENDSTOPS

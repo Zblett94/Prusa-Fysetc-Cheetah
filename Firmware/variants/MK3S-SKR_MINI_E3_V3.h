@@ -52,8 +52,10 @@
 #define DEFAULT_AXIS_STEPS_PER_UNIT   {100,100,3200/8,280}
 
 // Endstop inverting
-#define X_MIN_ENDSTOP_INVERTING 0 // set to 1 to invert the logic of the endstop.
-#define Y_MIN_ENDSTOP_INVERTING 0 // set to 1 to invert the logic of the endstop.
+#define X_MIN_ENDSTOP_INVERTING 1 // SKR: X/Y min and max are the TMC2209 DIAG (FASTIO_INVERTED): 1 makes M119 report a stall as TRIGGERED
+#define Y_MIN_ENDSTOP_INVERTING 1
+#define X_MAX_ENDSTOP_INVERTING 1
+#define Y_MAX_ENDSTOP_INVERTING 1
 #define Z_MIN_ENDSTOP_INVERTING 0 // set to 1 to invert the logic of the endstop.
 
 // Direction inverting
