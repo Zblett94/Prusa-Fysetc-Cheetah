@@ -146,8 +146,12 @@ uint8_t accel_fifo_entries()
 {
 	if (!emu_running) return 0;
 	const uint32_t made = (uint32_t)(((uint64_t)(micros() - emu_t0_us) * 400ULL) / 1000000ULL);
-	const uint32_t waiting = made - emu_consumed;
-	return waiting > 32 ? 32 : (uint8_t)waiting;
+	uint32_t waiting = made - emu_consumed;
+	if (waiting > 32) { // the 32 entry FIFO overflowed: the oldest samples are lost, as in the sensor
+		emu_consumed = made - 32;
+		waiting = 32;
+	}
+	return (uint8_t)waiting;
 }
 
 void accel_read_sample(int16_t xyz[3])
