@@ -838,11 +838,13 @@ bool tmc2130_wait_standstill_xy(int timeout)
 void tmc2130_check_overtemp()
 {
 #ifdef TMC2209
-	// Cheetah V3: a bit-banged read stops the step interrupt for 0.4 ms (the steps then come
-	// late in a burst: lost steps at the MK3.5 speeds). Reads during a print only with the DMA
-	// capture of the reply (tmc2209_uart_nonblocking(): interrupts stay enabled); else only
-	// while nothing moves. The TMC2209 shuts itself off at 150 C in any case.
-	if (blocks_queued() && !tmc2209_uart_nonblocking()) return;
+	// Read the drivers only while nothing moves. A bit-banged read stops the step interrupt
+	// for 0.4 ms (the steps come late in a burst: lost steps). The DMA capture keeps the
+	// interrupts enabled, but when one capture fails the read is repeated bit-banged: reads
+	// during moves (allowed for a while with DMA) are the suspected cause of Z steps lost
+	// while probing (nozzle too high after mesh bed leveling). The TMC2209 shuts itself off
+	// at 150 C anyway.
+	if (blocks_queued()) return;
 #endif
 	if (tmc2130_overtemp_timer.expired_cont(1000))
 	{
