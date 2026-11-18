@@ -51,11 +51,11 @@ motor, not for the original MK3S extruder:
 |---|---|---|
 | E steps/mm (M92 E) | 415 | 280 |
 | E microsteps (M350 E) | 16 | 32 |
-| E motor current, running | 0.51 A RMS (Prusa units 27) | 0.56 A (30) |
+| E motor current, running | 0.45 A RMS (Prusa units 24) | 0.56 A (30) |
 | E motor current, holding | 0.20 A RMS (10) | 0.56 A (30) |
 
-The motor (FYSETC G36HSY4405-6D-1200A) is rated 1 A; 0.51 A RMS (0.72 A peak) gives the
-torque for high flow hotends and stays warm, not hot. Check the motor temperature after a
+The motor (FYSETC G36HSY4405-6D-1200A) is rated 1 A; 0.45 A RMS (0.64 A peak) gives the
+torque for high flow hotends and stays warm, not hot (`M912 E27` = 0.51 A for more). Check the motor temperature after a
 long print the first time (comfortably touchable is fine). Leave the "E-cool mode" of the
 Experimental menu off (it drives the extruder with a fixed voltage instead of the current
 setting).
