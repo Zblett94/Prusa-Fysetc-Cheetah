@@ -1971,6 +1971,7 @@ inline void gcode_M900() {
 // collected by G29 P1 for the G80 run by G29 A
 static float m555_area[4];          // x, y, w, h
 static bool m555_valid;
+static bool m555_before_g28;        // MK3.5 G-code: M555 comes right before its G28
 static float g29_area[4];           // x0, y0, x1, y1
 static uint8_t g29_state;           // 0: nothing, 1: area collected, 2: whole bed
 
@@ -1980,6 +1981,7 @@ static void gcode_M555() {
     if (code_seen('W')) m555_area[2] = code_value();
     if (code_seen('H')) m555_area[3] = code_value();
     m555_valid = m555_area[2] > 0 && m555_area[3] > 0;
+    m555_before_g28 = true;
     motion_restore_defaults();
 }
 
@@ -4455,9 +4457,15 @@ void process_commands()
 #endif //TMC2130
 #ifdef MOTION_ENGINE
       // STM32 port: a print starts with homing: back to the stored input shaper and pressure
-      // advance (the MK3.5 end G-code switches them off). A plain G28 (MK3.5 G-code) is
-      // followed by its own G29 bed leveling: homing only, no second mesh leveling.
-      if ((home_x || home_y || home_z) == false) motion_restore_defaults();
+      // advance (the MK3.5 end G-code switches them off).
+      // A plain G28 levels the bed (G80, which also applies the Live Z of the sheet) as in the
+      // stock firmware: the first layer calibration relies on it. Not in MK3.5 G-code (M555
+      // right before G28): its own G29 commands level the bed.
+      if ((home_x || home_y || home_z) == false) {
+          motion_restore_defaults();
+          if (!without_mbl && !m555_before_g28) gcode_G80();
+      }
+      m555_before_g28 = false;
 #else
       if ((home_x || home_y || without_mbl || home_z) == false) {
           gcode_G80();
