@@ -340,19 +340,20 @@
 #define TMC2130_SG_THRS_HOME {3, 3, TMC2130_SG_THRS_Z, TMC2130_SG_THRS_E}
 
 //new settings is possible for vsense = 1, running current value > 31 set vsense to zero and shift both currents by 1 bit right (Z axis only)
-// CHEETAH: E = FYSETC NEMA 14 pancake motor, whose maker specifies 0.30..0.35 A (it
-// overheats above): 17 = 0.33 A RMS running, 10 = 0.20 A RMS holding. The 3:1 gears
-// give the torque. Prusa current units: values < 32: (value + 1) * 18.1 mA RMS,
+// CHEETAH: E = FYSETC NEMA 14 pancake motor G36HSY4405-6D-1200A (datasheet: 1 A rated,
+// 2.4 ohm, 110 mN.m): 27 = 0.51 A RMS (0.72 A peak) running, 10 = 0.20 A RMS holding.
+// (Was 17 = 0.33 A; more torque for high flow hotends.) The 3:1 gears multiply the torque.
+// Prusa current units: values < 32: (value + 1) * 18.1 mA RMS,
 // values >= 32: (value / 2 + 1) * 32.1 mA RMS. M911/M912 change them at run time
-// (M913 prints them): never more than 18 (0.34 A) for this motor.
+// (M913 prints them).
 // CHEETAH: X 24 = 0.45 A RMS, Y 27 = 0.51 A RMS running (the MK3.5 runs these motors at 0.30 / 0.37 A):
 // more torque headroom for the MK3.5 accelerations. Settings > Motor current changes them.
 // X/Y holding current (standstill) 60 % of the running current: X 14 = 0.27 A, Y 16 = 0.31 A
 // (at the full current the spreadCycle chopper hums audibly at standstill).
 #define TMC2130_CURRENTS_H {14, 16, 35, 10}  // default holding currents for all axes
-#define TMC2130_CURRENTS_FARM 17             // CHEETAH: E current of the ECool/farm mode, limited to the 0.33 A of the pancake motor (MK3S: 36)
-#define TMC2130_CURRENTS_R {24, 27, 35, 17}  // default running currents for all axes
-#define TMC2130_CURRENTS_R_HOME {8, 10, 20, 17}  // homing running currents for all axes (CHEETAH: E 0.33 A max)
+#define TMC2130_CURRENTS_FARM 27             // CHEETAH: E current of the ECool/farm mode, 0.51 A as the running current (MK3S: 36)
+#define TMC2130_CURRENTS_R {24, 27, 35, 27}  // default running currents for all axes
+#define TMC2130_CURRENTS_R_HOME {8, 10, 20, 27}  // homing running currents for all axes
 
 #define TMC2130_STEALTH_Z
 #define TMC2130_DEDGE_STEPPING
