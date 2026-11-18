@@ -79,6 +79,58 @@ while measuring. The port is normally `/dev/ttyACM0`.
 
 The script finds the sensor axis that moves by itself, so the sensor orientation does not matter.
 
+## Raspberry Pi + BTT S2DW (USB, LIS2DW12)
+
+The S2DW is an RP2040 board that runs Klipper firmware only. Klipper runs on the Pi with the
+S2DW as its **only** MCU, just to record the sensor; the printer stays on this firmware and is
+connected to the Pi by USB as well. `tools/shaker/s2dw_klipper.py` starts the recording through
+Klipper, makes the printer shake (M975) and analyses the result.
+
+### Pi setup (once)
+
+1. Raspberry Pi OS Lite (64-bit) with the Raspberry Pi Imager (enable SSH, user `pi`).
+2. Klipper with KIAUH: `sudo apt install git python3-serial`, then
+   `git clone https://github.com/dw-0/kiauh.git && ./kiauh/kiauh.sh` and install
+   Klipper, Moonraker and Mainsail (Mainsail gives a browser console and config editor).
+3. S2DW firmware (BTT manual): `cd ~/klipper && make menuconfig` with
+   *Enable extra low-level configuration options*, Raspberry Pi RP2040, rp2040,
+   Bootloader offset **No bootloader**, Flash chip **GENERIC_03H with CLKDIV 4**,
+   Communication **USBSERIAL**; `make`. Hold the BOOT button while plugging the S2DW into
+   the Pi, `lsusb` shows `2e8a:0003`, then `make flash FLASH_DEVICE=2e8a:0003`.
+4. `ls /dev/serial/by-id/` shows `usb-Klipper_rp2040_...` (the S2DW) and the printer.
+5. `~/printer_data/config/printer.cfg` (pins from BTT's sample config, bigtreetech/LIS2DW):
+
+```
+[mcu]
+serial: /dev/serial/by-id/usb-Klipper_rp2040_XXXXXXXX-if00
+
+[printer]
+kinematics: none
+max_velocity: 1
+max_accel: 1
+
+[lis2dw]
+cs_pin: gpio9
+spi_software_sclk_pin: gpio10
+spi_software_mosi_pin: gpio11
+spi_software_miso_pin: gpio8
+```
+   `sudo systemctl restart klipper`; in the Mainsail console `ACCELEROMETER_QUERY CHIP=lis2dw`
+   must print values (about 9800 mm/s^2 on the axis that points up). No `axes_map` is needed:
+   the analysis picks the sensor axis that moves.
+6. Copy `tools/shaker/` (shaker_analyze.py, adxl345_pi.py, s2dw_klipper.py) to the Pi.
+
+### Measuring
+
+Home the printer (Normal mode), fix the S2DW rigidly (nozzle carriage for X, bed for Y; route
+its USB cable so it cannot catch), then on the Pi:
+
+```
+python3 shaker/s2dw_klipper.py /dev/serial/by-id/usb-<the printer> X
+```
+(the printer's entry is the one that is *not* `usb-Klipper_rp2040...`). It prints the
+resonance and a line like `M593 X T2 F47.1 D0.10`; repeat with `Y` and the sensor on the bed.
+
 ## Other sensors (Klipper, ESP32)
 
 1. Sensor: the S2DW is an RP2040 board that only runs Klipper firmware (vendor information), so
