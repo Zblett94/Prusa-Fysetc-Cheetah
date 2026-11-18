@@ -128,13 +128,25 @@ def run(t, v, log, col, scale):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('csv'); ap.add_argument('log')
-    ap.add_argument('--column', type=int, default=1, help='1=x 2=y 3=z of the recording (the axis the sensor measures along the shaken axis)')
+    ap.add_argument('--column', type=int, default=0, help='1=x 2=y 3=z of the recording, 0 = the one with the strongest response')
     ap.add_argument('--scale', type=float, default=1.0, help='multiply samples to mm/s2 (9806.65 for g, 1000 for m/s2)')
     a = ap.parse_args()
     t, v = read_csv(a.csv)
     log = read_log(a.log)
-    fs, axis, freq, resp = run(t, v, log, a.column - 1, a.scale)
-    print('sample rate %.0f Hz, axis %s' % (fs, axis))
+    cols = [a.column - 1] if a.column else [0, 1, 2]
+    best = None
+    for c in cols:
+        try:
+            r = run(t, v, log, c, a.scale)
+        except SystemExit:
+            if len(cols) == 1: raise
+            continue            # no shaking seen on this sensor axis
+        if best is None or max(r[3]) > max(best[1][3]):
+            best = (c, r)
+    if best is None:
+        raise SystemExit('no shaking found in the recording (sensor fixed? recording started?)')
+    col, (fs, axis, freq, resp) = best
+    print('sample rate %.0f Hz, axis %s, sensor column %s' % (fs, axis, 'xyz'[col]))
     for f, r in zip(freq, resp):
         print('%5.1f Hz  %8.4f  %s' % (f, r, '#' * int(min(60, 40 * r / (max(resp) or 1)))))
     res, why = analyze(freq, resp)

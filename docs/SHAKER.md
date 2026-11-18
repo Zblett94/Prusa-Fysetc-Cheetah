@@ -32,7 +32,54 @@ X: sensor on the nozzle carriage. Y: sensor on the heatbed. Fix it rigidly. Keep
 (sensor along the shaken axis) in mind: use `--column 1/2/3` for the sensor axis that points
 along the shaken axis.
 
-## Pi side
+## Raspberry Pi + ADXL345 on SPI (e.g. Mellow Fly ADXL345)
+
+The simplest setup: the sensor on the Pi's SPI pins, the Pi on the printer's USB-C port, one
+script (`tools/shaker/adxl345_pi.py`) that records and runs the sweep at the same time.
+
+### Wiring (Raspberry Pi 3B, SPI0, 40-pin header)
+
+| ADXL345 signal (silkscreen names vary) | Pi pin | Pi signal |
+|---|---|---|
+| GND                                   | 6 (or 9, 14, 20, 25) | GND |
+| VCC / 3V3                             | 1 or 17 | 3.3 V |
+| CS                                    | 24 | GPIO8, SPI0 CE0 |
+| SDO (MISO)                            | 21 | GPIO9, SPI0 MISO |
+| SDA / SDI (MOSI)                      | 19 | GPIO10, SPI0 MOSI |
+| SCL / SCK / SCLK                      | 23 | GPIO11, SPI0 SCLK |
+| INT1 / INT2                           | not connected | |
+
+Check the silkscreen of your board before powering it: some boards have a 5 V input with a
+regulator (then use 5 V, pin 2 or 4); a bare ADXL345 must get **3.3 V only**. The Pi's GPIOs are
+3.3 V. Keep the wires short (under ~30 cm) and twisted with GND if possible: long loose SPI wires
+on a moving carriage give read errors.
+
+### Pi setup (once)
+
+```
+sudo raspi-config            # Interface Options > SPI > enable, reboot
+sudo apt install python3-spidev python3-serial
+ls /dev/spidev0.0            # must exist
+python3 tools/shaker/adxl345_pi.py --test
+```
+`--test` reads the sensor for 2 s: it must report about 800 samples per second and about
+9.8 m/s^2 on the axis that points up. "ADXL345 not found" means wiring or power.
+
+Connect the Pi to the printer's USB-C port. Stop OctoPrint (or anything else using the port)
+while measuring. The port is normally `/dev/ttyACM0`.
+
+### Measuring
+
+1. Home the printer (Normal mode, not printing).
+2. Fix the sensor rigidly: on the nozzle carriage for X, on the bed for Y.
+3. `python3 tools/shaker/adxl345_pi.py /dev/ttyACM0 X` (then the same with `Y` and the sensor on
+   the bed). The printer shakes for about a minute; the script writes `shake_x_<date>.csv/.log`
+   and prints the result, e.g. `M593 X T2 F47.1 D0.10`.
+4. Enter frequency (and type) in Calibration > Input shaper, PA, or send the M593 line.
+
+The script finds the sensor axis that moves by itself, so the sensor orientation does not matter.
+
+## Other sensors (Klipper, ESP32)
 
 1. Sensor: the S2DW is an RP2040 board that only runs Klipper firmware (vendor information), so
    the Pi runs Klipper with the S2DW as its only MCU (`[printer] kinematics: none`, a `[lis2dw]`
