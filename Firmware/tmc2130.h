@@ -19,9 +19,10 @@ uint8_t tmc2130_get_sg_thr_home(uint8_t axis);
 //! back to the values of the variant (TMC2209_SGTHRS_HOME_*)
 void tmc2130_reset_sg_thr_home();
 
-//! X / Y running (and holding) current in mA RMS, stored in the EEPROM (Settings > Motor current)
+//! X / Y running current in mA RMS, stored in the EEPROM (Settings > Motor current); holding current TMC_XY_HOLD_PERCENT of it
 #define TMC_XY_CURRENT_MIN 200
 #define TMC_XY_CURRENT_MAX 700
+#define TMC_XY_HOLD_PERCENT 60 // X/Y holding current in % of the running current
 uint16_t tmc2130_get_xy_current(uint8_t axis);
 void tmc2130_set_xy_current(uint8_t axis, uint16_t mA);
 void tmc2130_reset_xy_current();

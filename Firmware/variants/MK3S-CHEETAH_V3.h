@@ -347,7 +347,9 @@
 // (M913 prints them): never more than 18 (0.34 A) for this motor.
 // CHEETAH: X 24 = 0.45 A RMS, Y 27 = 0.51 A RMS running (the MK3.5 runs these motors at 0.30 / 0.37 A):
 // more torque headroom for the MK3.5 accelerations. Settings > Motor current changes them.
-#define TMC2130_CURRENTS_H {24, 27, 35, 10}  // default holding currents for all axes
+// X/Y holding current (standstill) 60 % of the running current: X 14 = 0.27 A, Y 16 = 0.31 A
+// (at the full current the spreadCycle chopper hums audibly at standstill).
+#define TMC2130_CURRENTS_H {14, 16, 35, 10}  // default holding currents for all axes
 #define TMC2130_CURRENTS_FARM 17             // CHEETAH: E current of the ECool/farm mode, limited to the 0.33 A of the pancake motor (MK3S: 36)
 #define TMC2130_CURRENTS_R {24, 27, 35, 17}  // default running currents for all axes
 #define TMC2130_CURRENTS_R_HOME {8, 10, 20, 17}  // homing running currents for all axes (CHEETAH: E 0.33 A max)

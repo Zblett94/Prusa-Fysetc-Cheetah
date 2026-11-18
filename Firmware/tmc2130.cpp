@@ -312,11 +312,12 @@ static uint8_t tmc2130_sg_thr_home[4] = {TMC2209_SGTHRS_HOME_X, TMC2209_SGTHRS_H
 #define SG_HOME_MAGIC 0xA7
 //! the X, Y, Z homing thresholds stored by the LCD menu or M916 H (EEPROM_SG_HOME)
 #define XY_CURRENT_MAGIC 0xC5
+//! running current mA, holding current (standstill) 60 % of it: at the full current the
+//! spreadCycle chopper hums audibly at standstill; holding needs far less torque
 static void tmc2209_apply_xy_current(uint8_t axis, uint16_t mA)
 {
-	const uint8_t val = tmc2130_cur2val(mA);
-	currents[axis].setiHold(val); // like M907
-	currents[axis].setiRun(val);
+	currents[axis].setiHold(tmc2130_cur2val(mA * TMC_XY_HOLD_PERCENT / 100));
+	currents[axis].setiRun(tmc2130_cur2val(mA));
 }
 //! the X/Y current stored by the LCD menu (once, at the first driver init: M907 changes of
 //! the running printer survive a mode change)
