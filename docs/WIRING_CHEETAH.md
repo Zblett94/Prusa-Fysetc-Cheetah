@@ -69,6 +69,21 @@ can also be set by hand in **Settings > HW Setup > E-steps**, or over USB with
 reverse the motor: turn its plug around or swap the two wires of one coil (or set
 `INVERT_E0_DIR` to 1 in `Firmware/variants/MK3S-CHEETAH_V3.h`).
 
+## Motor noise (Settings > Motor current)
+
+**X chopper / Y chopper** select the spreadCycle chopper of the axis (applied at once, stored):
+
+| Preset | TOFF HSTRT HEND TBL | |
+|---|---|---|
+| Default | 3 6 -2 36 clk | Prusa MK3S values |
+| Quiet | 3 4 -2 | less hysteresis: less hiss and whine at standstill |
+| Quieter | 3 3 -3 | least hysteresis; check fast moves for roughness |
+| LowFreq | 4 5 -2 | lower chopper frequency (~22 kHz) |
+
+Listen with the motors holding (after homing) and during slow and fast moves, keep the
+quietest preset that still moves smoothly. The X/Y holding current is 60 % of the running
+current.
+
 ## Board jumpers
 
 | Jumper | Setting | Why |

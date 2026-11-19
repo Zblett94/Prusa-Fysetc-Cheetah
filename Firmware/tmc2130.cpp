@@ -446,6 +446,67 @@ tmc2130_chopper_config_t tmc2130_chopper_config[NUM_AXIS] = {
 #endif
 };
 
+#ifdef TMC2209
+//------------------------------------------------------------------------------
+// X / Y spreadCycle chopper presets (Settings > Motor current). Register fields as in
+// TMC_SET_CHOP: hstr 0..7 = HSTRT 1..8, hend 0..15 = HEND -3..12. The hysteresis
+// (HSTRT + HEND) sets how far the coil current overshoots in each chopper cycle: less of
+// it makes the chopper quieter (the hiss and whine at standstill), too little makes the
+// current waveform rougher at speed. TOFF 4 lowers the chopper frequency (~22 kHz).
+//------------------------------------------------------------------------------
+struct ChopPreset { uint8_t toff, hstr, hend, tbl; };
+static const ChopPreset chop_presets[] = {
+	{3, 5, 1, 2}, // Default (Prusa MK3S): HSTRT 6, HEND -2, hysteresis 4
+	{3, 3, 1, 2}, // Quiet: hysteresis 2
+	{3, 2, 0, 2}, // Quieter: hysteresis 0
+	{4, 4, 1, 2}, // Low freq.: TOFF 4, hysteresis 3
+};
+static const char *const chop_preset_names[] = {"Default", "Quiet", "Quieter", "LowFreq"};
+constexpr uint8_t CHOP_PRESETS = sizeof(chop_presets) / sizeof(chop_presets[0]);
+#define XY_CHOPPER_MAGIC 0xC9
+static uint8_t chop_preset[2];
+
+static void tmc2209_apply_chop_preset(uint8_t axis, uint8_t idx)
+{
+	if (idx >= CHOP_PRESETS) idx = 0;
+	chop_preset[axis] = idx;
+	tmc2130_chopper_config[axis].toff = chop_presets[idx].toff;
+	tmc2130_chopper_config[axis].hstr = chop_presets[idx].hstr;
+	tmc2130_chopper_config[axis].hend = chop_presets[idx].hend;
+	tmc2130_chopper_config[axis].tbl = chop_presets[idx].tbl;
+}
+//! the presets stored by the LCD menu (once, at the first driver init)
+static void tmc2209_load_chop_presets()
+{
+	static bool loaded;
+	if (loaded) return;
+	loaded = true;
+	if (eeprom_read_byte((uint8_t *)EEPROM_XY_CHOPPER) != XY_CHOPPER_MAGIC) return;
+	for (uint8_t axis = X_AXIS; axis <= Y_AXIS; axis++)
+		tmc2209_apply_chop_preset(axis, eeprom_read_byte((uint8_t *)EEPROM_XY_CHOPPER + 1 + axis));
+}
+uint8_t tmc2130_get_chop_preset(uint8_t axis) { return axis <= Y_AXIS ? chop_preset[axis] : 0; }
+const char *tmc2130_chop_preset_name(uint8_t preset) { return chop_preset_names[preset < CHOP_PRESETS ? preset : 0]; }
+void tmc2130_next_chop_preset(uint8_t axis)
+{
+	if (axis > Y_AXIS) return;
+	tmc2209_apply_chop_preset(axis, (chop_preset[axis] + 1) % CHOP_PRESETS);
+	tmc2130_setup_chopper(axis, tmc2130_mres[axis]);
+	for (uint8_t a = X_AXIS; a <= Y_AXIS; a++)
+		eeprom_update_byte((uint8_t *)EEPROM_XY_CHOPPER + 1 + a, chop_preset[a]);
+	eeprom_update_byte((uint8_t *)EEPROM_XY_CHOPPER, XY_CHOPPER_MAGIC);
+}
+void tmc2130_reset_chop_presets()
+{
+	for (uint8_t axis = X_AXIS; axis <= Y_AXIS; axis++) {
+		tmc2209_apply_chop_preset(axis, 0);
+		tmc2130_setup_chopper(axis, tmc2130_mres[axis]);
+	}
+	eeprom_update_byte((uint8_t *)EEPROM_XY_CHOPPER, 0xFF);
+}
+#endif //TMC2209
+
+
 bool tmc2130_sg_stop_on_crash = true;
 uint8_t tmc2130_sg_crash = 0;
 
@@ -589,6 +650,7 @@ void tmc2130_init(TMCInitParams params)
 #ifdef TMC2209
 	tmc2209_load_sg_thr_home();
 	tmc2209_load_xy_current();
+	tmc2209_load_chop_presets();
 #endif
 //	DBG(_n("tmc2130_init(), mode=%s\n"), tmc2130_mode?_n("STEALTH"):_n("NORMAL"));
 #ifdef TMC2209

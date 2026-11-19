@@ -4641,7 +4641,9 @@ static void lcd_xy_current_edit(uint8_t axis)
 }
 static void lcd_xy_current_x() { lcd_xy_current_edit(X_AXIS); }
 static void lcd_xy_current_y() { lcd_xy_current_edit(Y_AXIS); }
-static void lcd_xy_current_defaults() { tmc2130_reset_xy_current(); }
+static void lcd_xy_current_defaults() { tmc2130_reset_xy_current(); tmc2130_reset_chop_presets(); }
+static void lcd_chop_x() { if (!printer_active()) tmc2130_next_chop_preset(X_AXIS); }
+static void lcd_chop_y() { if (!printer_active()) tmc2130_next_chop_preset(Y_AXIS); }
 
 static void lcd_motor_current_menu()
 {
@@ -4652,6 +4654,9 @@ static void lcd_motor_current_menu()
     MENU_ITEM_BACK_P(_T(MSG_SETTINGS));
     MENU_ITEM_TOGGLE_P(PSTR("X current"), x, lcd_xy_current_x);
     MENU_ITEM_TOGGLE_P(PSTR("Y current"), y, lcd_xy_current_y);
+    // spreadCycle chopper: click cycles Default / Quiet / Quieter / LowFreq (applied at once)
+    MENU_ITEM_TOGGLE_P(PSTR("X chopper"), tmc2130_chop_preset_name(tmc2130_get_chop_preset(X_AXIS)), lcd_chop_x);
+    MENU_ITEM_TOGGLE_P(PSTR("Y chopper"), tmc2130_chop_preset_name(tmc2130_get_chop_preset(Y_AXIS)), lcd_chop_y);
     MENU_ITEM_FUNCTION_P(PSTR("Defaults"), lcd_xy_current_defaults);
     MENU_END();
 }

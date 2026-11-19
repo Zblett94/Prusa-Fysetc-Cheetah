@@ -26,6 +26,12 @@ void tmc2130_reset_sg_thr_home();
 uint16_t tmc2130_get_xy_current(uint8_t axis);
 void tmc2130_set_xy_current(uint8_t axis, uint16_t mA);
 void tmc2130_reset_xy_current();
+//! X / Y spreadCycle chopper presets (TOFF, HSTRT, HEND, TBL), stored in the EEPROM:
+//! less hysteresis = less hiss and whine at standstill (Settings > Motor current)
+uint8_t tmc2130_get_chop_preset(uint8_t axis);
+const char *tmc2130_chop_preset_name(uint8_t preset);
+void tmc2130_next_chop_preset(uint8_t axis);
+void tmc2130_reset_chop_presets();
 #endif
 
 extern bool tmc2130_sg_stop_on_crash;

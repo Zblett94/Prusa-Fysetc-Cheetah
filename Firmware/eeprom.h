@@ -683,7 +683,10 @@ static Sheets * const EEPROM_Sheets_base = (Sheets*)(EEPROM_SHEETS_BASE);
 // STM32 port: X and Y running current set on the LCD: magic + 2 x uint16 (mA RMS, tmc2130.cpp)
 #define EEPROM_XY_CURRENT_SIZE 5
 #define EEPROM_XY_CURRENT (EEPROM_PA_FROM_GCODE-EEPROM_XY_CURRENT_SIZE)
-#define EEPROM_LAST_ITEM EEPROM_XY_CURRENT
+// STM32 port: X and Y spreadCycle chopper preset (Settings > Motor current): magic + 2 x uint8
+#define EEPROM_XY_CHOPPER_SIZE 3
+#define EEPROM_XY_CHOPPER (EEPROM_XY_CURRENT-EEPROM_XY_CHOPPER_SIZE)
+#define EEPROM_LAST_ITEM EEPROM_XY_CHOPPER
 // !!!!!
 // !!!!! this is end of EEPROM section ... all updates MUST BE inserted before this mark !!!!!
 // !!!!!
