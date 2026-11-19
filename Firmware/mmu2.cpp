@@ -326,6 +326,14 @@ bool MMU2::ToolChangeCommonOnce(uint8_t slot) {
             Disable_E0(); // it may seem counterintuitive to disable the E-motor, but it gets enabled in the planner whenever the E-motor is to move
             tool_change_extruder = slot;
             logic.ToolChange(slot); // let the MMU pull the filament out and push a new one in
+            // STM32 port, from the MK3.5/MK4 firmware: MMU FW 3.0.4+ positions its Idler and then
+            // waits (max. 4 s) for the printer's filament sensor to turn off before it pulls. The
+            // G-code ramming leaves the filament tip in the extruder gears: pull it out now.
+            // (MMU FW 3.0.3 pulls the filament out by itself: nothing to do then.)
+            if (extruder != MMU2_NO_TOOL && logic.MmuFwVersionRevision() >= 4) {
+                extruder_move(MMU2_RETRY_UNLOAD_FINISH_LENGTH, logic.PulleySlowFeedRate());
+                planner_synchronize();
+            }
             if (manage_response(true, true)) {
                 break;
             }

@@ -39,6 +39,8 @@ static constexpr float MMU2_VERIFY_LOAD_TO_NOZZLE_TWEAK = -5.F; // mm used to sh
 // The first the MMU does is initialise its axis. Meanwhile the E-motor will unload 20mm of filament in approx. 1 second.
 static constexpr float MMU2_RETRY_UNLOAD_TO_FINDA_LENGTH = 80.0f; // mm
 static constexpr float MMU2_RETRY_UNLOAD_TO_FINDA_FEED_RATE = 80.0f; // mm/s
+// MMU FW 3.0.4+: printer side pull after the ToolChange command (MK3.5 value)
+static constexpr float MMU2_RETRY_UNLOAD_FINISH_LENGTH = -80.0f; // mm
 
 // After loading a new filament, the printer will extrude the filament by this distance
 // and then retract it back to the original position. This is used to check if the
