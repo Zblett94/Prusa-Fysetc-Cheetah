@@ -79,6 +79,24 @@ while measuring. The port is normally `/dev/ttyACM0`.
 
 The script finds the sensor axis that moves by itself, so the sensor orientation does not matter.
 
+## Laptop + BTT S2DW (no Raspberry Pi, no Klipper)
+
+The S2DW's RP2040 can run a small firmware of this repository instead of Klipper
+(`tools/shaker/s2dw_usb`, prebuilt `s2dw_usb.uf2`) that streams the LIS2DW12 over USB, set up
+as Klipper does (1600 Hz, +-16 g). Sensor and printer both plug into the laptop.
+
+1. Flash: hold the S2DW's BOOT button while plugging it into the laptop; a drive `RPI-RP2`
+   appears; copy `s2dw_usb.uf2` onto it (the drive disappears, the board restarts).
+   (Back to Klipper later: flash Klipper as in the S2DW manual.)
+2. `python3 -m pip install pyserial`, put `laptop_s2dw.py`, `adxl345_pi.py` and
+   `shaker_analyze.py` in one folder.
+3. `python3 laptop_s2dw.py --test`: about 1600 samples per second and about 9.8 m/s^2 on the
+   axis pointing up.
+4. Printer on USB too, homed, Normal mode, nothing else using its port (close PrusaSlicer's
+   connection / OctoPrint). Sensor on the nozzle carriage: `python3 laptop_s2dw.py X`; sensor on
+   the bed: `python3 laptop_s2dw.py Y`. The ports are found by their USB ids (`--sensor` and
+   `--printer` override).
+
 ## Raspberry Pi + BTT S2DW (USB, LIS2DW12)
 
 The S2DW is an RP2040 board that runs Klipper firmware only. Klipper runs on the Pi with the
