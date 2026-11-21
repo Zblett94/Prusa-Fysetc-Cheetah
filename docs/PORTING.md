@@ -144,7 +144,7 @@ boots it, sends G-code and checks the serial output and the LCD;
 `test/renode/lang_test.sh` the language menu and a German message,
 `test/renode/motion_test.sh` fast moves at the MK3.5 limits with input shaping and
 pressure advance (exact end positions, no step underruns) and
-`test/renode/endstop_test.sh` an endstop stopping a move. The emulator does not model
+`test/renode/endstop_test.sh` an endstop stopping a move, `test/renode/g29_ok_test.sh` the "ok" after the MK3.5 `G29 A` (OctoPrint). The emulator does not model
 the TMC2209 drivers, EXTI and the ADC, so these tests cover the firmware logic, not the
 hardware layer.
 
