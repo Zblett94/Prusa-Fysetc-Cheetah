@@ -15,7 +15,7 @@ the board.)
 
 The Cheetah V3 uses all 51 I/O pins of its STM32F446RC for its own connectors. Only the
 two pins of the UART on the Raspberry Pi header (TX1 = PA9, RX1 = PA10) are left: they
-carry the MMU2S/MMU3. Power panic and the fan check (fan RPM, Noctua/alt-fan detection)
+carry the MMU2S/MMU3 (**under development: not yet tested on a printer**). Power panic and the fan check (fan RPM, Noctua/alt-fan detection)
 are not used.
 
 Everything else of the MK3S firmware works as on the SKR Mini port: original LCD menus
@@ -113,7 +113,7 @@ current.
 | Hotend fan (5 V) | FAN1 | PA13 | JP1 on 5V. The tachometer wire stays unconnected |
 | MK3S LCD | EXP1 + EXP2, the two LCD cables | see the pin file | RepRapDiscount layout like the EINSy. Check the orientation: EXP1 pins 1/2 are 5 V/GND |
 | PSU power panic cable | not connected | | not used |
-| MMU2S / MMU3 | "PI PWR" header: TX1 (PA9) → MMU RX, RX1 (PA10) ← MMU TX, DC5V → MMU +5 V, GND | PA9/PA10 | 115200 Bd. The MMU control board has no regulator: its logic runs from the +5 V wire of the signal cable (DC5V here). Its TX is 5 V logic: PA10 is 5 V tolerant, a 1 kΩ resistor in series is optional protection (no divider needed). No reset wire (reset over the protocol). 24 V from the PSU as on the MK3S |
+| MMU2S / MMU3 (under development, untested) | "PI PWR" header: TX1 (PA9) → MMU RX, RX1 (PA10) ← MMU TX, DC5V → MMU +5 V, GND | PA9/PA10 | 115200 Bd. The MMU control board has no regulator: its logic runs from the +5 V wire of the signal cable (DC5V here). Its TX is 5 V logic: PA10 is 5 V tolerant, a 1 kΩ resistor in series is optional protection (no divider needed). No reset wire (reset over the protocol). 24 V from the PSU as on the MK3S |
 
 micro SD: the on-board TF slot and the SD slot of the MK3S LCD share the same SPI bus,
 chip select and card detect. Use one of them, not both at once.

@@ -1,22 +1,37 @@
-# Prusa Firmware for 32-bit boards: SKR Mini E3 V3.0 and FYSETC Cheetah V3.0
+# Prusa MK3S firmware for the FYSETC Cheetah V3.0 (32-bit)
 
 This is [Prusa-Firmware 3.14.1](https://github.com/prusa3d/Prusa-Firmware/releases/tag/v3.14.1)
 for the **Original Prusa i3 MK3S**, ported from the 8-bit EINSy RAMBo (ATmega2560)
-to 32-bit boards with TMC2209 drivers:
+to the 32-bit **FYSETC Cheetah V3.0** (STM32F446RC, TMC2209 drivers), with the input
+shaper and pressure advance of the MK3.5.
+
+> **Status**
+>
+> - **FYSETC Cheetah V3.0: tested on a real MK3S.** It connects to OctoPrint
+>   (Raspberry Pi) over USB and prints from PrusaSlicer with the stock
+>   **Original Prusa MK3.5S** profile. This is the main target of the project.
+> - **MMU2S / MMU3: under development, not yet tested on a printer.** The code and
+>   the wiring are there (see [docs/WIRING_CHEETAH.md](docs/WIRING_CHEETAH.md)), but
+>   do not rely on it yet.
+> - **BigTreeTech SKR Mini E3 V3.0: not tested on hardware.** It builds and passes
+>   the emulator tests only. See [SKR Mini E3 V3.0 (untested)](#skr-mini-e3-v30-untested).
+>
+> It is still early: keep a hand on the power switch for the first homing and the
+> first heat-up, expect to tune the StallGuard thresholds, and raise the speeds step
+> by step. Reports from other printers are welcome (GitHub issues).
 
 | Board | MCU | Build | Display | Notes |
 |---|---|---|---|---|
-| **BigTreeTech SKR Mini E3 V3.0** | STM32G0B1 (512 KiB) | `pio run -e MK3S_SKR_MINI_E3_V3` | color TFT (default), Ender-3 LCD or MK3S LCD | all features, 14 languages. [Wiring](docs/WIRING.md) |
-| **FYSETC Cheetah V3.0** | STM32F446RC (256 KiB) | `pio run -e MK3S_CHEETAH_V3` | original MK3S LCD on EXP1/EXP2, no custom cable | English only; MMU on the Pi header; no power panic, no fan check. [Wiring and flashing](docs/WIRING_CHEETAH.md); optional [input shaper measurement with an external accelerometer](docs/SHAKER.md) |
+| **FYSETC Cheetah V3.0** (tested) | STM32F446RC (256 KiB) | `pio run -e MK3S_CHEETAH_V3` | original MK3S LCD on EXP1/EXP2, no custom cable | English only; MMU on the Pi header (under development); no power panic, no fan check. [Wiring and flashing](docs/WIRING_CHEETAH.md); optional [input shaper measurement with an external accelerometer](docs/SHAKER.md) |
+| BigTreeTech SKR Mini E3 V3.0 (untested) | STM32G0B1 (512 KiB) | `pio run -e MK3S_SKR_MINI_E3_V3` | color TFT (default), Ender-3 LCD or MK3S LCD | all features, 14 languages. [Wiring](docs/WIRING.md) |
 
 The printer logic is Prusa's own code, not a reimplementation: the same G-code
 handling and planner, mesh bed leveling (G80) with the
 P.I.N.D.A., XYZ calibration, PINDA temperature calibration, thermal model, LCD menus
-and wizard, self test, power panic recovery (SKR), filament sensor,
-MMU2S/MMU3 support, Live Z / steel sheets, statistics and so on. What changed is the
-hardware layer underneath it (`Firmware/hal_stm32`), which reproduces the timers,
-ADC, EEPROM, serial lines and stepper drivers of the EINSy on the STM32. See
-[docs/PORTING.md](docs/PORTING.md) for the details.
+and wizard, self test, filament sensor, Live Z / steel sheets, statistics and so on.
+What changed is the hardware layer underneath it (`Firmware/hal_stm32`), which
+reproduces the timers, ADC, EEPROM, serial lines and stepper drivers of the EINSy on
+the STM32. See [docs/PORTING.md](docs/PORTING.md) for the details.
 Input shaper and pressure advance can be tuned from the LCD: [docs/TUNING.md](docs/TUNING.md).
 
 The stepper interrupt is the one part that is new: a motion engine
@@ -25,23 +40,54 @@ MK3.5** (Prusa-Firmware-Buddy), which is the same mechanics as the MK3S on a 32-
 board. It uses the MK3.5 default input shaper profile and allows the MK3.5 speeds and
 accelerations, see [Input shaping and MK3.5 speeds](#input-shaping-and-mk35-speeds).
 
-> **Status: compiles and runs in an emulator, not yet tested on a printer.** The
-> firmware builds for both boards and passes the emulator tests (SKR: start-up,
-> moves, input shaping, pressure advance, endstops, heating, languages; Cheetah:
-> start-up, G-codes, moves), but it has not been run on real hardware yet. Expect to tune the StallGuard thresholds and to verify
-> the wiring. Keep a hand on the power switch for the first homing and the first heat-up,
-> and raise the speeds step by step.
+## FYSETC Cheetah V3.0
 
-## Build
+Everything for this board is in [docs/WIRING_CHEETAH.md](docs/WIRING_CHEETAH.md):
+what works and what does not, the wiring, the jumpers and how to flash it.
+
+### Build
 
 With [PlatformIO](https://platformio.org/) (command line or the VS Code extension):
 
 ```
-pio run -e MK3S_SKR_MINI_E3_V3     # SKR Mini E3 V3
-pio run -e MK3S_CHEETAH_V3         # FYSETC Cheetah V3 (see docs/WIRING_CHEETAH.md to flash it)
+pio run -e MK3S_CHEETAH_V3
 ```
 
-The SKR result is `.pio/build/MK3S_SKR_MINI_E3_V3/firmware.bin`. Every push to GitHub
+### Flash
+
+Over USB in the DFU mode of the STM32 (BT0 jumper to 3V3), with `dfu-util` or
+STM32CubeProgrammer. Flash `firmware_0x08000000.bin` and `firmware_0x0800C000.bin`
+(or `firmware.hex`) from `.pio/build/MK3S_CHEETAH_V3/`, **not** `firmware.bin` (it
+would erase the settings). Then put BT0 back to GND. Step by step:
+[docs/WIRING_CHEETAH.md](docs/WIRING_CHEETAH.md#flashing).
+
+On the first start the settings are empty: the printer starts like a new MK3S, run the
+**Wizard** (self test, XYZ calibration, first layer calibration).
+
+### Connect (OctoPrint, PrusaSlicer)
+
+The board's USB port is a native USB serial port: it shows up as `/dev/ttyACM0` on a
+Raspberry Pi (any baud rate works, use 115200). Use a USB **data** cable: with a
+charge-only cable the board powers up but the Pi does not see it. Turn the 12/24 V
+supply on before connecting, the stepper drivers do not run from USB power alone.
+The Raspberry Pi header of the Cheetah is used for the MMU, not for OctoPrint.
+
+In PrusaSlicer use the **Original Prusa MK3.5 & MK3.5S** profile with binary G-code
+switched off, see [PrusaSlicer](#input-shaping-and-mk35-speeds) below.
+
+## SKR Mini E3 V3.0 (untested)
+
+> The SKR Mini E3 V3.0 version builds and passes the emulator tests (start-up, moves,
+> input shaping, pressure advance, endstops, heating, languages), but it **has not
+> been run on a real printer**. Everything below is untested on hardware.
+
+### Build
+
+```
+pio run -e MK3S_SKR_MINI_E3_V3
+```
+
+The result is `.pio/build/MK3S_SKR_MINI_E3_V3/firmware.bin`. Every push to GitHub
 also builds it (Actions tab, artifact `firmware-MK3S_SKR_MINI_E3_V3`).
 
 The translations (`lang/po`) are added to `firmware.bin` after linking by
@@ -49,7 +95,7 @@ The translations (`lang/po`) are added to `firmware.bin` after linking by
 (installed automatically if missing). Flash `firmware.bin`, not `firmware.elf`: only
 the `.bin` contains the language tables.
 
-## Install (SKR Mini E3 V3; Cheetah V3: see [docs/WIRING_CHEETAH.md](docs/WIRING_CHEETAH.md#flashing))
+### Install
 
 1. Copy `firmware.bin` to the root of a FAT32 micro-SD card.
 2. Put the card into the SKR Mini E3 V3 and power the board. The BigTreeTech
@@ -60,7 +106,7 @@ On the first start the settings EEPROM of the board is erased if it contains the
 settings of another firmware, the printer then starts like a new MK3S: run the
 **Wizard** (self test, XYZ calibration, first layer calibration).
 
-## Wiring
+### Wiring
 
 See [docs/WIRING.md](docs/WIRING.md) and the [wiring picture](docs/wiring.png). In short: motors, heaters and thermistors go to
 the usual headers, the P.I.N.D.A. to the Z-PROBE header (its thermistor to the SERVOS
@@ -73,7 +119,7 @@ custom harness) are build options.
 
 ![status screen on the color TFT](docs/tft_status_printing.png)
 
-## Feature status
+### Feature status (SKR Mini E3 V3)
 
 | Prusa MK3S feature | On the SKR Mini E3 V3 |
 |---|---|
@@ -90,7 +136,7 @@ custom harness) are build options.
 | IR filament sensor, runout, autoload | yes (digital input) |
 | Fan check, Noctua/alt-fan detection | yes, needs the tach wires (see wiring) |
 | Power panic recovery | yes, needs a power-fail signal on PWR-DET |
-| MMU2S / MMU3 | yes, on the TFT header (no reset wire, reset over serial) |
+| MMU2S / MMU3 | under development, untested: on the TFT header (no reset wire, reset over serial) |
 | Quiet heatbed PWM | same automaton on a hardware timer |
 | Languages | all 14 languages of the Prusa release (en, cs, de, es, fr, it, pl, nl, ro, hu, hr, sk, sv, no), stored in the internal flash and selectable directly from the menu |
 | Crash dumps (D20-D22), memory dump menu | **no** (needs the external SPI flash) |
@@ -150,8 +196,8 @@ they can be changed with M593 (measure the resonance with an external accelerome
 | `Firmware/` | Prusa-Firmware sources (the first commit is the unmodified v3.14.1) |
 | `Firmware/hal_stm32/` | STM32 hardware abstraction layer |
 | `Firmware/motion/` | motion engine: input shaper, pressure advance, step generation |
-| `Firmware/pins_SKR_MINI_E3_V3.h` | pin map |
-| `Firmware/variants/MK3S-SKR_MINI_E3_V3.h` | printer configuration (MK3S values, hardware related changes marked `SKR:`) |
+| `Firmware/pins_FYSETC_CHEETAH_V3.h`, `Firmware/variants/MK3S-CHEETAH_V3.h` | Cheetah V3 pin map and printer configuration |
+| `Firmware/pins_SKR_MINI_E3_V3.h`, `Firmware/variants/MK3S-SKR_MINI_E3_V3.h` | SKR Mini E3 V3 pin map and printer configuration (hardware related changes marked `SKR:`) |
 | `buildroot/` | PlatformIO board definition, STM32 variant (from Marlin), build scripts |
 | `lang/` | Prusa translations (`po/`) and language table tools |
 | `test/renode/` | emulator test harness (see [docs/PORTING.md](docs/PORTING.md)) |
@@ -164,4 +210,4 @@ they can be changed with M593 (measure the resonance with an external accelerome
 GPL v3, like Prusa-Firmware (see `LICENSE`). The STM32 board definition and variant
 files are taken from [Marlin](https://github.com/MarlinFirmware/Marlin) (GPL v3) and
 STMicroelectronics (BSD 3-clause). "Original Prusa" and "Prusa" are trademarks of
-Prusa Research; this project is not affiliated with Prusa Research or BigTreeTech.
+Prusa Research; this project is not affiliated with Prusa Research, FYSETC or BigTreeTech.
