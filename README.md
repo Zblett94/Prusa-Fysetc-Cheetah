@@ -7,9 +7,14 @@ shaper and pressure advance of the MK3.5.
 
 > **Status**
 >
-> - **FYSETC Cheetah V3.0: tested on a real MK3S.** It connects to OctoPrint
->   (Raspberry Pi) over USB and prints from PrusaSlicer with the stock
->   **Original Prusa MK3.5S** profile. This is the main target of the project.
+> - **FYSETC Cheetah V3.0: tested on a real MK3S.** This is the main target of the project.
+>   Tested on the printer so far:
+>   - prints from OctoPrint (Raspberry Pi, also with SimplyPrint on top) over USB, sliced
+>     in PrusaSlicer with the stock **Original Prusa MK3.5S** profile, including its
+>     bed leveling (`G29`) before the print;
+>   - filament runout during a USB print: the print pauses, asks for new filament and
+>     resumes where it stopped;
+>   - flashing over USB (DFU) from a Mac or a Raspberry Pi; calibration and Live Z are kept.
 > - **MMU2S / MMU3: under development, not yet tested on a printer.** The code and
 >   the wiring are there (see [docs/WIRING_CHEETAH.md](docs/WIRING_CHEETAH.md)), but
 >   do not rely on it yet.
@@ -74,6 +79,12 @@ The Raspberry Pi header of the Cheetah is used for the MMU, not for OctoPrint.
 
 In PrusaSlicer use the **Original Prusa MK3.5 & MK3.5S** profile with binary G-code
 switched off, see [PrusaSlicer](#input-shaping-and-mk35-speeds) below.
+
+A pause during a USB print (filament runout, M600, M601) makes the printer ask the host to
+resend the lines it had not executed yet. The firmware keeps at most 32 host lines
+unexecuted, well within OctoPrint's history of 50 lines, so the print resumes. The IR
+filament sensor has to report a change for 100 ms before a runout counts (electrical noise
+on its wire is ignored).
 
 ## SKR Mini E3 V3.0 (untested)
 
