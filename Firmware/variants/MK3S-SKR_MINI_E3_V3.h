@@ -175,6 +175,7 @@
 // SKR: the IR sensor output is read digitally on E0-STOP (no analog input left for the
 // sensor version detection of FSENSOR_IR_ANALOG)
 #define FILAMENT_SENSOR_TYPE FSENSOR_IR
+#define FSENSOR_DEBOUNCE_MS 100 // STM32 port: ignore filament sensor changes shorter than this (noise)
 #define FSENSOR_PROBING
 
 // Backlash -

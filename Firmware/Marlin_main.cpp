@@ -1996,6 +1996,15 @@ static void g29_add_area(float x, float y, float w, float h) {
     g29_state = 1;
 }
 
+// G29 A and a plain G29 put a G80 in front of the queue. enquecommand_front() first removes
+// the G29 itself from the queue, so the "ok" at the end of process_commands() would see the
+// G80 (not from the host) and stay silent: OctoPrint would wait for it for ever after the
+// bed leveling. Confirm the G29 to the host before replacing it.
+static void g29_run(const char *cmd) {
+    ClearToSend();
+    enquecommand_front(cmd);
+}
+
 static void gcode_G29() {
     if (code_seen('A')) { // activate: probe the collected area now
         char cmd[48];
@@ -2006,7 +2015,7 @@ static void gcode_G29() {
             strcpy(cmd, "G80");
         g29_state = 0;
         printf_P(PSTR("echo:G29 A -> %s\n"), cmd);
-        enquecommand_front(cmd);
+        g29_run(cmd);
         return;
     }
     if (code_seen('P')) {
@@ -2024,7 +2033,7 @@ static void gcode_G29() {
         }
         return;
     }
-    enquecommand_front("G80"); // plain G29: the whole bed
+    g29_run("G80"); // plain G29: the whole bed
 }
 
 /**

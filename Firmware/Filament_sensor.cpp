@@ -93,6 +93,21 @@ bool Filament_sensor::checkFilamentEvents() {
     }
 
     bool newFilamentPresent = fsensor.getFilamentPresent();
+#ifdef FSENSOR_DEBOUNCE_MS
+    // STM32 port: the sensor signal comes through a diode and the board's pull-up, next to the
+    // motor and heater wiring. One noisy sample used to start a filament runout in the middle
+    // of a print. Accept a change only when it lasts FSENSOR_DEBOUNCE_MS.
+    if (oldFilamentPresent == newFilamentPresent) {
+        debounceTimer.stop();
+        return false;
+    }
+    if (!debounceTimer.running()) {
+        debounceTimer.start();
+        return false;
+    }
+    if (!debounceTimer.expired(FSENSOR_DEBOUNCE_MS))
+        return false;
+#endif
     if (oldFilamentPresent != newFilamentPresent) {
         oldFilamentPresent = newFilamentPresent;
         eventBlankingTimer.start();

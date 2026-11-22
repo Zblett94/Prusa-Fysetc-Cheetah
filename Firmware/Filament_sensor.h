@@ -80,6 +80,9 @@ protected:
     bool oldFilamentPresent; //for creating filament presence switching events.
     bool postponedLoadEvent; //this event lasts exactly one update cycle. It is long enough to be able to do polling for load event.
     ShortTimer eventBlankingTimer;
+#ifdef FSENSOR_DEBOUNCE_MS
+    ShortTimer debounceTimer; // STM32 port: a change must last FSENSOR_DEBOUNCE_MS
+#endif
     SensorActionOnError sensorActionOnError;
 };
 

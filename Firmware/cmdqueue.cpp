@@ -9,6 +9,7 @@
 #include "language.h"
 #include "stopwatch.h"
 #include "power_panic.h"
+#include "planner.h"
 
 // Reserve BUFSIZE lines of length MAX_CMD_SIZE plus CMDBUFFER_RESERVE_FRONT.
 char cmdbuffer[BUFSIZE * (MAX_CMD_SIZE + 1) + CMDBUFFER_RESERVE_FRONT];
@@ -356,6 +357,19 @@ void repeatcommand_front()
     cmdbuffer_front_already_processed = true;
 }
 
+#ifdef USB_MAX_LINES_IN_FLIGHT
+// STM32 port: the planner holds up to BLOCK_BUFFER_SIZE (64) moves, the EINSy only 16. A pause
+// of a host print (filament runout, M601, crash) asks the host to resend every line still in
+// the planner and the command queue ("Resend: N"). OctoPrint keeps only the last 50 lines and
+// gives up ("no sufficient history", M112) when asked for more. Do not read the next host line
+// while USB_MAX_LINES_IN_FLIGHT lines are not executed yet (checked before every character, so
+// also while short lines pile up in the command queue, which holds many of them).
+static bool usb_lines_limit_reached()
+{
+    return !card.sdprinting && planner_calc_sd_length() + buflen >= USB_MAX_LINES_IN_FLIGHT;
+}
+#endif
+
 void get_command()
 {
     // Test and reserve space for the new command string.
@@ -367,8 +381,13 @@ void get_command()
 		SERIAL_ECHOLNPGM("Full RX Buffer");   //if buffer was full, there is danger that reading of last gcode will not be completed
 	}
 
+
   // start of serial line processing loop
-  while (((MYSERIAL.available() > 0 && !saved_printing) || (MYSERIAL.available() > 0 && printingIsPaused())) && !cmdqueue_serial_disabled) {  //is print is saved (crash detection or filament detection), dont process data from serial line
+  while (((MYSERIAL.available() > 0 && !saved_printing) || (MYSERIAL.available() > 0 && printingIsPaused())) && !cmdqueue_serial_disabled
+#ifdef USB_MAX_LINES_IN_FLIGHT
+         && !usb_lines_limit_reached()
+#endif
+        ) {  //is print is saved (crash detection or filament detection), dont process data from serial line
 
 #ifdef ENABLE_MEATPACK
     // MeatPack Changes
