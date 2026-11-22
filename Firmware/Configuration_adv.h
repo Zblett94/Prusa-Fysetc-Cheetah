@@ -341,6 +341,9 @@ const unsigned int dropsegments=5; //everything with less than this number of st
   // STM32 motion engine: blocks stay in the queue until the shaped motion has left them,
   // the planner itself looks ahead over the blocks not yet taken by the motion engine
   #define BLOCK_BUFFER_SIZE 64
+  // At most this many numbered host (USB) lines in the planner and the command queue: on a
+  // pause the firmware asks the host to resend them, OctoPrint can resend the last 50 only.
+  #define USB_MAX_LINES_IN_FLIGHT 32
 #elif defined SDSUPPORT
   #define BLOCK_BUFFER_SIZE 16   // SD,LCD,Buttons take more memory, block buffer needs to be smaller
 #else
